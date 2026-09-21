@@ -1,21 +1,16 @@
-# TanStack Start + shadcn/ui
+# POS Platform Frontend
 
-This is a template for a new TanStack Start project with React, TypeScript, and shadcn/ui.
+Frontend scaffold built with TanStack Start, React, TypeScript, Tailwind CSS,
+Base UI, and shadcn/ui. Product pages are intentionally not implemented yet.
 
-## Adding components
+## UI primitives
 
-To add components to your app, run the following command:
+The initial component layer lives in `src/components/ui` and includes buttons,
+inputs, input groups, OTP input, comboboxes, selects, textareas, avatars, form
+fields, checkboxes, radio groups, switches, badges, separators, and skeletons.
 
-```bash
-npx shadcn@latest add button
-```
-
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
+Import components directly or from the component barrel:
 
 ```tsx
-import { Button } from "@/components/ui/button";
+import { Button, Input } from "@/components/ui"
 ```
