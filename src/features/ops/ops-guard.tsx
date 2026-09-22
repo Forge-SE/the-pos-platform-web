@@ -2,10 +2,7 @@ import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 
 import { NotFoundPage } from "@/app/root-document"
-import {
-  OPS_TOKEN_CHANGED_EVENT,
-  isOpsAuthenticated,
-} from "@/lib/ops-token"
+import { OPS_TOKEN_CHANGED_EVENT, isOpsAuthenticated } from "@/lib/ops-token"
 
 export function OpsGuard({ children }: { children: ReactNode }) {
   const [allowed, setAllowed] = useState<boolean | null>(null)

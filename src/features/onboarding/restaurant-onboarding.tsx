@@ -355,7 +355,10 @@ export function RestaurantOnboarding({
           )}
           {step === 1 && <OwnerAccessStep {...stepProps} />}
           {step === 2 && (
-            <OperatingControlsStep {...stepProps} hideSetupSecret={isPlatform} />
+            <OperatingControlsStep
+              {...stepProps}
+              hideSetupSecret={isPlatform}
+            />
           )}
           {step === 3 && (
             <OnboardingReviewStep values={values} onEdit={setStep} />

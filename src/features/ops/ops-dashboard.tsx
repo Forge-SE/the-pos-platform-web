@@ -182,8 +182,12 @@ function useOpsAuthError(error: unknown) {
     typeof error === "object" &&
     "graphQLErrors" in error &&
     Array.isArray((error as { graphQLErrors: unknown[] }).graphQLErrors) &&
-    (error as { graphQLErrors: { extensions?: { code?: string } }[] }).graphQLErrors.some(
-      (e) => e.extensions?.code === "UNAUTHENTICATED" || e.extensions?.code === "FORBIDDEN"
+    (
+      error as { graphQLErrors: { extensions?: { code?: string } }[] }
+    ).graphQLErrors.some(
+      (e) =>
+        e.extensions?.code === "UNAUTHENTICATED" ||
+        e.extensions?.code === "FORBIDDEN"
     )
   ) {
     clearOpsToken()
@@ -248,32 +252,42 @@ function RestaurantsView() {
           </p>
         )}
         <ul className="mt-4 divide-y divide-border">
-          {items.map((restaurant: { id: string; name: string; slug: string; code: string; currency: string }) => (
-            <li key={restaurant.id}>
-              <button
-                type="button"
-                onClick={() => setSelectedId(restaurant.id)}
-                className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/60 ${
-                  selectedId === restaurant.id ? "bg-muted" : ""
-                }`}
-              >
-                <span>
-                  <span className="block text-sm font-medium">
-                    {restaurant.name}
+          {items.map(
+            (restaurant: {
+              id: string
+              name: string
+              slug: string
+              code: string
+              currency: string
+            }) => (
+              <li key={restaurant.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(restaurant.id)}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/60 ${
+                    selectedId === restaurant.id ? "bg-muted" : ""
+                  }`}
+                >
+                  <span>
+                    <span className="block text-sm font-medium">
+                      {restaurant.name}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {restaurant.slug} · {restaurant.currency}
+                    </span>
                   </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {restaurant.slug} · {restaurant.currency}
-                  </span>
-                </span>
-                <code className="shrink-0 rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
-                  {restaurant.code}
-                </code>
-              </button>
-            </li>
-          ))}
+                  <code className="shrink-0 rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+                    {restaurant.code}
+                  </code>
+                </button>
+              </li>
+            )
+          )}
         </ul>
         {items.length === 0 && !loading && (
-          <p className="mt-4 text-sm text-muted-foreground">No restaurants found.</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            No restaurants found.
+          </p>
         )}
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
           <span>
@@ -334,7 +348,12 @@ function RestaurantDetail({
           timezone: string
           createdAt: string
         }
-        staff: Array<{ id: string; name: string; role: string; active: boolean }>
+        staff: Array<{
+          id: string
+          name: string
+          role: string
+          active: boolean
+        }>
         staffCount: number
         activeStaffCount: number
       }
@@ -354,9 +373,12 @@ function RestaurantDetail({
     context: opsAuthContext(),
   })
   useOpsAuthError(error)
-  const [setStaffActive, { loading: toggling }] = useMutation(SET_STAFF_ACTIVE, {
-    context: opsAuthContext(),
-  })
+  const [setStaffActive, { loading: toggling }] = useMutation(
+    SET_STAFF_ACTIVE,
+    {
+      context: opsAuthContext(),
+    }
+  )
 
   async function toggleStaff(userId: string, active: boolean) {
     await setStaffActive({
@@ -365,8 +387,7 @@ function RestaurantDetail({
     refetch()
   }
 
-  if (loading)
-    return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>
   if (error || !data?.platformRestaurant)
     return <p className="text-sm text-destructive">Couldn’t load details.</p>
 
@@ -555,9 +576,13 @@ function AuditView() {
           aria-label="Filter by action"
         />
       </div>
-      {loading && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
+      {loading && (
+        <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+      )}
       {error && (
-        <p className="mt-4 text-sm text-destructive">Couldn’t load audit logs.</p>
+        <p className="mt-4 text-sm text-destructive">
+          Couldn’t load audit logs.
+        </p>
       )}
       <ul className="mt-4 divide-y divide-border">
         {items.map(
@@ -620,7 +645,11 @@ function NewRestaurantView({ onProvisioned }: { onProvisioned: () => void }) {
     return (
       <section className="rounded-xl border bg-card p-6 text-card-foreground sm:p-8">
         <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <CheckCircleIcon aria-hidden="true" className="size-7" weight="fill" />
+          <CheckCircleIcon
+            aria-hidden="true"
+            className="size-7"
+            weight="fill"
+          />
         </span>
         <p className="mt-6 text-xs font-semibold tracking-[0.14em] text-primary uppercase">
           Restaurant provisioned
@@ -636,14 +665,16 @@ function NewRestaurantView({ onProvisioned }: { onProvisioned: () => void }) {
           <div className="flex items-center justify-between gap-4 py-2.5">
             <dt className="text-muted-foreground">Workspace</dt>
             <dd className="font-medium">{provisioned.restaurant.slug}</dd>
-          </div>          <div className="flex items-center justify-between gap-4 py-2.5">
+          </div>{" "}
+          <div className="flex items-center justify-between gap-4 py-2.5">
             <dt className="text-muted-foreground">Owner</dt>
             <dd className="font-medium">{provisioned.user.name}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 py-2.5">
             <dt className="text-muted-foreground">Operating region</dt>
             <dd className="font-medium">
-              {provisioned.restaurant.currency} · {provisioned.restaurant.timezone}
+              {provisioned.restaurant.currency} ·{" "}
+              {provisioned.restaurant.timezone}
             </dd>
           </div>
         </dl>

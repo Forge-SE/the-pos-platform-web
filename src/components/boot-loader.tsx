@@ -75,11 +75,9 @@ export function BootLoader() {
             </motion.span>
             <span className="overflow-hidden">
               <motion.span
-                className="font-heading block text-4xl font-semibold tracking-tight text-[#1F4D2E]"
+                className="block font-heading text-4xl font-semibold tracking-tight text-[#1F4D2E]"
                 initial={
-                  reduceMotion
-                    ? { opacity: 0 }
-                    : { x: "-110%", opacity: 0 }
+                  reduceMotion ? { opacity: 0 } : { x: "-110%", opacity: 0 }
                 }
                 animate={{ x: "0%", opacity: 1 }}
                 transition={{

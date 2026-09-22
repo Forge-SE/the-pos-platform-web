@@ -4,11 +4,7 @@ import { useMutation } from "@apollo/client/react"
 import { useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { setOpsToken } from "@/lib/ops-token"
 
