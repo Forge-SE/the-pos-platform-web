@@ -1,7 +1,14 @@
 # POS Platform Frontend
 
-Frontend scaffold built with TanStack Start, React, TypeScript, Tailwind CSS,
-Base UI, and shadcn/ui. Product pages are intentionally not implemented yet.
+Frontend built with TanStack Router, React, TypeScript, Tailwind CSS, Base UI,
+and shadcn/ui.
+
+## Routing
+
+Routes are declared programmatically in `src/route-tree.tsx`. Route-level page
+components live in `src/pages`; feature UI and business logic stay in
+`src/features`. Add a page component first, then register its path and metadata
+in the route tree.
 
 ## UI primitives
 
@@ -14,3 +21,15 @@ Import components directly or from the component barrel:
 ```tsx
 import { Button, Input } from "@/components/ui"
 ```
+
+## Development
+
+Use Node.js 24, then install and validate the project:
+
+```bash
+npm ci
+npm run validate
+```
+
+See [docs/infrastructure.md](docs/infrastructure.md) for CI, environment,
+container, and repository setup.

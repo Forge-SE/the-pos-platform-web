@@ -1,0 +1,10 @@
+.git
+.github
+.tanstack
+dist
+node_modules
+*.local
+.env*
+!.env.example
+npm-debug.log*
+README.md

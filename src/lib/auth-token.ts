@@ -18,3 +18,39 @@ export function clearAccessToken(): void {
   window.localStorage.removeItem(ACCESS_TOKEN_KEY)
   window.dispatchEvent(new Event(AUTH_TOKEN_CHANGED_EVENT))
 }
+
+export type RestaurantRole = "CASHIER" | "KITCHEN" | "MANAGER" | "OWNER"
+
+export interface AccessTokenProfile {
+  sub: string
+  restaurantId: string
+  name: string
+  role: RestaurantRole
+  exp?: number
+}
+
+export function getAccessTokenProfile(): AccessTokenProfile | null {
+  const token = getAccessToken()
+  if (!token) return null
+
+  try {
+    const encodedPayload = token.split(".")[1]
+    if (!encodedPayload) return null
+    const normalized = encodedPayload.replace(/-/g, "+").replace(/_/g, "/")
+    const payload = JSON.parse(
+      window.atob(normalized)
+    ) as Partial<AccessTokenProfile>
+    if (
+      !payload.sub ||
+      !payload.restaurantId ||
+      !payload.name ||
+      !payload.role
+    ) {
+      return null
+    }
+    if (payload.exp && payload.exp * 1000 <= Date.now()) return null
+    return payload as AccessTokenProfile
+  } catch {
+    return null
+  }
+}
