@@ -1,10 +1,5 @@
-import { SectionPage } from "@/components/layout/section-page"
+import { Performance as PerformanceFeature } from "@/features/performance/performance"
 
 export function Performance() {
-  return (
-    <SectionPage
-      title="Performance"
-      description="Review sales, payments, and restaurant performance over time."
-    />
-  )
+  return <PerformanceFeature />
 }
