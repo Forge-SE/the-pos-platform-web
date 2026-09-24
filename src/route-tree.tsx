@@ -92,6 +92,13 @@ const shiftRoute = createRoute({
   head: () => ({ meta: [{ title: "Shift & cash | Ovaal" }] }),
 })
 
+const menuRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/menu",
+  component: lazyRouteComponent(() => import("@/pages/Menu"), "Menu"),
+  head: () => ({ meta: [{ title: "Menu | Ovaal" }] }),
+})
+
 const settingsRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/settings",
@@ -137,6 +144,7 @@ export const routeTree = rootRoute.addChildren([
     ordersRoute,
     performanceRoute,
     teamRoute,
+    menuRoute,
     shiftRoute,
     settingsRoute,
   ]),

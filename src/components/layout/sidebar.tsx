@@ -1,6 +1,8 @@
 import type { Icon } from "@phosphor-icons/react"
 import {
   ChartLineUpIcon,
+  ForkKnifeIcon,
+  GearSixIcon,
   HouseIcon,
   ReceiptIcon,
   SidebarIcon,
@@ -26,11 +28,13 @@ const primaryNavigation = [
   { label: "Overview", to: "/overview", icon: HouseIcon },
   { label: "Orders", to: "/orders", icon: ReceiptIcon },
   { label: "Performance", to: "/performance", icon: ChartLineUpIcon },
-  { label: "Team", to: "/team", icon: UsersThreeIcon },
 ] as const
 
 const managementNavigation = [
+  { label: "Menu", to: "/menu", icon: ForkKnifeIcon },
   { label: "Shift & cash", to: "/shift", icon: WalletIcon },
+  { label: "Team", to: "/team", icon: UsersThreeIcon },
+  { label: "Settings", to: "/settings", icon: GearSixIcon },
 ] as const
 
 function initials(name: string) {

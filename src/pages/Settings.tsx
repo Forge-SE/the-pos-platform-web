@@ -1,10 +1,5 @@
-import { SectionPage } from "@/components/layout/section-page"
+import { RestaurantBranding } from "@/features/branding/restaurant-branding"
 
 export function Settings() {
-  return (
-    <SectionPage
-      title="Settings"
-      description="Manage restaurant details and account preferences."
-    />
-  )
+  return <RestaurantBranding />
 }

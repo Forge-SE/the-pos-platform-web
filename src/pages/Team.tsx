@@ -1,10 +1,5 @@
-import { SectionPage } from "@/components/layout/section-page"
+import { StaffManagement } from "@/features/staff/staff-management"
 
 export function Team() {
-  return (
-    <SectionPage
-      title="Team"
-      description="Manage restaurant staff, access, and operating roles."
-    />
-  )
+  return <StaffManagement />
 }
