@@ -4,7 +4,11 @@ import { useQuery } from "@apollo/client/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { OpsHeader } from "@/features/ops/ops-shell"
-import { AUDIT_LOGS_QUERY, PAGE_SIZE, formatWhen } from "@/features/ops/ops-model"
+import {
+  AUDIT_LOGS_QUERY,
+  PAGE_SIZE,
+  formatWhen,
+} from "@/features/ops/ops-model"
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
 import { opsAuthContext } from "@/lib/ops-token"
 
@@ -124,14 +128,17 @@ export function OpsAudit() {
         </div>
         <div className="flex items-center justify-between border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">
           <span>
-            {total === 0 ? "0" : `${offset + 1}–${offset + items.length}`} of {total}
+            {total === 0 ? "0" : `${offset + 1}–${offset + items.length}`} of{" "}
+            {total}
           </span>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               disabled={offset === 0}
-              onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
+              onClick={() =>
+                setOffset((current) => Math.max(0, current - PAGE_SIZE))
+              }
             >
               Previous
             </Button>

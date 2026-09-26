@@ -2,7 +2,11 @@ import { useState } from "react"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Navigate, useNavigate } from "@tanstack/react-router"
-import { CheckCircleIcon, ForkKnifeIcon, UsersThreeIcon } from "@phosphor-icons/react"
+import {
+  CheckCircleIcon,
+  ForkKnifeIcon,
+  UsersThreeIcon,
+} from "@phosphor-icons/react"
 
 import { OvaalMark } from "@/components/ovaal-mark"
 import { OnboardingMenuStep } from "@/features/onboarding/components/onboarding-menu-step"
@@ -22,17 +26,28 @@ const COMPLETE_ONBOARDING = gql`
 `
 
 const steps = [
-  { label: "Staff", description: "Add the team, or skip and do it later", icon: UsersThreeIcon },
-  { label: "Menu", description: "Put the first dishes on the till", icon: ForkKnifeIcon },
+  {
+    label: "Staff",
+    description: "Add the team, or skip and do it later",
+    icon: UsersThreeIcon,
+  },
+  {
+    label: "Menu",
+    description: "Put the first dishes on the till",
+    icon: ForkKnifeIcon,
+  },
 ] as const
 
 export function OwnerOnboarding() {
   const navigate = useNavigate()
   const profile = getAccessTokenProfile()
-  const { data, loading } = useQuery<{ ownerOnboardingRequired: boolean }>(ONBOARDING_QUERY, {
-    skip: profile?.role !== "OWNER",
-    fetchPolicy: "network-only",
-  })
+  const { data, loading } = useQuery<{ ownerOnboardingRequired: boolean }>(
+    ONBOARDING_QUERY,
+    {
+      skip: profile?.role !== "OWNER",
+      fetchPolicy: "network-only",
+    }
+  )
   const [complete, completeState] = useMutation(COMPLETE_ONBOARDING)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -60,7 +75,9 @@ export function OwnerOnboarding() {
           <OvaalMark elevated={false} />
           <div>
             <p className="text-sm font-semibold tracking-[-0.02em]">Ovaal</p>
-            <p className="text-xs text-muted-foreground">First sign-in for {profile.name}</p>
+            <p className="text-xs text-muted-foreground">
+              First sign-in for {profile.name}
+            </p>
           </div>
         </div>
 
@@ -75,14 +92,22 @@ export function OwnerOnboarding() {
                   className={`flex size-8 shrink-0 items-center justify-center rounded-full ${done || now ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}
                 >
                   {done ? (
-                    <CheckCircleIcon aria-hidden="true" className="size-4" weight="fill" />
+                    <CheckCircleIcon
+                      aria-hidden="true"
+                      className="size-4"
+                      weight="fill"
+                    />
                   ) : (
                     <Icon aria-hidden="true" className="size-4" />
                   )}
                 </span>
                 <span>
-                  <span className="block text-sm font-semibold">{item.label}</span>
-                  <span className="block text-xs text-muted-foreground">{item.description}</span>
+                  <span className="block text-sm font-semibold">
+                    {item.label}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {item.description}
+                  </span>
                 </span>
               </li>
             )

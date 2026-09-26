@@ -16,7 +16,11 @@ import { OpsHeader } from "@/features/ops/ops-shell"
 import { PAGE_SIZE, RESTAURANTS_QUERY } from "@/features/ops/ops-model"
 import type { PlatformRestaurant } from "@/features/ops/ops-model"
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
-import { cedisToPesewas, formatMoney, mutationMessage } from "@/features/menu/model"
+import {
+  cedisToPesewas,
+  formatMoney,
+  mutationMessage,
+} from "@/features/menu/model"
 import { opsAuthContext } from "@/lib/ops-token"
 
 const PLANS_QUERY = gql`
@@ -58,7 +62,10 @@ const CREATE_PLAN = gql`
 `
 
 const UPDATE_PLAN = gql`
-  mutation PlatformUpdateSubscriptionPlan($id: ID!, $input: SubscriptionPlanInput!) {
+  mutation PlatformUpdateSubscriptionPlan(
+    $id: ID!
+    $input: SubscriptionPlanInput!
+  ) {
     platformUpdateSubscriptionPlan(id: $id, input: $input) {
       id
     }
@@ -104,7 +111,10 @@ interface RestaurantSubscriptionRow {
 }
 
 const planSchema = Yup.object({
-  name: Yup.string().trim().min(2, "Enter a plan name.").required("Enter a plan name."),
+  name: Yup.string()
+    .trim()
+    .min(2, "Enter a plan name.")
+    .required("Enter a plan name."),
   description: Yup.string(),
   price: Yup.string()
     .trim()
@@ -154,13 +164,20 @@ export function OpsSubscriptions() {
         title="Subscriptions"
         description="Set Paystack pricing tiers and assign a plan to a restaurant."
       >
-        <Button onClick={() => { setFormError(null); setEditing("new") }}>
+        <Button
+          onClick={() => {
+            setFormError(null)
+            setEditing("new")
+          }}
+        >
           <PlusIcon data-icon="inline-start" />
           Add tier
         </Button>
       </OpsHeader>
       <section className="mx-4 mb-6 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
-        <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">Tiers</h2>
+        <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">
+          Tiers
+        </h2>
         <table className="w-full text-left text-sm">
           <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             <tr>
@@ -174,12 +191,16 @@ export function OpsSubscriptions() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-muted-foreground">Loading plans…</td>
+                <td colSpan={5} className="px-4 py-6 text-muted-foreground">
+                  Loading plans…
+                </td>
               </tr>
             )}
             {!loading && plans.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-muted-foreground">No tiers yet.</td>
+                <td colSpan={5} className="px-4 py-6 text-muted-foreground">
+                  No tiers yet.
+                </td>
               </tr>
             )}
             {plans.map((plan) => (
@@ -187,7 +208,9 @@ export function OpsSubscriptions() {
                 <td className="px-4 py-3">
                   <span className="block font-medium">{plan.name}</span>
                   {plan.description && (
-                    <span className="text-xs text-muted-foreground">{plan.description}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {plan.description}
+                    </span>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -206,7 +229,10 @@ export function OpsSubscriptions() {
                     variant="ghost"
                     size="icon-sm"
                     aria-label={`Edit ${plan.name}`}
-                    onClick={() => { setFormError(null); setEditing(plan) }}
+                    onClick={() => {
+                      setFormError(null)
+                      setEditing(plan)
+                    }}
                   >
                     <PencilSimpleIcon />
                   </Button>
@@ -220,7 +246,12 @@ export function OpsSubscriptions() {
       <section className="mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
         <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
           <h2 className="text-sm font-semibold">Restaurant subscriptions</h2>
-          <Button variant="outline" size="sm" onClick={() => setAssigning(true)} disabled={plans.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAssigning(true)}
+            disabled={plans.length === 0}
+          >
             Assign plan
           </Button>
         </div>
@@ -247,26 +278,42 @@ export function OpsSubscriptions() {
                 <td className="px-4 py-3 font-medium">{row.restaurantName}</td>
                 <td className="px-4 py-3">{row.plan.name}</td>
                 <td className="px-4 py-3">{row.status}</td>
-                <td className="px-4 py-3 text-muted-foreground">{formatWhen(row.lastPaidAt)}</td>
-                <td className="px-4 py-3 text-muted-foreground">{formatWhen(row.nextPaymentAt)}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {formatWhen(row.lastPaidAt)}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {formatWhen(row.nextPaymentAt)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
 
-      {error && <p className="mx-4 mb-8 text-sm text-destructive lg:mx-8">Couldn’t load subscriptions.</p>}
+      {error && (
+        <p className="mx-4 mb-8 text-sm text-destructive lg:mx-8">
+          Couldn’t load subscriptions.
+        </p>
+      )}
 
       {editing && (
         <OpsModal
           wide
           open
-          onOpenChange={(open) => { if (!open) setEditing(null) }}
+          onOpenChange={(open) => {
+            if (!open) setEditing(null)
+          }}
           title={editing === "new" ? "Add tier" : `Edit ${editing.name}`}
           description="Price is charged in cedis through Paystack on the interval you choose."
           footer={
             <>
-              <Button variant="outline" type="button" onClick={() => setEditing(null)}>Cancel</Button>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setEditing(null)}
+              >
+                Cancel
+              </Button>
               <Button type="submit" form="subscription-plan" disabled={saving}>
                 {saving ? "Saving…" : "Save tier"}
               </Button>
@@ -278,7 +325,7 @@ export function OpsSubscriptions() {
             className="mt-5 space-y-4"
             initialValues={{
               name: editing === "new" ? "" : editing.name,
-              description: editing === "new" ? "" : editing.description ?? "",
+              description: editing === "new" ? "" : (editing.description ?? ""),
               price: editing === "new" ? "" : pesewasToCedis(editing.amount),
               interval: editing === "new" ? "monthly" : editing.interval,
               active: editing === "new" ? true : editing.active,
@@ -304,26 +351,52 @@ export function OpsSubscriptions() {
                 setEditing(null)
                 await refetch()
               } catch (mutationError) {
-                setFormError(mutationMessage(mutationError, "Could not save this tier."))
+                setFormError(
+                  mutationMessage(mutationError, "Could not save this tier.")
+                )
               }
             }}
           >
             {(formik) => (
               <>
-                {formError && <p className="text-sm text-destructive" role="alert">{formError}</p>}
+                {formError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {formError}
+                  </p>
+                )}
                 <Field data-invalid={Boolean(fieldError(formik, "name"))}>
                   <FieldLabel htmlFor="plan-name">Name</FieldLabel>
-                  <Input id="plan-name" name="name" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
+                  <Input
+                    id="plan-name"
+                    name="name"
+                    value={formik.values.name}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
                   <FieldError>{fieldError(formik, "name")}</FieldError>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="plan-description">Description</FieldLabel>
-                  <Textarea id="plan-description" name="description" value={formik.values.description} onChange={formik.handleChange} />
+                  <FieldLabel htmlFor="plan-description">
+                    Description
+                  </FieldLabel>
+                  <Textarea
+                    id="plan-description"
+                    name="description"
+                    value={formik.values.description}
+                    onChange={formik.handleChange}
+                  />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field data-invalid={Boolean(fieldError(formik, "price"))}>
                     <FieldLabel htmlFor="plan-price">Price (GHS)</FieldLabel>
-                    <Input id="plan-price" name="price" inputMode="decimal" value={formik.values.price} onChange={formik.handleChange} onBlur={formik.handleBlur} />
+                    <Input
+                      id="plan-price"
+                      name="price"
+                      inputMode="decimal"
+                      value={formik.values.price}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                    />
                     <FieldError>{fieldError(formik, "price")}</FieldError>
                   </Field>
                   <Field>
@@ -344,7 +417,9 @@ export function OpsSubscriptions() {
                 <label className="flex items-center gap-2 text-sm">
                   <Switch
                     checked={formik.values.active}
-                    onCheckedChange={(active) => void formik.setFieldValue("active", active)}
+                    onCheckedChange={(active) =>
+                      void formik.setFieldValue("active", active)
+                    }
                   />
                   Available for restaurants to buy
                 </label>
@@ -401,7 +476,9 @@ function AssignSubscription({
       await setSubscription({ variables: { restaurantId, planId, status } })
       await onSaved()
     } catch (mutationError) {
-      setFormError(mutationMessage(mutationError, "Could not update this subscription."))
+      setFormError(
+        mutationMessage(mutationError, "Could not update this subscription.")
+      )
       setConfirming(false)
     }
   }
@@ -409,7 +486,9 @@ function AssignSubscription({
   return (
     <OpsModal
       open
-      onOpenChange={(open) => { if (!open) onClose() }}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
       title={confirming ? "Confirm subscription change" : "Assign plan"}
       description={
         confirming
@@ -421,22 +500,40 @@ function AssignSubscription({
       footer={
         confirming ? (
           <>
-            <Button variant="outline" onClick={() => setConfirming(false)}>Back</Button>
-            <Button variant={status === "CANCELLED" ? "destructive" : "default"} disabled={loading} onClick={() => void save()}>
+            <Button variant="outline" onClick={() => setConfirming(false)}>
+              Back
+            </Button>
+            <Button
+              variant={status === "CANCELLED" ? "destructive" : "default"}
+              disabled={loading}
+              onClick={() => void save()}
+            >
               {loading ? "Saving…" : "Confirm"}
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button disabled={!restaurantId || !planId} onClick={() => setConfirming(true)}>Continue</Button>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!restaurantId || !planId}
+              onClick={() => setConfirming(true)}
+            >
+              Continue
+            </Button>
           </>
         )
       }
     >
       {!confirming && (
         <div className="mt-4 space-y-3">
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search restaurants" aria-label="Search restaurants" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search restaurants"
+            aria-label="Search restaurants"
+          />
           <select
             aria-label="Restaurant"
             value={restaurantId}
@@ -445,7 +542,9 @@ function AssignSubscription({
           >
             <option value="">Choose restaurant</option>
             {restaurants.map((restaurant) => (
-              <option key={restaurant.id} value={restaurant.id}>{restaurant.name}</option>
+              <option key={restaurant.id} value={restaurant.id}>
+                {restaurant.name}
+              </option>
             ))}
           </select>
           <select
@@ -473,7 +572,11 @@ function AssignSubscription({
           </select>
         </div>
       )}
-      {formError && <p className="mt-3 text-sm text-destructive" role="alert">{formError}</p>}
+      {formError && (
+        <p className="mt-3 text-sm text-destructive" role="alert">
+          {formError}
+        </p>
+      )}
     </OpsModal>
   )
 }

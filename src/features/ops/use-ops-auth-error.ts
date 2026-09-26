@@ -17,7 +17,7 @@ export function useOpsAuthError(error: unknown) {
       ).graphQLErrors.some(
         (entry) =>
           entry.extensions?.code === "UNAUTHENTICATED" ||
-          entry.extensions?.code === "FORBIDDEN",
+          entry.extensions?.code === "FORBIDDEN"
       )
     ) {
       clearOpsToken()

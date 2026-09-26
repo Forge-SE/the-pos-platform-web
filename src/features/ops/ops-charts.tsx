@@ -46,22 +46,29 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
   const maxOrders = Math.max(1, ...points.map((point) => point.orderCount))
   const maxRevenue = Math.max(
     1,
-    ...points.map((point) => Math.max(point.revenue, point.subscriptionRevenue ?? 0)),
+    ...points.map((point) =>
+      Math.max(point.revenue, point.subscriptionRevenue ?? 0)
+    )
   )
   const slot = points.length ? innerW / points.length : innerW
   const barWidth = Math.max(2, Math.min(18, slot * 0.55))
 
-  const orderY = (count: number) => pad.top + innerH - (count / maxOrders) * innerH
-  const revenueY = (amount: number) => pad.top + innerH - (amount / maxRevenue) * innerH
+  const orderY = (count: number) =>
+    pad.top + innerH - (count / maxOrders) * innerH
+  const revenueY = (amount: number) =>
+    pad.top + innerH - (amount / maxRevenue) * innerH
   const xAt = (index: number) => pad.left + slot * index + slot / 2
 
   const line = points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${xAt(index)} ${revenueY(point.revenue)}`)
+    .map(
+      (point, index) =>
+        `${index === 0 ? "M" : "L"} ${xAt(index)} ${revenueY(point.revenue)}`
+    )
     .join(" ")
   const subscriptionLine = points
     .map(
       (point, index) =>
-        `${index === 0 ? "M" : "L"} ${xAt(index)} ${revenueY(point.subscriptionRevenue ?? 0)}`,
+        `${index === 0 ? "M" : "L"} ${xAt(index)} ${revenueY(point.subscriptionRevenue ?? 0)}`
     )
     .join(" ")
   const area =
@@ -74,7 +81,9 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
   return (
     <figure className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
       <figcaption className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-sm font-semibold">Orders, revenue, and subscriptions</span>
+        <span className="text-sm font-semibold">
+          Orders, revenue, and subscriptions
+        </span>
         <span className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-sm bg-chart-1" />
@@ -113,7 +122,12 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
                   stroke="var(--border)"
                   strokeDasharray="3 4"
                 />
-                <text x={4} y={y + 4} fill="var(--muted-foreground)" fontSize="11">
+                <text
+                  x={4}
+                  y={y + 4}
+                  fill="var(--muted-foreground)"
+                  fontSize="11"
+                >
                   {Math.round(maxOrders * step)}
                 </text>
                 <text
@@ -134,13 +148,19 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
                 x={xAt(index) - barWidth / 2}
                 y={orderY(point.orderCount)}
                 width={barWidth}
-                height={Math.max(0, pad.top + innerH - orderY(point.orderCount))}
+                height={Math.max(
+                  0,
+                  pad.top + innerH - orderY(point.orderCount)
+                )}
                 rx="2"
                 fill="var(--chart-1)"
                 opacity="0.85"
               >
                 <title>
-                  {dayLabel(point.day)}: {point.orderCount} orders, {formatMoney(point.revenue)} order revenue, {point.subscriptionCount ?? 0} subscription payments, {formatMoney(point.subscriptionRevenue ?? 0)}
+                  {dayLabel(point.day)}: {point.orderCount} orders,{" "}
+                  {formatMoney(point.revenue)} order revenue,{" "}
+                  {point.subscriptionCount ?? 0} subscription payments,{" "}
+                  {formatMoney(point.subscriptionRevenue ?? 0)}
                 </title>
               </rect>
               {index % labelEvery === 0 && (
@@ -157,8 +177,18 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
             </g>
           ))}
           <path d={area} fill="var(--chart-4)" opacity="0.12" />
-          <path d={line} fill="none" stroke="var(--chart-4)" strokeWidth="2.5" />
-          <path d={subscriptionLine} fill="none" stroke="var(--chart-5)" strokeWidth="2.5" />
+          <path
+            d={line}
+            fill="none"
+            stroke="var(--chart-4)"
+            strokeWidth="2.5"
+          />
+          <path
+            d={subscriptionLine}
+            fill="none"
+            stroke="var(--chart-5)"
+            strokeWidth="2.5"
+          />
           {points.map((point, index) => (
             <circle
               key={`${point.day}-dot`}
@@ -168,7 +198,8 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
               fill="var(--chart-4)"
             >
               <title>
-                {dayLabel(point.day)}: {formatMoney(point.revenue)} order revenue
+                {dayLabel(point.day)}: {formatMoney(point.revenue)} order
+                revenue
               </title>
             </circle>
           ))}
@@ -181,7 +212,9 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
               fill="var(--chart-5)"
             >
               <title>
-                {dayLabel(point.day)}: {point.subscriptionCount ?? 0} subscription payments, {formatMoney(point.subscriptionRevenue ?? 0)}
+                {dayLabel(point.day)}: {point.subscriptionCount ?? 0}{" "}
+                subscription payments,{" "}
+                {formatMoney(point.subscriptionRevenue ?? 0)}
               </title>
             </circle>
           ))}
@@ -207,16 +240,20 @@ export function ShareBars({
     <figure className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
       <figcaption className="text-sm font-semibold">{title}</figcaption>
       {rows.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">Nothing in this range.</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          Nothing in this range.
+        </p>
       ) : (
         <ul className="mt-4 space-y-3" aria-label={title}>
           {rows.map((row, index) => (
             <li key={row.label}>
               <div className="flex items-baseline justify-between gap-3 text-sm">
                 <span className="truncate font-medium">{row.label}</span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">
+                <span className="shrink-0 text-muted-foreground tabular-nums">
                   {formatMoney(row.revenue)}
-                  <span className="ml-2 text-xs">{row.orderCount} {countLabel}</span>
+                  <span className="ml-2 text-xs">
+                    {row.orderCount} {countLabel}
+                  </span>
                 </span>
               </div>
               <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
@@ -238,7 +275,13 @@ export function ShareBars({
   )
 }
 
-export function ShareDonut({ title, rows }: { title: string; rows: SharePoint[] }) {
+export function ShareDonut({
+  title,
+  rows,
+}: {
+  title: string
+  rows: SharePoint[]
+}) {
   const total = rows.reduce((sum, row) => sum + row.revenue, 0)
   let cursor = 0
   const gradient = total
@@ -255,7 +298,9 @@ export function ShareDonut({ title, rows }: { title: string; rows: SharePoint[] 
     <figure className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
       <figcaption className="text-sm font-semibold">{title}</figcaption>
       {rows.length === 0 || total === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">Nothing in this range.</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          Nothing in this range.
+        </p>
       ) : (
         <div className="mt-4 grid items-center gap-5 sm:grid-cols-[9rem_minmax(0,1fr)]">
           <div
@@ -281,10 +326,14 @@ export function ShareDonut({ title, rows }: { title: string; rows: SharePoint[] 
                   <span
                     aria-hidden="true"
                     className="size-2.5 shrink-0 rounded-full"
-                    style={{ background: chartColors[index % chartColors.length] }}
+                    style={{
+                      background: chartColors[index % chartColors.length],
+                    }}
                   />
                   <span className="min-w-0 flex-1 truncate">{row.label}</span>
-                  <span className="tabular-nums text-muted-foreground">{share}%</span>
+                  <span className="text-muted-foreground tabular-nums">
+                    {share}%
+                  </span>
                 </li>
               )
             })}

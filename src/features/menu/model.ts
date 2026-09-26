@@ -83,8 +83,14 @@ export const CREATE_MODIFIER_GROUP = gql`
 `
 
 export const COMPLETE_OPTION_IMAGE = gql`
-  mutation CompleteModifierOptionImageUpload($optionId: ID!, $objectKey: String!) {
-    completeModifierOptionImageUpload(optionId: $optionId, objectKey: $objectKey) {
+  mutation CompleteModifierOptionImageUpload(
+    $optionId: ID!
+    $objectKey: String!
+  ) {
+    completeModifierOptionImageUpload(
+      optionId: $optionId
+      objectKey: $objectKey
+    ) {
       id
       imageUrl
     }
@@ -222,7 +228,9 @@ export function formatMoney(value: number) {
 
 export function cedisToPesewas(value: string, allowNegative = false) {
   const normalized = value.trim()
-  const pattern = allowNegative ? /^-?\d+(?:\.\d{1,2})?$/ : /^\d+(?:\.\d{1,2})?$/
+  const pattern = allowNegative
+    ? /^-?\d+(?:\.\d{1,2})?$/
+    : /^\d+(?:\.\d{1,2})?$/
   if (!pattern.test(normalized)) return null
   const negative = normalized.startsWith("-")
   const [whole, decimals = ""] = normalized.replace("-", "").split(".")
@@ -249,7 +257,7 @@ export async function uploadOptionImage(
     objectKey: string
   }) => Promise<unknown>,
   optionId: string,
-  file: File,
+  file: File
 ) {
   validateImageFile(file)
   const secureUrl = await uploadImageToCloudinary(file)

@@ -142,9 +142,12 @@ export function ShiftReview() {
   const presets = defaultPresets()
   const range: DateRange | undefined =
     rangeParam === "custom" && fromParam
-      ? { from: new Date(fromParam), to: toParam ? new Date(toParam) : undefined }
-      : (presets.find((preset) => preset.id === (rangeParam ?? "30d"))?.dateRange ??
-        presets[2].dateRange)
+      ? {
+          from: new Date(fromParam),
+          to: toParam ? new Date(toParam) : undefined,
+        }
+      : (presets.find((preset) => preset.id === (rangeParam ?? "30d"))
+          ?.dateRange ?? presets[2].dateRange)
   const { from, to } = bounds(range)
   const list = useQuery<{ shifts: ShiftListItem[] }>(SHIFTS_QUERY, {
     variables: { from, to },
@@ -227,12 +230,18 @@ export function ShiftReview() {
                 <td className="px-4 py-3">{formatWhen(row.openedAt)}</td>
                 <td className="px-4 py-3">{formatWhen(row.closedAt)}</td>
                 <td className="px-4 py-3">
-                  <Badge variant={row.status === "OPEN" ? "secondary" : "outline"}>
+                  <Badge
+                    variant={row.status === "OPEN" ? "secondary" : "outline"}
+                  >
                     {row.status === "OPEN" ? "Open" : "Closed"}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums">{row.orderCount}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{formatMoney(row.revenue)}</td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  {row.orderCount}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  {formatMoney(row.revenue)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -266,117 +275,165 @@ export function ShiftReview() {
               </div>
               <Dialog.Close
                 render={
-                  <Button variant="ghost" size="icon-sm" aria-label="Close dialog">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Close dialog"
+                  >
                     <XIcon />
                   </Button>
                 }
               />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
-          {report.loading && <p className="text-sm text-muted-foreground">Loading this shift…</p>}
-          {detail && (
-            <>
-              <dl className="grid gap-3 sm:grid-cols-4">
-                <Stat label="Orders" value={String(detail.orderCount)} />
-                <Stat label="Revenue" value={formatMoney(detail.revenue)} />
-                <Stat label="Average ticket" value={formatMoney(detail.averageTicket)} />
-                <Stat label="Opening float" value={formatMoney(detail.openingFloat)} />
-              </dl>
-              <div className="mt-5 flex gap-1 border-b border-border/70" role="tablist">
-                {(
-                  [
-                    ["orders", "Orders"],
-                    ["revenue", "Revenue"],
-                  ] as const
-                ).map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={tab === id}
-                    onClick={() => setTabParam(id)}
-                    className={`border-b-2 px-3 py-2 text-sm font-medium ${
-                      tab === id
-                        ? "border-secondary text-foreground"
-                        : "border-transparent text-muted-foreground"
-                    }`}
+              {report.loading && (
+                <p className="text-sm text-muted-foreground">
+                  Loading this shift…
+                </p>
+              )}
+              {detail && (
+                <>
+                  <dl className="grid gap-3 sm:grid-cols-4">
+                    <Stat label="Orders" value={String(detail.orderCount)} />
+                    <Stat label="Revenue" value={formatMoney(detail.revenue)} />
+                    <Stat
+                      label="Average ticket"
+                      value={formatMoney(detail.averageTicket)}
+                    />
+                    <Stat
+                      label="Opening float"
+                      value={formatMoney(detail.openingFloat)}
+                    />
+                  </dl>
+                  <div
+                    className="mt-5 flex gap-1 border-b border-border/70"
+                    role="tablist"
                   >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {tab === "orders" && (
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead className="text-xs tracking-[0.06em] text-muted-foreground uppercase">
-                      <tr>
-                        <th className="py-2 pr-3 font-medium">When</th>
-                        <th className="py-2 pr-3 font-medium">Dining</th>
-                        <th className="py-2 pr-3 font-medium">Status</th>
-                        <th className="py-2 pr-3 font-medium">Payment</th>
-                        <th className="py-2 text-right font-medium">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detail.orders.map((order) => (
-                        <tr key={order.id} className="border-t border-border/50">
-                          <td className="py-2.5 pr-3">{formatWhen(order.createdAt)}</td>
-                          <td className="py-2.5 pr-3">{diningLabel(order.diningType)}</td>
-                          <td className="py-2.5 pr-3">{statusLabels[order.status] ?? order.status}</td>
-                          <td className="py-2.5 pr-3">{order.paid ? "Paid" : "Unpaid"}</td>
-                          <td className="py-2.5 text-right tabular-nums">{formatMoney(order.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {detail.orders.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      No orders on this shift.
-                    </p>
+                    {(
+                      [
+                        ["orders", "Orders"],
+                        ["revenue", "Revenue"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === id}
+                        onClick={() => setTabParam(id)}
+                        className={`border-b-2 px-3 py-2 text-sm font-medium ${
+                          tab === id
+                            ? "border-secondary text-foreground"
+                            : "border-transparent text-muted-foreground"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {tab === "orders" && (
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="text-xs tracking-[0.06em] text-muted-foreground uppercase">
+                          <tr>
+                            <th className="py-2 pr-3 font-medium">When</th>
+                            <th className="py-2 pr-3 font-medium">Dining</th>
+                            <th className="py-2 pr-3 font-medium">Status</th>
+                            <th className="py-2 pr-3 font-medium">Payment</th>
+                            <th className="py-2 text-right font-medium">
+                              Total
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {detail.orders.map((order) => (
+                            <tr
+                              key={order.id}
+                              className="border-t border-border/50"
+                            >
+                              <td className="py-2.5 pr-3">
+                                {formatWhen(order.createdAt)}
+                              </td>
+                              <td className="py-2.5 pr-3">
+                                {diningLabel(order.diningType)}
+                              </td>
+                              <td className="py-2.5 pr-3">
+                                {statusLabels[order.status] ?? order.status}
+                              </td>
+                              <td className="py-2.5 pr-3">
+                                {order.paid ? "Paid" : "Unpaid"}
+                              </td>
+                              <td className="py-2.5 text-right tabular-nums">
+                                {formatMoney(order.total)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {detail.orders.length === 0 && (
+                        <p className="py-8 text-center text-sm text-muted-foreground">
+                          No orders on this shift.
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-              {tab === "revenue" && (
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <ShareBars
-                    title="By payment method"
-                    countLabel="payments"
-                    valueLabel="Revenue"
-                    rows={detail.byMethod.map((slice) => ({
-                      label: methodLabels[slice.label] ?? slice.label,
-                      orderCount: slice.count,
-                      revenue: slice.amount,
-                    }))}
-                  />
-                  <ShareBars
-                    title="By dining"
-                    valueLabel="Revenue"
-                    rows={detail.byDining.map((slice) => ({
-                      label: diningLabel(slice.label),
-                      orderCount: slice.count,
-                      revenue: slice.amount,
-                    }))}
-                  />
-                  {detail.closedAt && (
-                    <dl className="rounded-xl border border-border/70 p-4 text-sm lg:col-span-2">
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground">Expected cash</dt>
-                        <dd>{detail.expectedCash == null ? "—" : formatMoney(detail.expectedCash)}</dd>
-                      </div>
-                      <div className="mt-2 flex justify-between gap-3">
-                        <dt className="text-muted-foreground">Counted cash</dt>
-                        <dd>{detail.countedCash == null ? "—" : formatMoney(detail.countedCash)}</dd>
-                      </div>
-                      <div className="mt-2 flex justify-between gap-3">
-                        <dt className="text-muted-foreground">Variance</dt>
-                        <dd>{detail.variance == null ? "—" : formatMoney(detail.variance)}</dd>
-                      </div>
-                    </dl>
+                  {tab === "revenue" && (
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      <ShareBars
+                        title="By payment method"
+                        countLabel="payments"
+                        valueLabel="Revenue"
+                        rows={detail.byMethod.map((slice) => ({
+                          label: methodLabels[slice.label] ?? slice.label,
+                          orderCount: slice.count,
+                          revenue: slice.amount,
+                        }))}
+                      />
+                      <ShareBars
+                        title="By dining"
+                        valueLabel="Revenue"
+                        rows={detail.byDining.map((slice) => ({
+                          label: diningLabel(slice.label),
+                          orderCount: slice.count,
+                          revenue: slice.amount,
+                        }))}
+                      />
+                      {detail.closedAt && (
+                        <dl className="rounded-xl border border-border/70 p-4 text-sm lg:col-span-2">
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-muted-foreground">
+                              Expected cash
+                            </dt>
+                            <dd>
+                              {detail.expectedCash == null
+                                ? "—"
+                                : formatMoney(detail.expectedCash)}
+                            </dd>
+                          </div>
+                          <div className="mt-2 flex justify-between gap-3">
+                            <dt className="text-muted-foreground">
+                              Counted cash
+                            </dt>
+                            <dd>
+                              {detail.countedCash == null
+                                ? "—"
+                                : formatMoney(detail.countedCash)}
+                            </dd>
+                          </div>
+                          <div className="mt-2 flex justify-between gap-3">
+                            <dt className="text-muted-foreground">Variance</dt>
+                            <dd>
+                              {detail.variance == null
+                                ? "—"
+                                : formatMoney(detail.variance)}
+                            </dd>
+                          </div>
+                        </dl>
+                      )}
+                    </div>
                   )}
-                </div>
+                </>
               )}
-            </>
-          )}
             </div>
           </Dialog.Popup>
         </Dialog.Portal>

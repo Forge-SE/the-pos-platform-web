@@ -13,10 +13,34 @@ import { Button } from "@/components/ui/button"
 import { clearOpsToken } from "@/lib/ops-token"
 
 const links = [
-  { label: "Restaurants", to: "/ops", icon: StorefrontIcon, exact: true, section: "directory" },
-  { label: "Metrics", to: "/ops/metrics", icon: ChartLineUpIcon, exact: true, section: "insights" },
-  { label: "Subscriptions", to: "/ops/subscriptions", icon: CreditCardIcon, exact: true, section: "insights" },
-  { label: "Audit log", to: "/ops/audit", icon: ClipboardTextIcon, exact: false, section: "records" },
+  {
+    label: "Restaurants",
+    to: "/ops",
+    icon: StorefrontIcon,
+    exact: true,
+    section: "directory",
+  },
+  {
+    label: "Metrics",
+    to: "/ops/metrics",
+    icon: ChartLineUpIcon,
+    exact: true,
+    section: "insights",
+  },
+  {
+    label: "Subscriptions",
+    to: "/ops/subscriptions",
+    icon: CreditCardIcon,
+    exact: true,
+    section: "insights",
+  },
+  {
+    label: "Audit log",
+    to: "/ops/audit",
+    icon: ClipboardTextIcon,
+    exact: false,
+    section: "records",
+  },
 ] as const
 
 export function OpsHeader({
@@ -47,7 +71,9 @@ export function OpsHeader({
 
 export function OpsShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
 
   function signOut() {
     clearOpsToken()
@@ -87,7 +113,12 @@ export function OpsShell({ children }: { children: ReactNode }) {
             {links.map((link) => (
               <NavLink key={link.to} link={link} pathname={pathname} compact />
             ))}
-            <Button variant="ghost" size="icon-sm" aria-label="Sign out" onClick={signOut}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Sign out"
+              onClick={signOut}
+            >
               <SignOutIcon />
             </Button>
           </div>
@@ -131,7 +162,9 @@ function NavLink({
   pathname: string
   compact?: boolean
 }) {
-  const active = link.exact ? pathname === link.to : pathname.startsWith(link.to)
+  const active = link.exact
+    ? pathname === link.to
+    : pathname.startsWith(link.to)
   const Icon = link.icon
   return (
     <Link

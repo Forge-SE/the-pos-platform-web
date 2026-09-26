@@ -43,14 +43,24 @@ export function primaryNavigationFor(role: AccessTokenProfile["role"]) {
 }
 
 export const managementNavigation = [
-  { label: "Menu", to: "/menu", icon: ForkKnifeIcon, permission: "MENU_MANAGE" },
+  {
+    label: "Menu",
+    to: "/menu",
+    icon: ForkKnifeIcon,
+    permission: "MENU_MANAGE",
+  },
   {
     label: "Shift & cash",
     to: "/shift",
     icon: WalletIcon,
     permission: "SHIFTS_MANAGE",
   },
-  { label: "Team", to: "/team", icon: UsersThreeIcon, permission: "STAFF_MANAGE" },
+  {
+    label: "Team",
+    to: "/team",
+    icon: UsersThreeIcon,
+    permission: "STAFF_MANAGE",
+  },
   {
     label: "Settings",
     to: "/settings",
@@ -66,7 +76,7 @@ export const managementNavigation = [
 
 export function seesManagementItem(
   profile: AccessTokenProfile,
-  item: (typeof managementNavigation)[number],
+  item: (typeof managementNavigation)[number]
 ) {
   if (item.to === "/shift") return true
   return hasPermission(profile, item.permission)
@@ -156,7 +166,9 @@ export function Sidebar({
   onCollapsedChange: () => void
   onSignOut: () => void
 }) {
-  const me = useQuery<{ me: { avatarUrl: string | null } }>(SIDEBAR_PROFILE_QUERY)
+  const me = useQuery<{ me: { avatarUrl: string | null } }>(
+    SIDEBAR_PROFILE_QUERY
+  )
   const avatarUrl = me.data?.me.avatarUrl
 
   return (
@@ -203,10 +215,14 @@ export function Sidebar({
         items={primaryNavigationFor(profile.role)}
         collapsed={collapsed}
       />
-      {managementNavigation.some((item) => seesManagementItem(profile, item)) && (
+      {managementNavigation.some((item) =>
+        seesManagementItem(profile, item)
+      ) && (
         <NavigationSection
           label="Manage"
-          items={managementNavigation.filter((item) => seesManagementItem(profile, item))}
+          items={managementNavigation.filter((item) =>
+            seesManagementItem(profile, item)
+          )}
           collapsed={collapsed}
         />
       )}

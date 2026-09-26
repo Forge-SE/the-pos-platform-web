@@ -59,7 +59,7 @@ const menuSchema = Yup.object({
   price: Yup.string().test(
     "cedis",
     "Enter a category, a dish name, and a price like 25.00.",
-    (value) => cedisToPesewas(value ?? "") !== null,
+    (value) => cedisToPesewas(value ?? "") !== null
   ),
 })
 
@@ -95,7 +95,7 @@ export function OnboardingMenuStep({
     values: typeof menuValues,
     helpers: {
       setFieldValue: (field: "itemName" | "price", value: string) => void
-    },
+    }
   ) {
     const amount = cedisToPesewas(values.price)
     if (amount === null) return
@@ -103,7 +103,8 @@ export function OnboardingMenuStep({
       setError(null)
       const match = categories.find(
         (category) =>
-          category.name.toLowerCase() === values.categoryName.trim().toLowerCase(),
+          category.name.toLowerCase() ===
+          values.categoryName.trim().toLowerCase()
       )
       let categoryId = match?.id
       if (!categoryId) {
@@ -129,7 +130,7 @@ export function OnboardingMenuStep({
       setError(
         mutationError instanceof Error
           ? mutationError.message
-          : "Could not add that dish.",
+          : "Could not add that dish."
       )
     }
   }
@@ -201,9 +202,7 @@ export function OnboardingMenuStep({
           )
         }}
       </Form>
-      {error && (
-        <FieldError className="mt-3">{error}</FieldError>
-      )}
+      {error && <FieldError className="mt-3">{error}</FieldError>}
       <ul className="mt-5 divide-y divide-border rounded-lg border">
         {items.length === 0 ? (
           <li className="px-4 py-3 text-sm text-muted-foreground">
@@ -213,7 +212,7 @@ export function OnboardingMenuStep({
         ) : (
           items.map((item) => {
             const category = categories.find(
-              (entry) => entry.id === item.categoryId,
+              (entry) => entry.id === item.categoryId
             )
             return (
               <li

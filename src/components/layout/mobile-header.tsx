@@ -57,7 +57,11 @@ export function MobileHeader({
                   : "bg-muted text-muted-foreground"
               }`}
             >
-              <item.icon aria-hidden="true" className="size-3.5" weight={active ? "fill" : "regular"} />
+              <item.icon
+                aria-hidden="true"
+                className="size-3.5"
+                weight={active ? "fill" : "regular"}
+              />
               {item.label}
             </Link>
           )

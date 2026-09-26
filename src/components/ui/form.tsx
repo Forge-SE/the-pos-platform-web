@@ -12,10 +12,7 @@ import type { AnySchema } from "yup"
 interface FormProps<T extends FormikValues> {
   initialValues: T
   validationSchema: AnySchema
-  onSubmit: (
-    values: T,
-    helpers: FormikHelpers<T>,
-  ) => void | Promise<unknown>
+  onSubmit: (values: T, helpers: FormikHelpers<T>) => void | Promise<unknown>
   children: (formik: FormikProps<T>) => ReactNode
   className?: string
   id?: string
@@ -30,7 +27,7 @@ function FormComponent<T extends FormikValues>(
     children,
     id,
   }: FormProps<T>,
-  ref: Ref<HTMLFormElement>,
+  ref: Ref<HTMLFormElement>
 ) {
   const formik = useFormik<T>({
     initialValues,
@@ -57,12 +54,12 @@ function FormComponent<T extends FormikValues>(
 }
 
 const Form = forwardRef(FormComponent) as <T extends FormikValues>(
-  props: FormProps<T> & { ref?: Ref<HTMLFormElement> },
+  props: FormProps<T> & { ref?: Ref<HTMLFormElement> }
 ) => ReactNode
 
 export function fieldError<T extends FormikValues>(
   formik: FormikProps<T>,
-  name: keyof T & string,
+  name: keyof T & string
 ) {
   const message = formik.errors[name]
   if (typeof message !== "string") return undefined

@@ -1,7 +1,11 @@
 import { useState } from "react"
 import type { FormikProps } from "formik"
 import { useMutation } from "@apollo/client/react"
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react"
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckCircleIcon,
+} from "@phosphor-icons/react"
 import { Link } from "@tanstack/react-router"
 import * as Yup from "yup"
 
@@ -61,7 +65,7 @@ const timePattern = /^([01]\d|2[0-3]):[0-5]\d/
 function hoursAreValid(value: unknown) {
   if (!Array.isArray(value) || value.length === 0) return false
   const openDays = value.filter(
-    (entry) => entry && typeof entry === "object" && !entry.closed,
+    (entry) => entry && typeof entry === "object" && !entry.closed
   )
   if (openDays.length === 0) return false
   return openDays.every((entry) => {
@@ -78,11 +82,14 @@ function schemaFor(step: number) {
         .trim()
         .min(2, "Enter the restaurant name.")
         .required("Enter the restaurant name."),
-      description: Yup.string().max(800, "Keep the description under 800 characters."),
+      description: Yup.string().max(
+        800,
+        "Keep the description under 800 characters."
+      ),
       slug: Yup.string()
         .matches(
           /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-          "Use lowercase letters, numbers, and single hyphens.",
+          "Use lowercase letters, numbers, and single hyphens."
         )
         .required("Use lowercase letters, numbers, and single hyphens."),
       address: Yup.string()
@@ -98,7 +105,7 @@ function schemaFor(step: number) {
       openingHours: Yup.array().test(
         "hours",
         "Keep at least one day open, and make sure closing is later than opening.",
-        hoursAreValid,
+        hoursAreValid
       ),
     })
   }
@@ -148,7 +155,10 @@ export function OpsProvision() {
     { input: Record<string, unknown> }
   >(SETUP_RESTAURANT)
 
-  async function createRestaurant(values: ProvisionValues, includeCompliance: boolean) {
+  async function createRestaurant(
+    values: ProvisionValues,
+    includeCompliance: boolean
+  ) {
     try {
       setApiError(null)
       const result = await setupRestaurant({
@@ -195,7 +205,7 @@ export function OpsProvision() {
       setApiError(
         error instanceof Error
           ? error.message
-          : "We couldn’t create the restaurant. Try again.",
+          : "We couldn’t create the restaurant. Try again."
       )
     }
   }
@@ -238,7 +248,12 @@ export function OpsProvision() {
         <ol className="grid w-full grid-cols-3" aria-label="Progress">
           {steps.map((label, index) => {
             const stepNumber = index + 1
-            const state = stepNumber < step + 1 ? "done" : stepNumber === step + 1 ? "now" : "next"
+            const state =
+              stepNumber < step + 1
+                ? "done"
+                : stepNumber === step + 1
+                  ? "now"
+                  : "next"
             const align =
               index === 0
                 ? "items-start text-left"
@@ -249,7 +264,10 @@ export function OpsProvision() {
               <li key={label} className={`flex min-w-0 flex-col ${align}`}>
                 <div className="flex w-full items-center">
                   {index > 0 && (
-                    <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
+                    <span
+                      aria-hidden="true"
+                      className="h-px flex-1 bg-border/70"
+                    />
                   )}
                   <span
                     aria-current={state === "now" ? "step" : undefined}
@@ -268,7 +286,10 @@ export function OpsProvision() {
                     )}
                   </span>
                   {index < steps.length - 1 && (
-                    <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
+                    <span
+                      aria-hidden="true"
+                      className="h-px flex-1 bg-border/70"
+                    />
                   )}
                 </div>
                 <span
@@ -282,7 +303,10 @@ export function OpsProvision() {
         </ol>
 
         {apiError && (
-          <p role="alert" className="mt-6 rounded-lg bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <p
+            role="alert"
+            className="mt-6 rounded-lg bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          >
             {apiError}
           </p>
         )}
@@ -328,7 +352,9 @@ export function OpsProvision() {
                       type="button"
                       variant="outline"
                       disabled={loading}
-                      onClick={() => void createRestaurant(formik.values, false)}
+                      onClick={() =>
+                        void createRestaurant(formik.values, false)
+                      }
                     >
                       Skip for now
                     </Button>
@@ -386,7 +412,10 @@ function DetailsStep({
           onChange={(event) => {
             formik.handleChange(event)
             if (!slugEdited) {
-              void formik.setFieldValue("slug", restaurantSlug(event.target.value))
+              void formik.setFieldValue(
+                "slug",
+                restaurantSlug(event.target.value)
+              )
             }
           }}
           onBlur={formik.handleBlur}
@@ -414,7 +443,10 @@ function DetailsStep({
           value={formik.values.slug}
           onChange={(event) => {
             onSlugEdited()
-            void formik.setFieldValue("slug", restaurantSlug(event.target.value))
+            void formik.setFieldValue(
+              "slug",
+              restaurantSlug(event.target.value)
+            )
           }}
           onBlur={formik.handleBlur}
           aria-invalid={Boolean(slugError)}
@@ -452,7 +484,9 @@ function DetailsStep({
           <FieldLabel>Region</FieldLabel>
           <Select
             value={formik.values.region}
-            onValueChange={(value) => void formik.setFieldValue("region", value ?? "")}
+            onValueChange={(value) =>
+              void formik.setFieldValue("region", value ?? "")
+            }
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose region" />
@@ -481,7 +515,9 @@ function DetailsStep({
               key={value}
               type="button"
               aria-pressed={formik.values.defaultDiningType === value}
-              onClick={() => void formik.setFieldValue("defaultDiningType", value)}
+              onClick={() =>
+                void formik.setFieldValue("defaultDiningType", value)
+              }
               className="rounded-lg border bg-background px-3 py-2.5 text-left text-sm font-medium data-[selected=true]:border-primary/50 data-[selected=true]:bg-primary/5"
               data-selected={formik.values.defaultDiningType === value}
             >
@@ -503,8 +539,11 @@ function DetailsStep({
                 <Switch
                   checked={!row.closed}
                   onCheckedChange={(open) => {
-                    const next = formik.values.openingHours.map((entry, entryIndex) =>
-                      entryIndex === index ? { ...entry, closed: !open } : entry,
+                    const next = formik.values.openingHours.map(
+                      (entry, entryIndex) =>
+                        entryIndex === index
+                          ? { ...entry, closed: !open }
+                          : entry
                     )
                     void formik.setFieldValue("openingHours", next)
                   }}
@@ -517,14 +556,18 @@ function DetailsStep({
                 aria-label={`${dayLabels[row.day]} opens`}
                 value={row.opens}
                 disabled={row.closed}
-                onChange={(event) => updateHour(formik, index, { opens: event.target.value })}
+                onChange={(event) =>
+                  updateHour(formik, index, { opens: event.target.value })
+                }
               />
               <Input
                 type="time"
                 aria-label={`${dayLabels[row.day]} closes`}
                 value={row.closes}
                 disabled={row.closed}
-                onChange={(event) => updateHour(formik, index, { closes: event.target.value })}
+                onChange={(event) =>
+                  updateHour(formik, index, { closes: event.target.value })
+                }
               />
             </li>
           ))}
@@ -538,10 +581,10 @@ function DetailsStep({
 function updateHour(
   formik: FormikProps<ProvisionValues>,
   index: number,
-  patch: Partial<DayHours>,
+  patch: Partial<DayHours>
 ) {
   const next = formik.values.openingHours.map((entry, entryIndex) =>
-    entryIndex === index ? { ...entry, ...patch } : entry,
+    entryIndex === index ? { ...entry, ...patch } : entry
   )
   void formik.setFieldValue("openingHours", next)
 }
@@ -553,7 +596,9 @@ function AdminStep({ formik }: { formik: FormikProps<ProvisionValues> }) {
   return (
     <div className="space-y-5">
       <p className="text-sm leading-6 text-muted-foreground">
-        This person administers the restaurant. They sign in with a four-digit PIN. Other staff choose their own PIN the first time they tap their profile.
+        This person administers the restaurant. They sign in with a four-digit
+        PIN. Other staff choose their own PIN the first time they tap their
+        profile.
       </p>
       <Field data-invalid={Boolean(nameError)}>
         <FieldLabel htmlFor="admin-name">Admin name</FieldLabel>
@@ -606,7 +651,9 @@ function ComplianceStep({ formik }: { formik: FormikProps<ProvisionValues> }) {
   return (
     <div className="space-y-5">
       <p className="text-sm leading-6 text-muted-foreground">
-        Optional. Ghana restaurants often keep a Registrar General certificate, a GRA TIN, a food hygiene permit, and a district assembly permit. You can skip this and add them later.
+        Optional. Ghana restaurants often keep a Registrar General certificate,
+        a GRA TIN, a food hygiene permit, and a district assembly permit. You
+        can skip this and add them later.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <ComplianceField
@@ -615,7 +662,12 @@ function ComplianceStep({ formik }: { formik: FormikProps<ProvisionValues> }) {
           label="Business registration"
           placeholder="BN-123456789"
         />
-        <ComplianceField formik={formik} name="tin" label="GRA TIN" placeholder="C0012345678" />
+        <ComplianceField
+          formik={formik}
+          name="tin"
+          label="GRA TIN"
+          placeholder="C0012345678"
+        />
         <ComplianceField
           formik={formik}
           name="foodHygienePermit"
@@ -651,7 +703,11 @@ function ComplianceField({
   placeholder,
 }: {
   formik: FormikProps<ProvisionValues>
-  name: "businessRegistrationNumber" | "tin" | "foodHygienePermit" | "districtAssemblyPermit"
+  name:
+    | "businessRegistrationNumber"
+    | "tin"
+    | "foodHygienePermit"
+    | "districtAssemblyPermit"
   label: string
   placeholder: string
 }) {

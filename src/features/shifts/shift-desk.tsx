@@ -10,7 +10,11 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { getAccessTokenProfile } from "@/lib/auth-token"
-import { cedisToPesewas, formatMoney, mutationMessage } from "@/features/menu/model"
+import {
+  cedisToPesewas,
+  formatMoney,
+  mutationMessage,
+} from "@/features/menu/model"
 
 const SHIFT_QUERY = gql`
   query CurrentShift {
@@ -68,7 +72,10 @@ interface ClosedShift extends OpenShift {
 const moneySchema = Yup.object({
   amount: Yup.string()
     .trim()
-    .matches(/^\d+(?:\.\d{1,2})?$/, "Enter an amount in cedis, such as 50 or 50.00.")
+    .matches(
+      /^\d+(?:\.\d{1,2})?$/,
+      "Enter an amount in cedis, such as 50 or 50.00."
+    )
     .required("Enter an amount in cedis."),
 })
 
@@ -84,9 +91,9 @@ function formatWhen(value: string) {
 export function ShiftDesk() {
   const profile = getAccessTokenProfile()
   const canManage = profile?.role === "CASHIER" || profile?.role === "KITCHEN"
-  const { data, loading, error, refetch } = useQuery<{ currentShift: OpenShift | null }>(
-    SHIFT_QUERY,
-  )
+  const { data, loading, error, refetch } = useQuery<{
+    currentShift: OpenShift | null
+  }>(SHIFT_QUERY)
   const [openShift, { loading: opening }] = useMutation<
     { openShift: OpenShift },
     { input: { idempotencyKey: string; openingFloat: number } }
@@ -113,7 +120,9 @@ export function ShiftDesk() {
       })
       await refetch()
     } catch (mutationError) {
-      setActionError(mutationMessage(mutationError, "The shift could not be opened."))
+      setActionError(
+        mutationMessage(mutationError, "The shift could not be opened.")
+      )
     }
   }
 
@@ -134,7 +143,9 @@ export function ShiftDesk() {
       if (result.data?.closeShift) setClosed(result.data.closeShift)
       await refetch()
     } catch (mutationError) {
-      setActionError(mutationMessage(mutationError, "The shift could not be closed."))
+      setActionError(
+        mutationMessage(mutationError, "The shift could not be closed.")
+      )
     }
   }
 
@@ -145,7 +156,9 @@ export function ShiftDesk() {
     >
       <div className="mt-7 grid gap-4 lg:grid-cols-2">
         {loading && (
-          <p className="text-sm text-muted-foreground">Loading the current shift…</p>
+          <p className="text-sm text-muted-foreground">
+            Loading the current shift…
+          </p>
         )}
         {error && (
           <p className="text-sm text-destructive" role="alert">
@@ -155,7 +168,9 @@ export function ShiftDesk() {
         {!loading && !error && shift && (
           <section className="rounded-xl border border-border/70 bg-card p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold tracking-[-0.025em]">Current shift</h2>
+              <h2 className="text-lg font-semibold tracking-[-0.025em]">
+                Current shift
+              </h2>
               <Badge>Open</Badge>
             </div>
             <dl className="mt-4 space-y-2 text-sm">
@@ -165,7 +180,9 @@ export function ShiftDesk() {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Opening float</dt>
-                <dd className="font-medium">{formatMoney(shift.openingFloat)}</dd>
+                <dd className="font-medium">
+                  {formatMoney(shift.openingFloat)}
+                </dd>
               </div>
             </dl>
             {canManage ? (
@@ -180,7 +197,9 @@ export function ShiftDesk() {
                   return (
                     <>
                       <Field data-invalid={Boolean(amountError)}>
-                        <FieldLabel htmlFor="counted-cash">Counted cash (GHS)</FieldLabel>
+                        <FieldLabel htmlFor="counted-cash">
+                          Counted cash (GHS)
+                        </FieldLabel>
                         <Input
                           id="counted-cash"
                           name="amount"
@@ -194,7 +213,8 @@ export function ShiftDesk() {
                         <FieldError>{amountError}</FieldError>
                       </Field>
                       <p className="text-xs leading-5 text-muted-foreground">
-                        Count the notes and coins in the drawer. Finish or void open orders, and record every payment, before closing.
+                        Count the notes and coins in the drawer. Finish or void
+                        open orders, and record every payment, before closing.
                       </p>
                       <Button type="submit" disabled={closing}>
                         {closing ? "Closing shift…" : "Close shift"}
@@ -212,9 +232,12 @@ export function ShiftDesk() {
         )}
         {!loading && !error && !shift && canManage && (
           <section className="rounded-xl border border-border/70 bg-card p-5">
-            <h2 className="text-lg font-semibold tracking-[-0.025em]">Open a shift</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.025em]">
+              Open a shift
+            </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Enter the cash already in the drawer. Sales for this sitting are tracked against that float.
+              Enter the cash already in the drawer. Sales for this sitting are
+              tracked against that float.
             </p>
             <Form
               className="mt-5 space-y-4"
@@ -227,7 +250,9 @@ export function ShiftDesk() {
                 return (
                   <>
                     <Field data-invalid={Boolean(amountError)}>
-                      <FieldLabel htmlFor="opening-float">Opening float (GHS)</FieldLabel>
+                      <FieldLabel htmlFor="opening-float">
+                        Opening float (GHS)
+                      </FieldLabel>
                       <Input
                         id="opening-float"
                         name="amount"
@@ -251,8 +276,12 @@ export function ShiftDesk() {
         {closed && !shift && (
           <section className="rounded-xl border border-border/70 bg-card p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold tracking-[-0.025em]">Last close</h2>
-              <Badge variant={closed.varianceFlagged ? "destructive" : "secondary"}>
+              <h2 className="text-lg font-semibold tracking-[-0.025em]">
+                Last close
+              </h2>
+              <Badge
+                variant={closed.varianceFlagged ? "destructive" : "secondary"}
+              >
                 {closed.varianceFlagged ? "Variance flagged" : "Balanced"}
               </Badge>
             </div>
@@ -277,7 +306,9 @@ function CashRow({ label, amount }: { label: string; amount: number | null }) {
   return (
     <div className="flex justify-between gap-3">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{amount == null ? "—" : formatMoney(amount)}</dd>
+      <dd className="font-medium">
+        {amount == null ? "—" : formatMoney(amount)}
+      </dd>
     </div>
   )
 }

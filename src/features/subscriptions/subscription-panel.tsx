@@ -80,7 +80,10 @@ interface SubscriptionData {
 
 const checkoutSchema = Yup.object({
   planId: Yup.string().required("Choose a plan."),
-  email: Yup.string().trim().email("Enter a billing email.").required("Enter a billing email."),
+  email: Yup.string()
+    .trim()
+    .email("Enter a billing email.")
+    .required("Enter a billing email."),
 })
 
 const statusLabel: Record<string, string> = {
@@ -108,7 +111,8 @@ function formatWhen(value: string | null) {
 export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
   const confirmed = useRef(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const { data, loading, error, refetch } = useQuery<SubscriptionData>(SUBSCRIPTION_QUERY)
+  const { data, loading, error, refetch } =
+    useQuery<SubscriptionData>(SUBSCRIPTION_QUERY)
   const [startCheckout, { loading: starting }] = useMutation<
     { startSubscriptionCheckout: { authorizationUrl: string } },
     { planId: string; email: string }
@@ -118,7 +122,9 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
   const plans = data?.subscriptionPlans ?? []
 
   useEffect(() => {
-    const reference = new URLSearchParams(window.location.search).get("reference")
+    const reference = new URLSearchParams(window.location.search).get(
+      "reference"
+    )
     if (!reference || confirmed.current || !canManage) return
     confirmed.current = true
     void confirmPayment({ variables: { reference } })
@@ -128,17 +134,29 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
         await refetch()
       })
       .catch((paymentError) => {
-        setNotice(mutationMessage(paymentError, "Paystack has not confirmed this payment yet."))
+        setNotice(
+          mutationMessage(
+            paymentError,
+            "Paystack has not confirmed this payment yet."
+          )
+        )
       })
   }, [canManage, confirmPayment, refetch])
 
   return (
     <section className="mt-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-      <h2 className="text-lg font-semibold tracking-[-0.025em]">Subscription</h2>
+      <h2 className="text-lg font-semibold tracking-[-0.025em]">
+        Subscription
+      </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Ovaal is billed through Paystack. This is the plan on the restaurant, the last payment, and the next due date.
+        Ovaal is billed through Paystack. This is the plan on the restaurant,
+        the last payment, and the next due date.
       </p>
-      {loading && <p className="mt-5 text-sm text-muted-foreground">Loading subscription…</p>}
+      {loading && (
+        <p className="mt-5 text-sm text-muted-foreground">
+          Loading subscription…
+        </p>
+      )}
       {error && (
         <p className="mt-5 text-sm text-destructive" role="alert">
           Couldn’t load the subscription.
@@ -152,10 +170,18 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
       {!loading && !error && (
         <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">Status</dt>
+            <dt className="text-xs font-medium text-muted-foreground">
+              Status
+            </dt>
             <dd className="mt-1">
-              <Badge variant={subscription?.status === "ACTIVE" ? "secondary" : "outline"}>
-                {subscription ? statusLabel[subscription.status] ?? subscription.status : "Not subscribed"}
+              <Badge
+                variant={
+                  subscription?.status === "ACTIVE" ? "secondary" : "outline"
+                }
+              >
+                {subscription
+                  ? (statusLabel[subscription.status] ?? subscription.status)
+                  : "Not subscribed"}
               </Badge>
             </dd>
           </div>
@@ -168,11 +194,17 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">Last paid</dt>
-            <dd className="mt-1 text-sm font-medium">{formatWhen(subscription?.lastPaidAt ?? null)}</dd>
+            <dt className="text-xs font-medium text-muted-foreground">
+              Last paid
+            </dt>
+            <dd className="mt-1 text-sm font-medium">
+              {formatWhen(subscription?.lastPaidAt ?? null)}
+            </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">Next payment due</dt>
+            <dt className="text-xs font-medium text-muted-foreground">
+              Next payment due
+            </dt>
             <dd className="mt-1 text-sm font-medium">
               {formatWhen(subscription?.nextPaymentAt ?? null)}
             </dd>
@@ -190,11 +222,18 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
           onSubmit={async (values, helpers) => {
             try {
               const result = await startCheckout({ variables: values })
-              const url = result.data?.startSubscriptionCheckout.authorizationUrl
-              if (!url) throw new Error("Paystack did not return a checkout link.")
+              const url =
+                result.data?.startSubscriptionCheckout.authorizationUrl
+              if (!url)
+                throw new Error("Paystack did not return a checkout link.")
               window.location.assign(url)
             } catch (checkoutError) {
-              helpers.setStatus(mutationMessage(checkoutError, "Could not start Paystack checkout."))
+              helpers.setStatus(
+                mutationMessage(
+                  checkoutError,
+                  "Could not start Paystack checkout."
+                )
+              )
             }
           }}
         >
@@ -212,7 +251,8 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
                 >
                   {plans.map((plan) => (
                     <option key={plan.id} value={plan.id}>
-                      {plan.name} · {formatMoney(plan.amount)} / {intervalLabel(plan.interval)}
+                      {plan.name} · {formatMoney(plan.amount)} /{" "}
+                      {intervalLabel(plan.interval)}
                     </option>
                   ))}
                 </select>
@@ -234,7 +274,10 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
                 {starting ? "Opening Paystack…" : "Pay with Paystack"}
               </Button>
               {typeof formik.status === "string" && (
-                <p className="text-sm text-destructive sm:col-span-3" role="alert">
+                <p
+                  className="text-sm text-destructive sm:col-span-3"
+                  role="alert"
+                >
                   {formik.status}
                 </p>
               )}

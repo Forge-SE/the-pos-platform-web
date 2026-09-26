@@ -56,9 +56,7 @@ export function PreviewCard({
   )
 }
 
-function smoothPath(
-  coords: Array<{ x: number; y: number }>
-) {
+function smoothPath(coords: Array<{ x: number; y: number }>) {
   if (coords.length < 2) return ""
   let path = `M ${coords[0].x},${coords[0].y}`
   for (let i = 0; i < coords.length - 1; i += 1) {
@@ -70,7 +68,13 @@ function smoothPath(
   return path
 }
 
-function LineChart({ points, height = 132 }: { points: TrendPoint[]; height?: number }) {
+function LineChart({
+  points,
+  height = 132,
+}: {
+  points: TrendPoint[]
+  height?: number
+}) {
   const max = Math.max(...points.map((point) => point.value))
   const width = 320
   const pad = 6
@@ -94,8 +98,16 @@ function LineChart({ points, height = 132 }: { points: TrendPoint[]; height?: nu
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-secondary)" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="var(--color-secondary)" stopOpacity={0.02} />
+            <stop
+              offset="0%"
+              stopColor="var(--color-secondary)"
+              stopOpacity={0.35}
+            />
+            <stop
+              offset="100%"
+              stopColor="var(--color-secondary)"
+              stopOpacity={0.02}
+            />
           </linearGradient>
         </defs>
         {gridlines.map((y) => (
@@ -309,9 +321,7 @@ export function DiscountVoidCard() {
               <dt className="text-sm font-medium">{row.label}</dt>
               <dd className="text-xs text-muted-foreground">{row.note}</dd>
             </div>
-            <dd className="text-sm font-semibold tabular-nums">
-              {row.value}
-            </dd>
+            <dd className="text-sm font-semibold tabular-nums">{row.value}</dd>
           </div>
         ))}
       </dl>
@@ -387,7 +397,9 @@ export function StaffLeaderboardCard() {
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-secondary"
-                  style={{ width: `${Math.round((person.orders / max) * 100)}%` }}
+                  style={{
+                    width: `${Math.round((person.orders / max) * 100)}%`,
+                  }}
                 />
               </div>
             </div>

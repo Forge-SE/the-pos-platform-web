@@ -72,7 +72,7 @@ export function RestaurantBranding() {
       setMessage(
         validationError instanceof Error
           ? validationError.message
-          : "Use JPEG, PNG, or WebP.",
+          : "Use JPEG, PNG, or WebP."
       )
       return
     }
@@ -91,7 +91,7 @@ export function RestaurantBranding() {
       setMessage(
         uploadError instanceof Error
           ? uploadError.message
-          : "Could not upload logo.",
+          : "Could not upload logo."
       )
     }
   }
@@ -141,7 +141,8 @@ export function RestaurantBranding() {
                 </p>
                 {restaurant && (
                   <p className="text-xs text-muted-foreground">
-                    {restaurant.slug} · {restaurant.code} · {restaurant.currency}
+                    {restaurant.slug} · {restaurant.code} ·{" "}
+                    {restaurant.currency}
                   </p>
                 )}
                 <div className="mt-3">

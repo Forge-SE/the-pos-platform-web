@@ -66,12 +66,17 @@ const editSchema = Yup.object({
     .trim()
     .min(2, "Enter the restaurant name.")
     .required("Enter the restaurant name."),
-  description: Yup.string().trim().max(800, "Keep the description under 800 characters."),
+  description: Yup.string()
+    .trim()
+    .max(800, "Keep the description under 800 characters."),
   address: Yup.string()
     .trim()
     .min(2, "Enter the street address.")
     .required("Enter the street address."),
-  city: Yup.string().trim().min(2, "Enter the city.").required("Enter the city."),
+  city: Yup.string()
+    .trim()
+    .min(2, "Enter the city.")
+    .required("Enter the city."),
   region: Yup.string().trim().required("Choose a region."),
   defaultDiningType: Yup.string()
     .oneOf(["DINE_IN", "TAKEAWAY"])
@@ -82,21 +87,23 @@ const editSchema = Yup.object({
     (value) => {
       if (!Array.isArray(value) || value.length === 0) return false
       const openDays = value.filter(
-        (entry) => entry && typeof entry === "object" && !entry.closed,
+        (entry) => entry && typeof entry === "object" && !entry.closed
       )
       if (openDays.length === 0) return false
       return openDays.every((entry) => {
         const opens = String(entry.opens ?? "").slice(0, 5)
         const closes = String(entry.closes ?? "").slice(0, 5)
-        return timePattern.test(opens) && timePattern.test(closes) && opens < closes
+        return (
+          timePattern.test(opens) && timePattern.test(closes) && opens < closes
+        )
       })
-    },
+    }
   ),
 })
 
 function valuesFrom(restaurant: PlatformRestaurant): EditValues {
   const stored = new Map(
-    (restaurant.openingHours ?? []).map((hours) => [hours.day, hours]),
+    (restaurant.openingHours ?? []).map((hours) => [hours.day, hours])
   )
   return {
     name: restaurant.name,
@@ -114,7 +121,8 @@ function valuesFrom(restaurant: PlatformRestaurant): EditValues {
         closes: hours?.closes?.slice(0, 5) || "22:00",
       }
     }),
-    businessRegistrationNumber: restaurant.compliance?.businessRegistrationNumber ?? "",
+    businessRegistrationNumber:
+      restaurant.compliance?.businessRegistrationNumber ?? "",
     tin: restaurant.compliance?.tin ?? "",
     foodHygienePermit: restaurant.compliance?.foodHygienePermit ?? "",
     districtAssemblyPermit: restaurant.compliance?.districtAssemblyPermit ?? "",
@@ -131,7 +139,11 @@ export function RestaurantEditModal({
   onClose: () => void
   onSaved: () => Promise<void> | void
 }) {
-  const { data, loading: loadingRestaurant, error } = useQuery<
+  const {
+    data,
+    loading: loadingRestaurant,
+    error,
+  } = useQuery<
     { platformRestaurant: { restaurant: PlatformRestaurant } },
     { id: string }
   >(RESTAURANT_DETAIL_QUERY, {
@@ -160,10 +172,19 @@ export function RestaurantEditModal({
       description="Update the name, location, hours, order type, and compliance records."
       footer={
         <>
-          <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+          >
             Cancel
           </Button>
-          <Button type="submit" form="edit-restaurant" disabled={loading || !restaurant}>
+          <Button
+            type="submit"
+            form="edit-restaurant"
+            disabled={loading || !restaurant}
+          >
             {loading ? "Saving…" : "Save changes"}
           </Button>
         </>
@@ -173,56 +194,66 @@ export function RestaurantEditModal({
         <p className="mt-5 text-sm text-muted-foreground">Loading details…</p>
       )}
       {error && (
-        <p className="mt-5 text-sm text-destructive">Couldn’t load restaurant details.</p>
+        <p className="mt-5 text-sm text-destructive">
+          Couldn’t load restaurant details.
+        </p>
       )}
       {restaurant && (
-      <Form
-        id="edit-restaurant"
-        className="mt-5 space-y-5"
-        initialValues={valuesFrom(restaurant)}
-        validationSchema={editSchema}
-        onSubmit={async (values) => {
-          try {
-            setFormError(null)
-            const result = await updateRestaurant({
-              variables: {
-                id: restaurant.id,
-                input: {
-                  name: values.name.trim(),
-                  description: values.description.trim() || null,
-                  address: values.address.trim(),
-                  city: values.city.trim(),
-                  region: values.region,
-                  defaultDiningType: values.defaultDiningType,
-                  openingHours: values.openingHours.map((row) => ({
-                    day: row.day,
-                    closed: row.closed,
-                    opens: row.closed ? null : row.opens,
-                    closes: row.closed ? null : row.closes,
-                  })),
-                  compliance: {
-                    businessRegistrationNumber:
-                      values.businessRegistrationNumber.trim() || null,
-                    tin: values.tin.trim() || null,
-                    foodHygienePermit: values.foodHygienePermit.trim() || null,
-                    districtAssemblyPermit:
-                      values.districtAssemblyPermit.trim() || null,
-                    notes: values.notes.trim() || null,
+        <Form
+          id="edit-restaurant"
+          className="mt-5 space-y-5"
+          initialValues={valuesFrom(restaurant)}
+          validationSchema={editSchema}
+          onSubmit={async (values) => {
+            try {
+              setFormError(null)
+              const result = await updateRestaurant({
+                variables: {
+                  id: restaurant.id,
+                  input: {
+                    name: values.name.trim(),
+                    description: values.description.trim() || null,
+                    address: values.address.trim(),
+                    city: values.city.trim(),
+                    region: values.region,
+                    defaultDiningType: values.defaultDiningType,
+                    openingHours: values.openingHours.map((row) => ({
+                      day: row.day,
+                      closed: row.closed,
+                      opens: row.closed ? null : row.opens,
+                      closes: row.closed ? null : row.closes,
+                    })),
+                    compliance: {
+                      businessRegistrationNumber:
+                        values.businessRegistrationNumber.trim() || null,
+                      tin: values.tin.trim() || null,
+                      foodHygienePermit:
+                        values.foodHygienePermit.trim() || null,
+                      districtAssemblyPermit:
+                        values.districtAssemblyPermit.trim() || null,
+                      notes: values.notes.trim() || null,
+                    },
                   },
                 },
-              },
-            })
-            if (!result.data) throw new Error("Could not save restaurant details.")
-            await onSaved()
-          } catch (error) {
-            setFormError(mutationMessage(error, "Could not save restaurant details."))
-          }
-        }}
-      >
-        {(formik) => (
-          <EditFields formik={formik} regions={regions} formError={formError} />
-        )}
-      </Form>
+              })
+              if (!result.data)
+                throw new Error("Could not save restaurant details.")
+              await onSaved()
+            } catch (error) {
+              setFormError(
+                mutationMessage(error, "Could not save restaurant details.")
+              )
+            }
+          }}
+        >
+          {(formik) => (
+            <EditFields
+              formik={formik}
+              regions={regions}
+              formError={formError}
+            />
+          )}
+        </Form>
       )}
     </OpsModal>
   )
@@ -304,7 +335,9 @@ function EditFields({
           <FieldLabel>Region</FieldLabel>
           <Select
             value={formik.values.region}
-            onValueChange={(value) => void formik.setFieldValue("region", value ?? "")}
+            onValueChange={(value) =>
+              void formik.setFieldValue("region", value ?? "")
+            }
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose region" />
@@ -333,7 +366,9 @@ function EditFields({
               key={value}
               type="button"
               aria-pressed={formik.values.defaultDiningType === value}
-              onClick={() => void formik.setFieldValue("defaultDiningType", value)}
+              onClick={() =>
+                void formik.setFieldValue("defaultDiningType", value)
+              }
               className="rounded-lg border bg-background px-3 py-2.5 text-left text-sm font-medium data-[selected=true]:border-primary/50 data-[selected=true]:bg-primary/5"
               data-selected={formik.values.defaultDiningType === value}
             >
@@ -355,8 +390,11 @@ function EditFields({
                 <Switch
                   checked={!row.closed}
                   onCheckedChange={(open) => {
-                    const next = formik.values.openingHours.map((entry, entryIndex) =>
-                      entryIndex === index ? { ...entry, closed: !open } : entry,
+                    const next = formik.values.openingHours.map(
+                      (entry, entryIndex) =>
+                        entryIndex === index
+                          ? { ...entry, closed: !open }
+                          : entry
                     )
                     void formik.setFieldValue("openingHours", next)
                   }}
@@ -422,10 +460,10 @@ function EditFields({
 function updateHour(
   formik: FormikProps<EditValues>,
   index: number,
-  patch: Partial<HourRow>,
+  patch: Partial<HourRow>
 ) {
   const next = formik.values.openingHours.map((entry, entryIndex) =>
-    entryIndex === index ? { ...entry, ...patch } : entry,
+    entryIndex === index ? { ...entry, ...patch } : entry
   )
   void formik.setFieldValue("openingHours", next)
 }

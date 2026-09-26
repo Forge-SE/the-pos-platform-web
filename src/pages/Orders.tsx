@@ -24,7 +24,11 @@ function CashierOrders() {
       role="group"
       aria-label="Order page"
     >
-      <DeskButton active={!status} onClick={() => setDesk(null)} icon={<ReceiptIcon aria-hidden="true" />}>
+      <DeskButton
+        active={!status}
+        onClick={() => setDesk(null)}
+        icon={<ReceiptIcon aria-hidden="true" />}
+      >
         Take orders
       </DeskButton>
       <DeskButton

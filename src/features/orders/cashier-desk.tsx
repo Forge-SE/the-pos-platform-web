@@ -15,7 +15,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { diningLabel, type DiningType } from "@/features/orders/labels"
-import { cedisToPesewas, formatMoney, mutationMessage } from "@/features/menu/model"
+import {
+  cedisToPesewas,
+  formatMoney,
+  mutationMessage,
+} from "@/features/menu/model"
 import { normalizeGhanaPhone } from "@/features/payouts/phone"
 
 interface ModifierOption {
@@ -202,7 +206,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
     })
   }, [categoryId, data?.menuItems, search])
 
-  const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0)
+  const subtotal = lines.reduce(
+    (sum, line) => sum + line.unitPrice * line.quantity,
+    0
+  )
   const tip =
     tipChoice === "percent"
       ? Math.round(subtotal * 0.1)
@@ -220,7 +227,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       const existing = current.find((line) => line.key === key)
       if (existing) {
         return current.map((line) =>
-          line.key === key ? { ...line, quantity: line.quantity + 1 } : line,
+          line.key === key ? { ...line, quantity: line.quantity + 1 } : line
         )
       }
       return [
@@ -244,7 +251,9 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
     setLines((current) =>
       quantity < 1
         ? current.filter((line) => line.key !== key)
-        : current.map((line) => (line.key === key ? { ...line, quantity } : line)),
+        : current.map((line) =>
+            line.key === key ? { ...line, quantity } : line
+          )
     )
   }
 
@@ -263,17 +272,25 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       setFormError("Enter the tip in cedis, like 1.50.")
       return
     }
-    const guestPhone = contactPhone.trim() ? normalizeGhanaPhone(contactPhone) : null
+    const guestPhone = contactPhone.trim()
+      ? normalizeGhanaPhone(contactPhone)
+      : null
     if (contactPhone.trim() && !guestPhone) {
       setFormError("Enter a Ghana phone number, like 024 123 4567.")
       return
     }
-    const wallet = payMethod === "MOMO" ? normalizeGhanaPhone(walletPhone || contactPhone) : null
+    const wallet =
+      payMethod === "MOMO"
+        ? normalizeGhanaPhone(walletPhone || contactPhone)
+        : null
     if (payMethod === "MOMO" && !wallet) {
-      setFormError("Enter the MoMo wallet number that should receive the prompt.")
+      setFormError(
+        "Enter the MoMo wallet number that should receive the prompt."
+      )
       return
     }
-    const notes = [customerName.trim(), guestPhone].filter(Boolean).join(" · ") || null
+    const notes =
+      [customerName.trim(), guestPhone].filter(Boolean).join(" · ") || null
     try {
       const created = await createOrder({
         variables: {
@@ -292,8 +309,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           },
         },
       })
-      const order = (created.data as { createOrder?: { id: string; total: number } } | undefined)
-        ?.createOrder
+      const order = (
+        created.data as
+          { createOrder?: { id: string; total: number } } | undefined
+      )?.createOrder
       if (!order) throw new Error("The order was not created.")
       if (payMethod === "CASH") {
         await recordPayment({
@@ -307,7 +326,9 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             },
           },
         })
-        setNotice(`Cash order ${order.id.slice(-6).toUpperCase()} is in. Total ${formatMoney(order.total)}.`)
+        setNotice(
+          `Cash order ${order.id.slice(-6).toUpperCase()} is in. Total ${formatMoney(order.total)}.`
+        )
       } else {
         const charged = await initiateMomo({
           variables: {
@@ -322,13 +343,16 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         })
         const attempt = (
           charged.data as {
-            initiateMomoPayment?: { displayText?: string | null; failureReason?: string | null }
+            initiateMomoPayment?: {
+              displayText?: string | null
+              failureReason?: string | null
+            }
           }
         )?.initiateMomoPayment
         setNotice(
           attempt?.displayText ||
             attempt?.failureReason ||
-            `Prompt sent for order ${order.id.slice(-6).toUpperCase()}.`,
+            `Prompt sent for order ${order.id.slice(-6).toUpperCase()}.`
         )
       }
       setLines([])
@@ -347,24 +371,31 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
     <div className="flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]">
       <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
         <div className="min-w-0">
-          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">Counter</h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
+            Counter
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Build the bag, then take cash or send a MoMo prompt.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-        {switcher}
-        <Button onClick={() => setBagOpen(true)} className="shrink-0">
-          <ShoppingBagIcon aria-hidden="true" data-icon="inline-start" />
-          Bag
-          <span className="tabular-nums">{lines.reduce((sum, line) => sum + line.quantity, 0)}</span>
-        </Button>
+          {switcher}
+          <Button onClick={() => setBagOpen(true)} className="shrink-0">
+            <ShoppingBagIcon aria-hidden="true" data-icon="inline-start" />
+            Bag
+            <span className="tabular-nums">
+              {lines.reduce((sum, line) => sum + line.quantity, 0)}
+            </span>
+          </Button>
         </div>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
         {notice && (
-          <p className="mb-4 rounded-xl border border-border/70 bg-primary/25 px-4 py-3 text-sm" role="status">
+          <p
+            className="mb-4 rounded-xl border border-border/70 bg-primary/25 px-4 py-3 text-sm"
+            role="status"
+          >
             {notice}
           </p>
         )}
@@ -377,7 +408,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           className="max-w-sm"
         />
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          <CategoryChip active={categoryId === "all"} onClick={() => setCategoryId("all")}>
+          <CategoryChip
+            active={categoryId === "all"}
+            onClick={() => setCategoryId("all")}
+          >
             All
           </CategoryChip>
           {categories.map((category) => (
@@ -392,13 +426,19 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         </div>
 
         {error ? (
-          <p className="py-16 text-center text-sm text-destructive" role="alert">
+          <p
+            className="py-16 text-center text-sm text-destructive"
+            role="alert"
+          >
             The menu could not be loaded.
           </p>
         ) : loading ? (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2].map((item) => (
-              <div key={item} className="h-72 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none" />
+              <div
+                key={item}
+                className="h-72 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none"
+              />
             ))}
           </div>
         ) : items.length === 0 ? (
@@ -408,9 +448,14 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         ) : (
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => {
-              const category = categories.find((entry) => entry.id === item.categoryId)
+              const category = categories.find(
+                (entry) => entry.id === item.categoryId
+              )
               return (
-                <li key={item.id} className="overflow-hidden rounded-2xl border border-border/70 bg-card">
+                <li
+                  key={item.id}
+                  className="overflow-hidden rounded-2xl border border-border/70 bg-card"
+                >
                   <div className="relative aspect-video bg-muted">
                     {item.imageUrl ? (
                       <img
@@ -430,11 +475,17 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
                     )}
                   </div>
                   <div className="space-y-2 p-4">
-                    <h2 className="text-base font-semibold tracking-[-0.02em]">{item.name}</h2>
+                    <h2 className="text-base font-semibold tracking-[-0.02em]">
+                      {item.name}
+                    </h2>
                     {item.description && (
-                      <p className="line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {item.description}
+                      </p>
                     )}
-                    {item.modifierGroups.some((group) => group.options.some((option) => option.active)) && (
+                    {item.modifierGroups.some((group) =>
+                      group.options.some((option) => option.active)
+                    ) && (
                       <ul className="flex flex-wrap gap-1.5">
                         {item.modifierGroups.flatMap((group) =>
                           group.options
@@ -453,7 +504,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
                                 ) : null}
                                 <span className="truncate">{option.name}</span>
                               </li>
-                            )),
+                            ))
                         )}
                       </ul>
                     )}
@@ -462,9 +513,15 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
                         <span className="block text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
                           Base price
                         </span>
-                        <span className="text-sm font-semibold tabular-nums">{formatMoney(item.price)}</span>
+                        <span className="text-sm font-semibold tabular-nums">
+                          {formatMoney(item.price)}
+                        </span>
                       </p>
-                      <Button variant="outline" size="sm" onClick={() => setCustomizing(item)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCustomizing(item)}
+                      >
                         <PlusIcon aria-hidden="true" data-icon="inline-start" />
                         Customize
                       </Button>
@@ -552,7 +609,11 @@ function CustomizeDialog({
   const [selected, setSelected] = useState<Record<string, string[]>>(() => {
     const initial: Record<string, string[]> = {}
     for (const group of item.modifierGroups) {
-      if (group.minSelections >= 1 && group.maxSelections <= 1 && group.options[0]) {
+      if (
+        group.minSelections >= 1 &&
+        group.maxSelections <= 1 &&
+        group.options[0]
+      ) {
         initial[group.id] = [group.options[0].id]
       } else {
         initial[group.id] = []
@@ -564,15 +625,19 @@ function CustomizeDialog({
   const optionIds = Object.values(selected).flat()
   const unit = item.price + optionPrice(item, optionIds)
   const missing = item.modifierGroups.find(
-    (group) => (selected[group.id]?.length ?? 0) < group.minSelections,
+    (group) => (selected[group.id]?.length ?? 0) < group.minSelections
   )
 
   function toggle(group: ModifierGroup, optionId: string) {
     setSelected((current) => {
       const chosen = current[group.id] ?? []
-      if (group.maxSelections <= 1) return { ...current, [group.id]: [optionId] }
+      if (group.maxSelections <= 1)
+        return { ...current, [group.id]: [optionId] }
       if (chosen.includes(optionId)) {
-        return { ...current, [group.id]: chosen.filter((id) => id !== optionId) }
+        return {
+          ...current,
+          [group.id]: chosen.filter((id) => id !== optionId),
+        }
       }
       if (chosen.length >= group.maxSelections) return current
       return { ...current, [group.id]: [...chosen, optionId] }
@@ -586,7 +651,11 @@ function CustomizeDialog({
         <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex max-h-[min(92svh,760px)] w-[min(32rem,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-lg">
           <div className="relative h-36 shrink-0 bg-muted">
             {item.imageUrl && (
-              <img src={item.imageUrl} alt="" className="size-full object-cover outline outline-black/10" />
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="size-full object-cover outline outline-black/10"
+              />
             )}
             <Dialog.Close
               aria-label="Close"
@@ -596,13 +665,17 @@ function CustomizeDialog({
             </Dialog.Close>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            <Dialog.Title className="text-xl font-semibold tracking-[-0.03em]">{item.name}</Dialog.Title>
+            <Dialog.Title className="text-xl font-semibold tracking-[-0.03em]">
+              {item.name}
+            </Dialog.Title>
             <Dialog.Description className="mt-1 text-sm text-muted-foreground">
               Base {formatMoney(item.price)}
             </Dialog.Description>
             <div className="mt-5 space-y-5">
               {item.modifierGroups.length === 0 && (
-                <p className="text-sm text-muted-foreground">This dish is served as listed.</p>
+                <p className="text-sm text-muted-foreground">
+                  This dish is served as listed.
+                </p>
               )}
               {item.modifierGroups.map((group, index) => (
                 <fieldset key={group.id}>
@@ -610,7 +683,13 @@ function CustomizeDialog({
                     <span>
                       {index + 1}. {group.name}
                     </span>
-                    <span className={group.minSelections > 0 ? "text-destructive" : "text-muted-foreground"}>
+                    <span
+                      className={
+                        group.minSelections > 0
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                      }
+                    >
                       {group.minSelections > 0 ? "Required" : "Optional"}
                     </span>
                   </legend>
@@ -635,7 +714,11 @@ function CustomizeDialog({
             </div>
           </div>
           <div className="border-t border-border/70 p-4">
-            <Button className="w-full" disabled={Boolean(missing)} onClick={() => onAdd(optionIds, kitchenNotes)}>
+            <Button
+              className="w-full"
+              disabled={Boolean(missing)}
+              onClick={() => onAdd(optionIds, kitchenNotes)}
+            >
               Add to bag
               <span className="tabular-nums">{formatMoney(unit)}</span>
             </Button>
@@ -670,7 +753,11 @@ function GroupOptions({
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-[background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] motion-reduce:active:scale-100 ${on ? "border-secondary bg-secondary text-secondary-foreground" : "border-border bg-card"}`}
             >
               {option.imageUrl && (
-                <img src={option.imageUrl} alt="" className="size-5 rounded-full object-cover" />
+                <img
+                  src={option.imageUrl}
+                  alt=""
+                  className="size-5 rounded-full object-cover"
+                />
               )}
               {option.name}
             </button>
@@ -700,12 +787,18 @@ function GroupOptions({
                   {on ? "✓" : ""}
                 </span>
                 {option.imageUrl && (
-                  <img src={option.imageUrl} alt="" className="size-8 rounded-md object-cover" />
+                  <img
+                    src={option.imageUrl}
+                    alt=""
+                    className="size-8 rounded-md object-cover"
+                  />
                 )}
                 {option.name}
               </span>
               <span className="mt-2 block pl-6 text-xs font-medium text-secondary">
-                {option.priceDelta > 0 ? `+${formatMoney(option.priceDelta)}` : "Included"}
+                {option.priceDelta > 0
+                  ? `+${formatMoney(option.priceDelta)}`
+                  : "Included"}
               </span>
             </button>
           )
@@ -733,12 +826,20 @@ function GroupOptions({
                 {on && <span className="size-2 rounded-full bg-secondary" />}
               </span>
               {option.imageUrl && (
-                <img src={option.imageUrl} alt="" className="size-8 rounded-md object-cover" />
+                <img
+                  src={option.imageUrl}
+                  alt=""
+                  className="size-8 rounded-md object-cover"
+                />
               )}
               {option.name}
             </span>
-            <span className={`shrink-0 text-xs font-medium ${option.priceDelta > 0 ? "text-secondary" : "text-muted-foreground"}`}>
-              {option.priceDelta > 0 ? `+${formatMoney(option.priceDelta)}` : "Included"}
+            <span
+              className={`shrink-0 text-xs font-medium ${option.priceDelta > 0 ? "text-secondary" : "text-muted-foreground"}`}
+            >
+              {option.priceDelta > 0
+                ? `+${formatMoney(option.priceDelta)}`
+                : "Included"}
             </span>
           </button>
         )
@@ -783,7 +884,9 @@ function BagDrawer(props: {
         <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border/70 bg-card shadow-lg">
           <div className="flex items-start justify-between gap-3 border-b border-border/70 px-4 py-4">
             <div>
-              <Dialog.Title className="text-lg font-semibold tracking-[-0.03em]">Your bag</Dialog.Title>
+              <Dialog.Title className="text-lg font-semibold tracking-[-0.03em]">
+                Your bag
+              </Dialog.Title>
               <Dialog.Description className="text-xs text-muted-foreground">
                 {props.lines.length === 0
                   ? "Nothing here yet."
@@ -792,11 +895,18 @@ function BagDrawer(props: {
             </div>
             <div className="flex items-center gap-2">
               {props.lines.length > 0 && (
-                <button type="button" onClick={props.onClear} className="text-xs font-medium text-muted-foreground hover:text-foreground">
+                <button
+                  type="button"
+                  onClick={props.onClear}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
                   Clear all
                 </button>
               )}
-              <Dialog.Close aria-label="Close bag" className="flex size-8 items-center justify-center rounded-full hover:bg-muted">
+              <Dialog.Close
+                aria-label="Close bag"
+                className="flex size-8 items-center justify-center rounded-full hover:bg-muted"
+              >
                 <XIcon aria-hidden="true" className="size-4" />
               </Dialog.Close>
             </div>
@@ -809,25 +919,56 @@ function BagDrawer(props: {
             ) : (
               <ul className="space-y-3">
                 {props.lines.map((line) => (
-                  <li key={line.key} className="rounded-xl border border-border/70 p-3">
+                  <li
+                    key={line.key}
+                    className="rounded-xl border border-border/70 p-3"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold">{line.item.name}</p>
+                        <p className="text-sm font-semibold">
+                          {line.item.name}
+                        </p>
                         {line.summary && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">{line.summary}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {line.summary}
+                          </p>
                         )}
                         {line.notes && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">{line.notes}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {line.notes}
+                          </p>
                         )}
                       </div>
-                      <p className="text-sm font-semibold tabular-nums">{formatMoney(line.unitPrice * line.quantity)}</p>
+                      <p className="text-sm font-semibold tabular-nums">
+                        {formatMoney(line.unitPrice * line.quantity)}
+                      </p>
                     </div>
                     <div className="mt-3 flex items-center gap-2">
-                      <button type="button" aria-label="Decrease quantity" onClick={() => props.onQuantity(line.key, line.quantity - 1)} className="flex size-8 items-center justify-center rounded-full border border-border">
-                        {line.quantity === 1 ? <TrashIcon className="size-3.5" /> : <MinusIcon className="size-3.5" />}
+                      <button
+                        type="button"
+                        aria-label="Decrease quantity"
+                        onClick={() =>
+                          props.onQuantity(line.key, line.quantity - 1)
+                        }
+                        className="flex size-8 items-center justify-center rounded-full border border-border"
+                      >
+                        {line.quantity === 1 ? (
+                          <TrashIcon className="size-3.5" />
+                        ) : (
+                          <MinusIcon className="size-3.5" />
+                        )}
                       </button>
-                      <span className="w-6 text-center text-sm tabular-nums">{line.quantity}</span>
-                      <button type="button" aria-label="Increase quantity" onClick={() => props.onQuantity(line.key, line.quantity + 1)} className="flex size-8 items-center justify-center rounded-full border border-border">
+                      <span className="w-6 text-center text-sm tabular-nums">
+                        {line.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Increase quantity"
+                        onClick={() =>
+                          props.onQuantity(line.key, line.quantity + 1)
+                        }
+                        className="flex size-8 items-center justify-center rounded-full border border-border"
+                      >
                         <PlusIcon className="size-3.5" />
                       </button>
                     </div>
@@ -840,7 +981,11 @@ function BagDrawer(props: {
               <h2 className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                 Dining
               </h2>
-              <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Dining">
+              <div
+                className="mt-2 grid grid-cols-3 gap-2"
+                role="radiogroup"
+                aria-label="Dining"
+              >
                 {(["TAKEAWAY", "DINE_IN", "DELIVERY"] as const).map((value) => (
                   <button
                     key={value}
@@ -859,15 +1004,24 @@ function BagDrawer(props: {
             <section className="rounded-xl border border-border/70 p-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Kitchen tip</h2>
-                <span className="text-sm font-semibold text-secondary tabular-nums">+{formatMoney(props.tip)}</span>
+                <span className="text-sm font-semibold text-secondary tabular-nums">
+                  +{formatMoney(props.tip)}
+                </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {tipPresets.map((preset) => (
-                  <TipChip key={preset.id} active={props.tipChoice === preset.id} onClick={() => props.onTipChoice(preset.id)}>
+                  <TipChip
+                    key={preset.id}
+                    active={props.tipChoice === preset.id}
+                    onClick={() => props.onTipChoice(preset.id)}
+                  >
                     {preset.label}
                   </TipChip>
                 ))}
-                <TipChip active={props.tipChoice === "percent"} onClick={() => props.onTipChoice("percent")}>
+                <TipChip
+                  active={props.tipChoice === "percent"}
+                  onClick={() => props.onTipChoice("percent")}
+                >
                   10%
                 </TipChip>
               </div>
@@ -921,7 +1075,9 @@ function BagDrawer(props: {
               </div>
               {props.payMethod === "MOMO" && (
                 <div className="space-y-2 rounded-xl bg-muted/50 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">MoMo network</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    MoMo network
+                  </p>
                   <div className="grid grid-cols-3 gap-2">
                     {networks.map((entry) => (
                       <button
@@ -937,14 +1093,16 @@ function BagDrawer(props: {
                   </div>
                   <Input
                     value={props.walletPhone}
-                    onChange={(event) => props.onWalletPhone(event.target.value)}
+                    onChange={(event) =>
+                      props.onWalletPhone(event.target.value)
+                    }
                     placeholder="MoMo wallet number"
                     aria-label="MoMo wallet number"
                     inputMode="tel"
                   />
                   <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <ClockIcon aria-hidden="true" className="size-3.5" />
-                    A prompt is sent to confirm payment on the phone.
+                    <ClockIcon aria-hidden="true" className="size-3.5" />A
+                    prompt is sent to confirm payment on the phone.
                   </p>
                 </div>
               )}
@@ -970,7 +1128,11 @@ function BagDrawer(props: {
                 {props.error}
               </p>
             )}
-            <Button className="h-12 w-full" disabled={props.busy || props.lines.length === 0} onClick={props.onPlace}>
+            <Button
+              className="h-12 w-full"
+              disabled={props.busy || props.lines.length === 0}
+              onClick={props.onPlace}
+            >
               {props.busy ? "Placing order…" : "Place order"}
             </Button>
           </div>

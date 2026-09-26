@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  CREATE_CATEGORY,
-  mutationMessage,
-} from "@/features/menu/model"
+import { CREATE_CATEGORY, mutationMessage } from "@/features/menu/model"
 
 import { MenuDialog } from "./menu-dialog"
 
@@ -37,7 +34,7 @@ export function CategoryModal({
 
   async function submit(
     values: typeof categoryValues,
-    helpers: { resetForm: () => void },
+    helpers: { resetForm: () => void }
   ) {
     try {
       setCategoryError(null)
@@ -83,7 +80,10 @@ export function CategoryModal({
           const nameError = fieldError(formik, "name")
           return (
             <>
-              <Field className="min-w-0 flex-1" data-invalid={Boolean(nameError)}>
+              <Field
+                className="min-w-0 flex-1"
+                data-invalid={Boolean(nameError)}
+              >
                 <FieldLabel htmlFor="modal-category-name">Name</FieldLabel>
                 <Input
                   id="modal-category-name"

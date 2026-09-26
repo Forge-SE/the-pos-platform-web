@@ -36,7 +36,11 @@ import {
   uploadMenuImage,
   uploadOptionImage,
 } from "@/features/menu/model"
-import type { MenuCategory, MenuItem, ModifierGroup } from "@/features/menu/model"
+import type {
+  MenuCategory,
+  MenuItem,
+  ModifierGroup,
+} from "@/features/menu/model"
 
 import { MenuDialog } from "./menu-dialog"
 
@@ -89,7 +93,10 @@ const CHOICE_KINDS: Array<{
 function kindOf(group: ModifierGroup, remembered?: ChoiceKind): ChoiceKind {
   if (remembered) return remembered
   if (group.maxSelections <= 1) return "pick-one"
-  if (group.options.length > 0 && group.options.every((option) => option.priceDelta === 0)) {
+  if (
+    group.options.length > 0 &&
+    group.options.every((option) => option.priceDelta === 0)
+  ) {
     return "removals"
   }
   return "extras"
@@ -102,7 +109,7 @@ const itemSchema = Yup.object({
   price: Yup.string().test(
     "cedis",
     "Use a valid cedi amount with no more than two decimal places.",
-    (value) => cedisToPesewas(value ?? "") !== null,
+    (value) => cedisToPesewas(value ?? "") !== null
   ),
 })
 
@@ -117,7 +124,8 @@ function StepIndicator({ step }: { step: number }) {
     <ol className="grid w-full grid-cols-4" aria-label="Progress">
       {STEPS.map((label, index) => {
         const stepNumber = index + 1
-        const state = stepNumber < step ? "done" : stepNumber === step ? "now" : "next"
+        const state =
+          stepNumber < step ? "done" : stepNumber === step ? "now" : "next"
         const align =
           index === 0
             ? "items-start text-left"
@@ -127,7 +135,9 @@ function StepIndicator({ step }: { step: number }) {
         return (
           <li key={label} className={`flex min-w-0 flex-col ${align}`}>
             <div className="flex w-full items-center">
-              {index > 0 && <span aria-hidden="true" className="h-px flex-1 bg-border/70" />}
+              {index > 0 && (
+                <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
+              )}
               <span
                 aria-current={state === "now" ? "step" : undefined}
                 className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
@@ -138,7 +148,11 @@ function StepIndicator({ step }: { step: number }) {
                       : "bg-muted text-muted-foreground"
                 }`}
               >
-                {state === "done" ? <CheckCircleIcon className="size-3.5" /> : stepNumber}
+                {state === "done" ? (
+                  <CheckCircleIcon className="size-3.5" />
+                ) : (
+                  stepNumber
+                )}
               </span>
               {index < STEPS.length - 1 && (
                 <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
@@ -158,7 +172,9 @@ function StepIndicator({ step }: { step: number }) {
 
 function choiceMode(group: ModifierGroup) {
   if (group.maxSelections <= 1) return "radio" as const
-  return group.options.some((option) => option.priceDelta !== 0) ? "cards" as const : "chips" as const
+  return group.options.some((option) => option.priceDelta !== 0)
+    ? ("cards" as const)
+    : ("chips" as const)
 }
 
 export function EditItemModal({
@@ -181,12 +197,12 @@ export function EditItemModal({
   const [updateItem, updateMutation] = useMutation(UPDATE_ITEM)
   const [completeImageUpload] = useMutation(COMPLETE_ITEM_IMAGE_UPLOAD)
   const [completeOptionImage] = useMutation(COMPLETE_OPTION_IMAGE)
-  const [createGroup, groupMutation] = useMutation<{ createModifierGroup: { id: string } }>(
-    CREATE_MODIFIER_GROUP,
-  )
-  const [createOption, optionMutation] = useMutation<{ createModifierOption: { id: string } }>(
-    CREATE_MODIFIER_OPTION,
-  )
+  const [createGroup, groupMutation] = useMutation<{
+    createModifierGroup: { id: string }
+  }>(CREATE_MODIFIER_GROUP)
+  const [createOption, optionMutation] = useMutation<{
+    createModifierOption: { id: string }
+  }>(CREATE_MODIFIER_OPTION)
   const [attachGroup] = useMutation(ATTACH_MODIFIER_GROUP)
   const [detachGroup] = useMutation(DETACH_MODIFIER_GROUP)
 
@@ -220,10 +236,14 @@ export function EditItemModal({
     }
   }, [open, item])
 
-  const attachedIds = new Set(item?.modifierGroups.map((group) => group.id) ?? [])
+  const attachedIds = new Set(
+    item?.modifierGroups.map((group) => group.id) ?? []
+  )
   const attached = groups.filter((group) => attachedIds.has(group.id))
   const available = groups.filter((group) => !attachedIds.has(group.id))
-  const categoryName = categories.find((category) => category.id === item?.categoryId)?.name
+  const categoryName = categories.find(
+    (category) => category.id === item?.categoryId
+  )?.name
 
   const initialValues = {
     categoryId: item?.categoryId ?? "",
@@ -236,7 +256,10 @@ export function EditItemModal({
     return optionDrafts[groupId] ?? { name: "", price: "", file: null }
   }
 
-  function setDraft(groupId: string, patch: Partial<{ name: string; price: string; file: File | null }>) {
+  function setDraft(
+    groupId: string,
+    patch: Partial<{ name: string; price: string; file: File | null }>
+  ) {
     setOptionDrafts((current) => ({
       ...current,
       [groupId]: { ...draftFor(groupId), ...patch },
@@ -263,7 +286,9 @@ export function EditItemModal({
       await onChanged()
       setStep(2)
     } catch (mutationError) {
-      setFormError(mutationMessage(mutationError, "Could not update this dish."))
+      setFormError(
+        mutationMessage(mutationError, "Could not update this dish.")
+      )
     }
   }
 
@@ -275,11 +300,13 @@ export function EditItemModal({
       await uploadMenuImage(
         (variables) => completeImageUpload({ variables }),
         item.id,
-        file,
+        file
       )
       await onChanged()
     } catch (mutationError) {
-      setFormError(mutationMessage(mutationError, "Could not upload the photo."))
+      setFormError(
+        mutationMessage(mutationError, "Could not upload the photo.")
+      )
     } finally {
       setPhotoBusy(false)
     }
@@ -312,7 +339,9 @@ export function EditItemModal({
       })
       await onChanged()
     } catch (mutationError) {
-      setFormError(mutationMessage(mutationError, "Could not remove that choice."))
+      setFormError(
+        mutationMessage(mutationError, "Could not remove that choice.")
+      )
     } finally {
       setPendingGroupId(null)
     }
@@ -320,7 +349,8 @@ export function EditItemModal({
 
   async function addNewChoice() {
     if (!item) return
-    const kind = CHOICE_KINDS.find((entry) => entry.id === choiceKind) ?? CHOICE_KINDS[0]
+    const kind =
+      CHOICE_KINDS.find((entry) => entry.id === choiceKind) ?? CHOICE_KINDS[0]
     const name = choiceName.trim()
     if (!name) {
       setFormError(`Name it, for example ${kind.namePlaceholder}.`)
@@ -349,10 +379,16 @@ export function EditItemModal({
   async function addOption(groupId: string, kind: ChoiceKind) {
     const draft = draftFor(groupId)
     const priceSource = kind === "removals" ? "0" : draft.price
-    const priceDelta = cedisToPesewas(priceSource === "" ? "0" : priceSource, true)
-    const kindMeta = CHOICE_KINDS.find((entry) => entry.id === kind) ?? CHOICE_KINDS[0]
+    const priceDelta = cedisToPesewas(
+      priceSource === "" ? "0" : priceSource,
+      true
+    )
+    const kindMeta =
+      CHOICE_KINDS.find((entry) => entry.id === kind) ?? CHOICE_KINDS[0]
     if (!draft.name.trim()) {
-      setFormError(`Name the option, for example ${kindMeta.optionPlaceholder}.`)
+      setFormError(
+        `Name the option, for example ${kindMeta.optionPlaceholder}.`
+      )
       return
     }
     if (priceDelta === null) {
@@ -373,7 +409,7 @@ export function EditItemModal({
         await uploadOptionImage(
           (variables) => completeOptionImage({ variables }),
           optionId,
-          draft.file,
+          draft.file
         )
       }
       setDraft(groupId, { name: "", price: "", file: null })
@@ -391,11 +427,13 @@ export function EditItemModal({
       await uploadOptionImage(
         (variables) => completeOptionImage({ variables }),
         optionId,
-        file,
+        file
       )
       await onChanged()
     } catch (mutationError) {
-      setFormError(mutationMessage(mutationError, "Could not upload the option photo."))
+      setFormError(
+        mutationMessage(mutationError, "Could not upload the option photo.")
+      )
     }
   }
 
@@ -427,18 +465,30 @@ export function EditItemModal({
               }
             />
           ) : (
-            <Button type="button" variant="outline" onClick={() => setStep((current) => current - 1)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep((current) => current - 1)}
+            >
               <CaretLeftIcon data-icon="inline-start" />
               Back
             </Button>
           )}
           {step === 1 && (
-            <Button type="submit" form="edit-item-form" disabled={updateMutation.loading || !item}>
+            <Button
+              type="submit"
+              form="edit-item-form"
+              disabled={updateMutation.loading || !item}
+            >
               {updateMutation.loading ? "Saving…" : "Continue"}
             </Button>
           )}
           {step === 2 && (
-            <Button type="button" onClick={() => setStep(3)} disabled={photoBusy}>
+            <Button
+              type="button"
+              onClick={() => setStep(3)}
+              disabled={photoBusy}
+            >
               Continue
             </Button>
           )}
@@ -486,12 +536,15 @@ export function EditItemModal({
                     <FieldLabel>Category</FieldLabel>
                     <Select
                       value={formik.values.categoryId}
-                      onValueChange={(value) => void formik.setFieldValue("categoryId", value ?? "")}
+                      onValueChange={(value) =>
+                        void formik.setFieldValue("categoryId", value ?? "")
+                      }
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Mains">
                           {(value) =>
-                            categories.find((category) => category.id === value)?.name ?? "Mains"
+                            categories.find((category) => category.id === value)
+                              ?.name ?? "Mains"
                           }
                         </SelectValue>
                       </SelectTrigger>
@@ -520,7 +573,9 @@ export function EditItemModal({
                   </Field>
                 </div>
                 <Field>
-                  <FieldLabel htmlFor="edit-item-description">Description</FieldLabel>
+                  <FieldLabel htmlFor="edit-item-description">
+                    Description
+                  </FieldLabel>
                   <Textarea
                     id="edit-item-description"
                     name="description"
@@ -571,14 +626,20 @@ export function EditItemModal({
             className="flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border/70 bg-muted/20 text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:cursor-wait"
           >
             {item.imageUrl ? (
-              <img src={item.imageUrl} alt="" className="size-full object-cover" />
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="size-full object-cover"
+              />
             ) : (
               <>
                 <ImageIcon className="size-8" />
                 <span className="text-sm font-medium">
                   {photoBusy ? "Uploading…" : "Photo of the dish"}
                 </span>
-                <span className="text-xs">JPEG, PNG, or WebP · up to 5 MiB</span>
+                <span className="text-xs">
+                  JPEG, PNG, or WebP · up to 5 MiB
+                </span>
               </>
             )}
           </button>
@@ -610,7 +671,10 @@ export function EditItemModal({
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Size">
-                      {(value) => available.find((group) => group.id === value)?.name ?? "Size"}
+                      {(value) =>
+                        available.find((group) => group.id === value)?.name ??
+                        "Size"
+                      }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -636,9 +700,13 @@ export function EditItemModal({
           {attached.map((group) => {
             const draft = draftFor(group.id)
             const kind = kindOf(group, groupKinds[group.id])
-            const kindMeta = CHOICE_KINDS.find((entry) => entry.id === kind) ?? CHOICE_KINDS[0]
+            const kindMeta =
+              CHOICE_KINDS.find((entry) => entry.id === kind) ?? CHOICE_KINDS[0]
             return (
-              <section key={group.id} className="rounded-xl border border-border/70 p-3">
+              <section
+                key={group.id}
+                className="rounded-xl border border-border/70 p-3"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold">{group.name}</h3>
@@ -659,15 +727,24 @@ export function EditItemModal({
                 </div>
                 <ul className="mt-3 space-y-2">
                   {group.options.map((option) => (
-                    <li key={option.id} className="flex items-center gap-2 text-sm">
+                    <li
+                      key={option.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
                       {option.imageUrl ? (
-                        <img src={option.imageUrl} alt="" className="size-9 rounded-md object-cover" />
+                        <img
+                          src={option.imageUrl}
+                          alt=""
+                          className="size-9 rounded-md object-cover"
+                        />
                       ) : (
                         <span className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
                           <ImageIcon className="size-4" />
                         </span>
                       )}
-                      <span className="min-w-0 flex-1 truncate">{option.name}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {option.name}
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         {option.priceDelta > 0
                           ? `+${formatMoney(option.priceDelta)}`
@@ -687,27 +764,37 @@ export function EditItemModal({
                     </li>
                   ))}
                 </ul>
-                <div className={`mt-3 grid gap-2 sm:items-end ${kind === "removals" ? "sm:grid-cols-[1fr_auto_auto]" : "sm:grid-cols-[1fr_7rem_auto_auto]"}`}>
+                <div
+                  className={`mt-3 grid gap-2 sm:items-end ${kind === "removals" ? "sm:grid-cols-[1fr_auto_auto]" : "sm:grid-cols-[1fr_7rem_auto_auto]"}`}
+                >
                   <Field>
-                    <FieldLabel htmlFor={`option-name-${group.id}`}>Option</FieldLabel>
+                    <FieldLabel htmlFor={`option-name-${group.id}`}>
+                      Option
+                    </FieldLabel>
                     <Input
                       id={`option-name-${group.id}`}
                       value={draft.name}
-                      onChange={(event) => setDraft(group.id, { name: event.target.value })}
+                      onChange={(event) =>
+                        setDraft(group.id, { name: event.target.value })
+                      }
                       placeholder={kindMeta.optionPlaceholder}
                     />
                   </Field>
                   {kind !== "removals" && (
-                  <Field>
-                    <FieldLabel htmlFor={`option-price-${group.id}`}>Extra (GHS)</FieldLabel>
-                    <Input
-                      id={`option-price-${group.id}`}
-                      inputMode="decimal"
-                      value={draft.price}
-                      onChange={(event) => setDraft(group.id, { price: event.target.value })}
-                      placeholder={kindMeta.pricePlaceholder}
-                    />
-                  </Field>
+                    <Field>
+                      <FieldLabel htmlFor={`option-price-${group.id}`}>
+                        Extra (GHS)
+                      </FieldLabel>
+                      <Input
+                        id={`option-price-${group.id}`}
+                        inputMode="decimal"
+                        value={draft.price}
+                        onChange={(event) =>
+                          setDraft(group.id, { price: event.target.value })
+                        }
+                        placeholder={kindMeta.pricePlaceholder}
+                      />
+                    </Field>
                   )}
                   <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-input px-3 text-xs font-medium">
                     {draft.file ? "Photo ready" : "Photo"}
@@ -716,13 +803,17 @@ export function EditItemModal({
                       accept="image/jpeg,image/png,image/webp"
                       className="sr-only"
                       onChange={(event) =>
-                        setDraft(group.id, { file: event.target.files?.[0] ?? null })
+                        setDraft(group.id, {
+                          file: event.target.files?.[0] ?? null,
+                        })
                       }
                     />
                   </label>
                   <Button
                     type="button"
-                    disabled={pendingGroupId === group.id || optionMutation.loading}
+                    disabled={
+                      pendingGroupId === group.id || optionMutation.loading
+                    }
                     onClick={() => void addOption(group.id, kind)}
                   >
                     <PlusIcon data-icon="inline-start" />
@@ -735,7 +826,11 @@ export function EditItemModal({
 
           <section className="rounded-xl border border-dashed border-border/70 p-3">
             <h3 className="text-sm font-semibold">Add to this dish</h3>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Kind of choice">
+            <div
+              className="mt-3 grid gap-2 sm:grid-cols-3"
+              role="radiogroup"
+              aria-label="Kind of choice"
+            >
               {CHOICE_KINDS.map((kind) => {
                 const selected = choiceKind === kind.id
                 return (
@@ -746,11 +841,17 @@ export function EditItemModal({
                     aria-checked={selected}
                     onClick={() => setChoiceKind(kind.id)}
                     className={`rounded-lg border px-3 py-2 text-left ${
-                      selected ? "border-secondary bg-primary/20" : "border-border bg-card"
+                      selected
+                        ? "border-secondary bg-primary/20"
+                        : "border-border bg-card"
                     }`}
                   >
-                    <span className="block text-sm font-semibold">{kind.label}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{kind.detail}</span>
+                    <span className="block text-sm font-semibold">
+                      {kind.label}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {kind.detail}
+                    </span>
                   </button>
                 )
               })}
@@ -762,7 +863,10 @@ export function EditItemModal({
                   id="new-choice-name"
                   value={choiceName}
                   onChange={(event) => setChoiceName(event.target.value)}
-                  placeholder={CHOICE_KINDS.find((kind) => kind.id === choiceKind)?.namePlaceholder}
+                  placeholder={
+                    CHOICE_KINDS.find((kind) => kind.id === choiceKind)
+                      ?.namePlaceholder
+                  }
                 />
               </Field>
               <Button
@@ -783,7 +887,11 @@ export function EditItemModal({
         <div className="mt-6 overflow-hidden rounded-xl border border-border/70">
           <div className="relative h-36 bg-muted">
             {item.imageUrl ? (
-              <img src={item.imageUrl} alt="" className="size-full object-cover" />
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="size-full object-cover"
+              />
             ) : (
               <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
                 No photo yet
@@ -794,14 +902,22 @@ export function EditItemModal({
             <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
               {categoryName}
             </p>
-            <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em]">{item.name}</h3>
+            <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em]">
+              {item.name}
+            </h3>
             {item.description && (
-              <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {item.description}
+              </p>
             )}
-            <p className="mt-1 text-sm text-muted-foreground">Base {formatMoney(item.price)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Base {formatMoney(item.price)}
+            </p>
             <div className="mt-5 space-y-5">
               {attached.length === 0 && (
-                <p className="text-sm text-muted-foreground">This dish is served as listed.</p>
+                <p className="text-sm text-muted-foreground">
+                  This dish is served as listed.
+                </p>
               )}
               {attached.map((group, index) => {
                 const selected = previewPick[group.id] ?? []
@@ -811,7 +927,13 @@ export function EditItemModal({
                       <span>
                         {index + 1}. {group.name}
                       </span>
-                      <span className={group.minSelections > 0 ? "text-destructive" : "text-muted-foreground"}>
+                      <span
+                        className={
+                          group.minSelections > 0
+                            ? "text-destructive"
+                            : "text-muted-foreground"
+                        }
+                      >
                         {group.minSelections > 0 ? "Required" : "Optional"}
                       </span>
                     </legend>
@@ -827,11 +949,17 @@ export function EditItemModal({
                           if (chosen.includes(optionId)) {
                             return {
                               ...current,
-                              [group.id]: chosen.filter((id) => id !== optionId),
+                              [group.id]: chosen.filter(
+                                (id) => id !== optionId
+                              ),
                             }
                           }
-                          if (chosen.length >= group.maxSelections) return current
-                          return { ...current, [group.id]: [...chosen, optionId] }
+                          if (chosen.length >= group.maxSelections)
+                            return current
+                          return {
+                            ...current,
+                            [group.id]: [...chosen, optionId],
+                          }
                         })
                       }
                     />
@@ -840,7 +968,9 @@ export function EditItemModal({
               })}
             </div>
             <Field className="mt-5">
-              <FieldLabel htmlFor="preview-kitchen-notes">Special kitchen notes</FieldLabel>
+              <FieldLabel htmlFor="preview-kitchen-notes">
+                Special kitchen notes
+              </FieldLabel>
               <Textarea
                 id="preview-kitchen-notes"
                 readOnly
@@ -876,11 +1006,17 @@ function PreviewOptions({
               aria-pressed={on}
               onClick={() => onToggle(option.id)}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${
-                on ? "border-secondary bg-secondary text-secondary-foreground" : "border-border bg-card"
+                on
+                  ? "border-secondary bg-secondary text-secondary-foreground"
+                  : "border-border bg-card"
               }`}
             >
               {option.imageUrl ? (
-                <img src={option.imageUrl} alt="" className="size-5 shrink-0 rounded-full object-cover" />
+                <img
+                  src={option.imageUrl}
+                  alt=""
+                  className="size-5 shrink-0 rounded-full object-cover"
+                />
               ) : null}
               {option.name}
             </button>
@@ -908,18 +1044,26 @@ function PreviewOptions({
                 <span
                   aria-hidden="true"
                   className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border ${
-                    on ? "border-secondary bg-secondary text-secondary-foreground" : "border-input"
+                    on
+                      ? "border-secondary bg-secondary text-secondary-foreground"
+                      : "border-input"
                   }`}
                 >
                   {on ? "✓" : ""}
                 </span>
                 {option.imageUrl ? (
-                  <img src={option.imageUrl} alt="" className="size-8 shrink-0 rounded-md object-cover" />
+                  <img
+                    src={option.imageUrl}
+                    alt=""
+                    className="size-8 shrink-0 rounded-md object-cover"
+                  />
                 ) : null}
                 {option.name}
               </span>
               <span className="mt-2 block pl-6 text-xs font-medium text-secondary">
-                {option.priceDelta > 0 ? `+${formatMoney(option.priceDelta)}` : "Included"}
+                {option.priceDelta > 0
+                  ? `+${formatMoney(option.priceDelta)}`
+                  : "Included"}
               </span>
             </button>
           )
@@ -951,12 +1095,20 @@ function PreviewOptions({
                 {on && <span className="size-2 rounded-full bg-secondary" />}
               </span>
               {option.imageUrl ? (
-                <img src={option.imageUrl} alt="" className="size-8 shrink-0 rounded-md object-cover" />
+                <img
+                  src={option.imageUrl}
+                  alt=""
+                  className="size-8 shrink-0 rounded-md object-cover"
+                />
               ) : null}
               {option.name}
             </span>
-            <span className={`text-xs font-medium ${option.priceDelta > 0 ? "text-secondary" : "text-muted-foreground"}`}>
-              {option.priceDelta > 0 ? `+${formatMoney(option.priceDelta)}` : "Included"}
+            <span
+              className={`text-xs font-medium ${option.priceDelta > 0 ? "text-secondary" : "text-muted-foreground"}`}
+            >
+              {option.priceDelta > 0
+                ? `+${formatMoney(option.priceDelta)}`
+                : "Included"}
             </span>
           </button>
         )

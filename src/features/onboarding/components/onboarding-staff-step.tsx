@@ -25,7 +25,7 @@ import type { StaffData, StaffRole } from "@/features/staff/model"
 import { StaffAvatar } from "@/features/staff/staff-avatar"
 
 const teamRoles = (Object.keys(roleLabels) as StaffRole[]).filter(
-  (role) => role !== "OWNER",
+  (role) => role !== "OWNER"
 )
 
 const staffValues = { name: "", role: "CASHIER" as StaffRole }
@@ -69,7 +69,7 @@ export function OnboardingStaffStep({
 
   async function addStaff(
     values: typeof staffValues,
-    helpers: { resetForm: () => void },
+    helpers: { resetForm: () => void }
   ) {
     try {
       setError(null)
@@ -86,14 +86,14 @@ export function OnboardingStaffStep({
           await uploadStaffAvatar(
             (variables) => completeUpload({ variables }),
             staffId,
-            pendingPhoto,
+            pendingPhoto
           )
         } catch (uploadError) {
           await refetch()
           setError(
             uploadError instanceof Error
               ? `${uploadError.message} The profile was still added.`
-              : "The profile was added, but the photo did not upload.",
+              : "The profile was added, but the photo did not upload."
           )
           return
         }
@@ -103,7 +103,7 @@ export function OnboardingStaffStep({
       setError(
         mutationError instanceof Error
           ? mutationError.message
-          : "Could not add that staff profile.",
+          : "Could not add that staff profile."
       )
     }
   }
@@ -120,91 +120,91 @@ export function OnboardingStaffStep({
           const nameError = fieldError(formik, "name")
           return (
             <>
-        <div className="flex items-center gap-3">
-          <StaffAvatar
-            name={formik.values.name || "Staff"}
-            url={previewUrl}
-            className="size-12 text-sm"
-          />
-          <div>
-            <input
-              id="onboarding-staff-photo"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              onChange={(event) => {
-                setPhoto(event.target.files?.[0] ?? null)
-                event.currentTarget.value = ""
-              }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                document.getElementById("onboarding-staff-photo")?.click()
-              }
-            >
-              <ImageIcon data-icon="inline-start" />
-              {photo ? "Change photo" : "Add photo"}
-            </Button>
-          </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
-          <Field data-invalid={Boolean(nameError)}>
-            <FieldLabel htmlFor="onboarding-staff-name">Name</FieldLabel>
-            <Input
-              id="onboarding-staff-name"
-              name="name"
-              value={formik.values.name}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="Kwame Boateng"
-              aria-invalid={Boolean(nameError)}
-            />
-            <FieldError>{nameError}</FieldError>
-          </Field>
-          <Field>
-            <FieldLabel>Role</FieldLabel>
-            <Select
-              value={formik.values.role}
-              onValueChange={(value) =>
-                void formik.setFieldValue(
-                  "role",
-                  (value as StaffRole | null) ?? "CASHIER",
-                )
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {teamRoles.map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {roleLabels[value]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Button type="submit" disabled={createState.loading}>
-            {createState.loading ? "Adding…" : "Add"}
-          </Button>
-        </div>
+              <div className="flex items-center gap-3">
+                <StaffAvatar
+                  name={formik.values.name || "Staff"}
+                  url={previewUrl}
+                  className="size-12 text-sm"
+                />
+                <div>
+                  <input
+                    id="onboarding-staff-photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(event) => {
+                      setPhoto(event.target.files?.[0] ?? null)
+                      event.currentTarget.value = ""
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      document.getElementById("onboarding-staff-photo")?.click()
+                    }
+                  >
+                    <ImageIcon data-icon="inline-start" />
+                    {photo ? "Change photo" : "Add photo"}
+                  </Button>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+                <Field data-invalid={Boolean(nameError)}>
+                  <FieldLabel htmlFor="onboarding-staff-name">Name</FieldLabel>
+                  <Input
+                    id="onboarding-staff-name"
+                    name="name"
+                    value={formik.values.name}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Kwame Boateng"
+                    aria-invalid={Boolean(nameError)}
+                  />
+                  <FieldError>{nameError}</FieldError>
+                </Field>
+                <Field>
+                  <FieldLabel>Role</FieldLabel>
+                  <Select
+                    value={formik.values.role}
+                    onValueChange={(value) =>
+                      void formik.setFieldValue(
+                        "role",
+                        (value as StaffRole | null) ?? "CASHIER"
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teamRoles.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {roleLabels[value]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Button type="submit" disabled={createState.loading}>
+                  {createState.loading ? "Adding…" : "Add"}
+                </Button>
+              </div>
             </>
           )
         }}
       </Form>
       {error && <FieldError className="mt-3">{error}</FieldError>}
       <p className="mt-4 text-sm text-muted-foreground">
-        You don’t set their PIN. Each person chooses one the first time they
-        tap their profile on the till.
+        You don’t set their PIN. Each person chooses one the first time they tap
+        their profile on the till.
       </p>
       <ul className="mt-4 divide-y divide-border rounded-lg border">
         {staff.length === 0 ? (
           <li className="px-4 py-3 text-sm text-muted-foreground">
-            No extra staff yet. You can continue and add them later, or add
-            the counter and kitchen team now.
+            No extra staff yet. You can continue and add them later, or add the
+            counter and kitchen team now.
           </li>
         ) : (
           staff.map((member) => (

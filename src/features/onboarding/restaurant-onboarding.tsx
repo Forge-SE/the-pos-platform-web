@@ -186,7 +186,7 @@ const onboardingFields = [
 ] as const satisfies readonly OnboardingField[]
 
 function shownOnboardingErrors(
-  formik: FormikProps<RestaurantOnboardingValues>,
+  formik: FormikProps<RestaurantOnboardingValues>
 ): OnboardingErrors {
   const errors: OnboardingErrors = {}
   for (const field of onboardingFields) {
@@ -232,7 +232,7 @@ export function RestaurantOnboarding({
 
   async function submitOnboarding(
     values: RestaurantOnboardingValues,
-    helpers: FormikHelpers<RestaurantOnboardingValues>,
+    helpers: FormikHelpers<RestaurantOnboardingValues>
   ) {
     if (step < onboardingSteps.length - 1) {
       setStep((current) => Math.min(current + 1, steps.length - 1))
@@ -267,7 +267,7 @@ export function RestaurantOnboarding({
             })
       void helpers.setTouched(
         Object.fromEntries(Object.keys(stepErrors).map((key) => [key, true])),
-        false,
+        false
       )
       helpers.setErrors(stepErrors)
       requestAnimationFrame(() => errorSummaryRef.current?.focus())
@@ -336,9 +336,7 @@ export function RestaurantOnboarding({
             <span className="text-primary">
               Step {step + 1} of {steps.length}
             </span>
-            <span className="text-muted-foreground">
-              {steps[step].label}
-            </span>
+            <span className="text-muted-foreground">{steps[step].label}</span>
           </div>
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
             <div
@@ -393,11 +391,11 @@ export function RestaurantOnboarding({
             {(formik) => {
               const errors = shownOnboardingErrors(formik)
               const visibleErrors = Object.entries(errors).filter(
-                ([, message]) => message,
+                ([, message]) => message
               )
               const updateField = <TField extends OnboardingField>(
                 field: TField,
-                value: RestaurantOnboardingValues[TField],
+                value: RestaurantOnboardingValues[TField]
               ) => {
                 void formik.setFieldValue(field, value)
                 setApiError(null)

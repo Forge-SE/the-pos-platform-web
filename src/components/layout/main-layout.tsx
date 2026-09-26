@@ -24,7 +24,7 @@ export function MainLayout() {
     function onSuspended() {
       sessionStorage.setItem(
         "pos.suspended-notice",
-        "This restaurant is suspended. Contact the platform team to restore access.",
+        "This restaurant is suspended. Contact the platform team to restore access."
       )
       clearAccessToken()
       navigate({ to: "/", replace: true })
@@ -34,10 +34,13 @@ export function MainLayout() {
       window.removeEventListener(APOLLO_RESTAURANT_SUSPENDED_EVENT, onSuspended)
   }, [navigate])
 
-  const onboarding = useQuery<{ ownerOnboardingRequired: boolean }>(ONBOARDING_QUERY, {
-    skip: profile?.role !== "OWNER",
-    fetchPolicy: "network-only",
-  })
+  const onboarding = useQuery<{ ownerOnboardingRequired: boolean }>(
+    ONBOARDING_QUERY,
+    {
+      skip: profile?.role !== "OWNER",
+      fetchPolicy: "network-only",
+    }
+  )
 
   if (!profile) return <Navigate to="/" replace />
   if (profile.role === "OWNER" && onboarding.loading) {

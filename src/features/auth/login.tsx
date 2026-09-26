@@ -173,7 +173,9 @@ export function Login() {
   }, [])
   const formikRef = useRef<FormikProps<typeof loginValues> | null>(null)
   const [signedInUser, setSignedInUser] = useState<AuthUser | null>(null)
-  const [nextPath, setNextPath] = useState<"/overview" | "/onboarding">("/overview")
+  const [nextPath, setNextPath] = useState<"/overview" | "/onboarding">(
+    "/overview"
+  )
 
   const [loadDirectory, directoryState] = useLazyQuery<
     DirectoryData,
@@ -189,7 +191,7 @@ export function Login() {
   >(SET_STAFF_PIN)
   const [loadOnboarding] = useLazyQuery<{ ownerOnboardingRequired: boolean }>(
     ONBOARDING_QUERY,
-    { fetchPolicy: "network-only" },
+    { fetchPolicy: "network-only" }
   )
 
   const busy =
@@ -244,7 +246,7 @@ export function Login() {
             ? "This restaurant is suspended. Contact the platform team to restore access."
             : /not found/i.test(message)
               ? "We couldn’t find that restaurant. Check the code and try again."
-              : "We couldn’t look up that restaurant. Check the code and try again.",
+              : "We couldn’t look up that restaurant. Check the code and try again."
         )
       }
       return
@@ -274,7 +276,8 @@ export function Login() {
         setAuthError(
           /suspended/i.test(message)
             ? "This restaurant is suspended. Contact the platform team to restore access."
-            : message || "We couldn’t save that PIN. Try a different four digits.",
+            : message ||
+                "We couldn’t save that PIN. Try a different four digits."
         )
       }
       return
@@ -293,7 +296,7 @@ export function Login() {
       setAuthError(
         /suspended/i.test(message)
           ? "This restaurant is suspended. Contact the platform team to restore access."
-          : "That PIN doesn’t match this profile. Try again.",
+          : "That PIN doesn’t match this profile. Try again."
       )
     }
   }
@@ -371,7 +374,9 @@ export function Login() {
           {signedInUser ? (
             <SignedIn
               user={signedInUser}
-              continueLabel={nextPath === "/onboarding" ? "Continue setup" : "Go to overview"}
+              continueLabel={
+                nextPath === "/onboarding" ? "Continue setup" : "Go to overview"
+              }
               onContinue={() => navigate({ to: nextPath, replace: true })}
               onReset={resetLogin}
             />
@@ -407,179 +412,189 @@ export function Login() {
                   const pinError = fieldError(formik, "pin")
                   const confirmError = fieldError(formik, "confirmPin")
                   return step === "restaurant" ? (
-                  <>
-                    <FieldGroup className="gap-5">
-                      <Field data-invalid={Boolean(codeError)}>
-                        <FieldLabel htmlFor="restaurant-id">
-                          Restaurant code
-                        </FieldLabel>
-                        <Input
-                          id="restaurant-id"
-                          name="restaurantCode"
-                          value={formik.values.restaurantCode}
-                          onChange={(event) => {
-                            formik.handleChange(event)
-                            setAuthError(null)
-                          }}
-                          onBlur={formik.handleBlur}
-                          autoComplete="organization"
-                          autoCapitalize="characters"
-                          spellCheck={false}
-                          placeholder="e.g. RR0093"
-                          aria-invalid={Boolean(codeError)}
-                          aria-describedby="restaurant-id-error"
-                          autoFocus
-                        />
-                        <div className="group relative mt-1 flex justify-end">
-                          <button
-                            type="button"
-                            aria-describedby="restaurant-id-help"
-                            className="inline-flex items-center gap-1 rounded text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-                          >
-                            <QuestionIcon
-                              aria-hidden="true"
-                              className="size-3.5"
-                            />
-                            Don&apos;t know your restaurant code?
-                          </button>
-                          <div
-                            role="tooltip"
-                            id="restaurant-id-help"
-                            className="pointer-events-none absolute right-0 bottom-full z-10 mb-2 w-60 rounded-md border bg-popover p-2.5 text-xs leading-5 text-popover-foreground opacity-0 shadow-md transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
-                          >
-                            Ask your manager for your restaurant code. It looks
-                            like AB1234 and was shared when your restaurant was
-                            set up.
-                          </div>
-                        </div>
-                        <FieldError id="restaurant-id-error">
-                          {codeError}
-                        </FieldError>
-                      </Field>
-                    </FieldGroup>
-
-                    <Button
-                      type="submit"
-                      className="mt-7 w-full"
-                      disabled={busy}
-                    >
-                      {directoryState.loading ? (
-                        <>
-                          <SpinnerGapIcon
-                            aria-hidden="true"
-                            className="animate-spin motion-reduce:animate-none"
-                            data-icon="inline-start"
-                          />
-                          Looking up restaurant…
-                        </>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          Continue
-                          <CaretRightIcon
-                            aria-hidden="true"
-                            data-icon="inline-end"
-                          />
-                        </div>
-                      )}
-                    </Button>
-                  </>
-                ) : step === "profiles" ? (
-                  <>
-                    {profiles.length === 0 ? (
-                      <p className="rounded-lg border border-border/70 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-                        No active staff profiles yet. An owner needs to add the
-                        team before anyone can sign in.
-                      </p>
-                    ) : (
-                      <StaffRail profiles={profiles} onChoose={chooseProfile} />
-                    )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="mt-4 w-full"
-                      onClick={goBack}
-                    >
-                      Back
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <FieldGroup className="gap-5">
-                      {step === "confirm-pin" ? (
-                        <Field data-invalid={Boolean(confirmError)}>
-                          <FieldLabel htmlFor="staff-pin-confirm" className="sr-only">
-                            Confirm PIN
+                    <>
+                      <FieldGroup className="gap-5">
+                        <Field data-invalid={Boolean(codeError)}>
+                          <FieldLabel htmlFor="restaurant-id">
+                            Restaurant code
                           </FieldLabel>
-                          <PinInput
-                            id="staff-pin-confirm"
-                            value={formik.values.confirmPin}
-                            onChange={(value) => {
-                              void formik.setFieldValue("confirmPin", value)
+                          <Input
+                            id="restaurant-id"
+                            name="restaurantCode"
+                            value={formik.values.restaurantCode}
+                            onChange={(event) => {
+                              formik.handleChange(event)
                               setAuthError(null)
                             }}
-                            invalid={Boolean(confirmError)}
-                            autoComplete="new-password"
+                            onBlur={formik.handleBlur}
+                            autoComplete="organization"
+                            autoCapitalize="characters"
+                            spellCheck={false}
+                            placeholder="e.g. RR0093"
+                            aria-invalid={Boolean(codeError)}
+                            aria-describedby="restaurant-id-error"
+                            autoFocus
                           />
-                          <FieldError>{confirmError}</FieldError>
+                          <div className="group relative mt-1 flex justify-end">
+                            <button
+                              type="button"
+                              aria-describedby="restaurant-id-help"
+                              className="inline-flex items-center gap-1 rounded text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                            >
+                              <QuestionIcon
+                                aria-hidden="true"
+                                className="size-3.5"
+                              />
+                              Don&apos;t know your restaurant code?
+                            </button>
+                            <div
+                              role="tooltip"
+                              id="restaurant-id-help"
+                              className="pointer-events-none absolute right-0 bottom-full z-10 mb-2 w-60 rounded-md border bg-popover p-2.5 text-xs leading-5 text-popover-foreground opacity-0 shadow-md transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
+                            >
+                              Ask your manager for your restaurant code. It
+                              looks like AB1234 and was shared when your
+                              restaurant was set up.
+                            </div>
+                          </div>
+                          <FieldError id="restaurant-id-error">
+                            {codeError}
+                          </FieldError>
                         </Field>
-                      ) : (
-                        <Field data-invalid={Boolean(pinError)}>
-                          <PinInput
-                            id="staff-pin"
-                            value={formik.values.pin}
-                            onChange={(value) => {
-                              void formik.setFieldValue("pin", value)
-                              setAuthError(null)
-                            }}
-                            invalid={Boolean(pinError)}
-                            autoComplete={
-                              step === "set-pin" ? "new-password" : "current-password"
-                            }
-                          />
-                          <FieldError>{pinError}</FieldError>
-                        </Field>
-                      )}
-                    </FieldGroup>
+                      </FieldGroup>
 
-                    <Button
-                      type="submit"
-                      className="mt-7 w-full"
-                      disabled={busy}
-                    >
-                      {busy ? (
-                        <>
-                          <SpinnerGapIcon
-                            aria-hidden="true"
-                            className="animate-spin motion-reduce:animate-none"
-                            data-icon="inline-start"
-                          />
-                          {step === "confirm-pin" ? "Saving PIN…" : "Signing in…"}
-                        </>
+                      <Button
+                        type="submit"
+                        className="mt-7 w-full"
+                        disabled={busy}
+                      >
+                        {directoryState.loading ? (
+                          <>
+                            <SpinnerGapIcon
+                              aria-hidden="true"
+                              className="animate-spin motion-reduce:animate-none"
+                              data-icon="inline-start"
+                            />
+                            Looking up restaurant…
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2">
+                            Continue
+                            <CaretRightIcon
+                              aria-hidden="true"
+                              data-icon="inline-end"
+                            />
+                          </div>
+                        )}
+                      </Button>
+                    </>
+                  ) : step === "profiles" ? (
+                    <>
+                      {profiles.length === 0 ? (
+                        <p className="rounded-lg border border-border/70 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                          No active staff profiles yet. An owner needs to add
+                          the team before anyone can sign in.
+                        </p>
                       ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          {step === "set-pin"
-                            ? "Continue"
-                            : step === "confirm-pin"
-                              ? "Save PIN and sign in"
-                              : "Sign in"}
-                          <CaretRightIcon
-                            aria-hidden="true"
-                            data-icon="inline-end"
-                          />
-                        </div>
+                        <StaffRail
+                          profiles={profiles}
+                          onChoose={chooseProfile}
+                        />
                       )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="mt-2 w-full"
-                      onClick={goBack}
-                      disabled={busy}
-                    >
-                      Back
-                    </Button>
-                  </>
-                )
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="mt-4 w-full"
+                        onClick={goBack}
+                      >
+                        Back
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <FieldGroup className="gap-5">
+                        {step === "confirm-pin" ? (
+                          <Field data-invalid={Boolean(confirmError)}>
+                            <FieldLabel
+                              htmlFor="staff-pin-confirm"
+                              className="sr-only"
+                            >
+                              Confirm PIN
+                            </FieldLabel>
+                            <PinInput
+                              id="staff-pin-confirm"
+                              value={formik.values.confirmPin}
+                              onChange={(value) => {
+                                void formik.setFieldValue("confirmPin", value)
+                                setAuthError(null)
+                              }}
+                              invalid={Boolean(confirmError)}
+                              autoComplete="new-password"
+                            />
+                            <FieldError>{confirmError}</FieldError>
+                          </Field>
+                        ) : (
+                          <Field data-invalid={Boolean(pinError)}>
+                            <PinInput
+                              id="staff-pin"
+                              value={formik.values.pin}
+                              onChange={(value) => {
+                                void formik.setFieldValue("pin", value)
+                                setAuthError(null)
+                              }}
+                              invalid={Boolean(pinError)}
+                              autoComplete={
+                                step === "set-pin"
+                                  ? "new-password"
+                                  : "current-password"
+                              }
+                            />
+                            <FieldError>{pinError}</FieldError>
+                          </Field>
+                        )}
+                      </FieldGroup>
+
+                      <Button
+                        type="submit"
+                        className="mt-7 w-full"
+                        disabled={busy}
+                      >
+                        {busy ? (
+                          <>
+                            <SpinnerGapIcon
+                              aria-hidden="true"
+                              className="animate-spin motion-reduce:animate-none"
+                              data-icon="inline-start"
+                            />
+                            {step === "confirm-pin"
+                              ? "Saving PIN…"
+                              : "Signing in…"}
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2">
+                            {step === "set-pin"
+                              ? "Continue"
+                              : step === "confirm-pin"
+                                ? "Save PIN and sign in"
+                                : "Sign in"}
+                            <CaretRightIcon
+                              aria-hidden="true"
+                              data-icon="inline-end"
+                            />
+                          </div>
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="mt-2 w-full"
+                        onClick={goBack}
+                        disabled={busy}
+                      >
+                        Back
+                      </Button>
+                    </>
+                  )
                 }}
               </Form>
             </div>

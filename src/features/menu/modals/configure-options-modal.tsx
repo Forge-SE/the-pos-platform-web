@@ -61,7 +61,7 @@ const optionSchema = Yup.object({
   price: Yup.string().test(
     "delta",
     "Use a valid positive, zero, or negative price adjustment.",
-    (value) => cedisToPesewas(value ?? "", true) !== null,
+    (value) => cedisToPesewas(value ?? "", true) !== null
   ),
 })
 
@@ -147,14 +147,15 @@ export function ConfigureOptionsModal({
   const selectedAttachGroup = groups.find((group) => group.id === attachGroupId)
   const attachGroupReady = Boolean(
     selectedAttachGroup &&
-      selectedAttachGroup.options.length >= selectedAttachGroup.maxSelections
+    selectedAttachGroup.options.length >= selectedAttachGroup.maxSelections
   )
 
   async function submitGroup(
     values: typeof groupValues,
-    helpers: { resetForm: () => void },
+    helpers: { resetForm: () => void }
   ) {
-    const minSelections = values.minimum.trim() === "" ? 0 : Number(values.minimum)
+    const minSelections =
+      values.minimum.trim() === "" ? 0 : Number(values.minimum)
     const maxSelections = Number(values.maximum)
     try {
       setOptionsError(null)
@@ -174,7 +175,7 @@ export function ConfigureOptionsModal({
 
   async function submitOption(
     values: typeof optionValues,
-    helpers: { setFieldValue: (field: "name" | "price", value: string) => void },
+    helpers: { setFieldValue: (field: "name" | "price", value: string) => void }
   ) {
     const priceDelta = cedisToPesewas(values.price, true)
     if (priceDelta === null) return
@@ -201,12 +202,10 @@ export function ConfigureOptionsModal({
 
   async function submitAttachment(values: typeof attachValues) {
     const group = groups.find((entry) => entry.id === values.groupId)
-    const ready = Boolean(
-      group && group.options.length >= group.maxSelections,
-    )
+    const ready = Boolean(group && group.options.length >= group.maxSelections)
     if (!values.itemId || !values.groupId || !ready) {
       setOptionsError(
-        "Choose an item and a modifier group with enough options to satisfy its maximum selection limit.",
+        "Choose an item and a modifier group with enough options to satisfy its maximum selection limit."
       )
       return
     }
@@ -315,20 +314,55 @@ export function ConfigureOptionsModal({
               return (
                 <>
                   <Field data-invalid={Boolean(nameError)}>
-                    <FieldLabel htmlFor="options-group-name">Group name</FieldLabel>
-                    <Input id="options-group-name" name="name" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="Size" aria-invalid={Boolean(nameError)} />
+                    <FieldLabel htmlFor="options-group-name">
+                      Group name
+                    </FieldLabel>
+                    <Input
+                      id="options-group-name"
+                      name="name"
+                      value={formik.values.name}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      placeholder="Size"
+                      aria-invalid={Boolean(nameError)}
+                    />
                     <FieldError>{nameError}</FieldError>
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="options-group-min">Minimum</FieldLabel>
-                    <Input id="options-group-min" name="minimum" type="number" min="0" step="1" value={formik.values.minimum} onChange={formik.handleChange} onBlur={formik.handleBlur} />
+                    <Input
+                      id="options-group-min"
+                      name="minimum"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formik.values.minimum}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                    />
                   </Field>
                   <Field data-invalid={Boolean(limitError)}>
                     <FieldLabel htmlFor="options-group-max">Maximum</FieldLabel>
-                    <Input id="options-group-max" name="maximum" type="number" min="1" step="1" value={formik.values.maximum} onChange={formik.handleChange} onBlur={formik.handleBlur} aria-invalid={Boolean(limitError)} />
+                    <Input
+                      id="options-group-max"
+                      name="maximum"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={formik.values.maximum}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      aria-invalid={Boolean(limitError)}
+                    />
                     <FieldError>{limitError}</FieldError>
                   </Field>
-                  <Button type="submit" className="self-end" disabled={groupMutation.loading}><PlusIcon data-icon="inline-start" /> Add</Button>
+                  <Button
+                    type="submit"
+                    className="self-end"
+                    disabled={groupMutation.loading}
+                  >
+                    <PlusIcon data-icon="inline-start" /> Add
+                  </Button>
                 </>
               )
             }}
@@ -339,9 +373,28 @@ export function ConfigureOptionsModal({
           </p>
           <div className="mt-4 space-y-2">
             {groups.map((group) => (
-              <div key={group.id} className="flex items-center justify-between gap-3 rounded-lg bg-muted/35 px-3 py-2.5 text-sm">
-                <div><p className="font-medium">{group.name}</p><p className="text-xs text-muted-foreground">{group.minSelections === 0 ? "Optional" : `Required · choose at least ${group.minSelections}`} · max {group.maxSelections}</p></div>
-                <Badge variant={group.options.length >= group.maxSelections ? "outline" : "destructive"}>{group.options.length} options</Badge>
+              <div
+                key={group.id}
+                className="flex items-center justify-between gap-3 rounded-lg bg-muted/35 px-3 py-2.5 text-sm"
+              >
+                <div>
+                  <p className="font-medium">{group.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {group.minSelections === 0
+                      ? "Optional"
+                      : `Required · choose at least ${group.minSelections}`}{" "}
+                    · max {group.maxSelections}
+                  </p>
+                </div>
+                <Badge
+                  variant={
+                    group.options.length >= group.maxSelections
+                      ? "outline"
+                      : "destructive"
+                  }
+                >
+                  {group.options.length} options
+                </Badge>
               </div>
             ))}
             {groups.length === 0 && (
@@ -378,23 +431,60 @@ export function ConfigureOptionsModal({
                         setOptionGroupId(next)
                       }}
                     >
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Choose group" /></SelectTrigger>
-                      <SelectContent>{groups.map((group) => <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                     <FieldError>{groupError}</FieldError>
                   </Field>
                   <div className="flex items-end gap-3">
                     <Field className="flex-1" data-invalid={Boolean(nameError)}>
-                      <FieldLabel htmlFor="options-option-name">Option name</FieldLabel>
-                      <Input id="options-option-name" name="name" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="Large" aria-invalid={Boolean(nameError)} />
+                      <FieldLabel htmlFor="options-option-name">
+                        Option name
+                      </FieldLabel>
+                      <Input
+                        id="options-option-name"
+                        name="name"
+                        value={formik.values.name}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="Large"
+                        aria-invalid={Boolean(nameError)}
+                      />
                       <FieldError>{nameError}</FieldError>
                     </Field>
-                    <Field className="max-w-40" data-invalid={Boolean(priceError)}>
-                      <FieldLabel htmlFor="options-option-price">Adjustment (GHS)</FieldLabel>
-                      <Input id="options-option-price" name="price" inputMode="decimal" value={formik.values.price} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="5.00" aria-invalid={Boolean(priceError)} />
+                    <Field
+                      className="max-w-40"
+                      data-invalid={Boolean(priceError)}
+                    >
+                      <FieldLabel htmlFor="options-option-price">
+                        Adjustment (GHS)
+                      </FieldLabel>
+                      <Input
+                        id="options-option-price"
+                        name="price"
+                        inputMode="decimal"
+                        value={formik.values.price}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="5.00"
+                        aria-invalid={Boolean(priceError)}
+                      />
                       <FieldError>{priceError}</FieldError>
                     </Field>
-                    <Button type="submit" disabled={optionMutation.loading || groups.length === 0}><PlusIcon data-icon="inline-start" /> Add</Button>
+                    <Button
+                      type="submit"
+                      disabled={optionMutation.loading || groups.length === 0}
+                    >
+                      <PlusIcon data-icon="inline-start" /> Add
+                    </Button>
                   </div>
                 </>
               )
@@ -405,8 +495,13 @@ export function ConfigureOptionsModal({
             unchanged.
           </p>
           <div className="mt-4 space-y-2">
-            {(groups.find((group) => group.id === optionGroupId)?.options ?? []).map((option) => (
-              <div key={option.id} className="flex items-center justify-between gap-3 rounded-lg bg-muted/35 px-3 py-2.5 text-sm">
+            {(
+              groups.find((group) => group.id === optionGroupId)?.options ?? []
+            ).map((option) => (
+              <div
+                key={option.id}
+                className="flex items-center justify-between gap-3 rounded-lg bg-muted/35 px-3 py-2.5 text-sm"
+              >
                 <p className="font-medium">{option.name}</p>
                 <Badge variant="outline">
                   {option.priceDelta === 0
@@ -415,71 +510,103 @@ export function ConfigureOptionsModal({
                 </Badge>
               </div>
             ))}
-            {optionGroupId && (groups.find((group) => group.id === optionGroupId)?.options.length ?? 0) === 0 && (
-              <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
-                No choices in this group yet — add the first one above.
-              </p>
-            )}
+            {optionGroupId &&
+              (groups.find((group) => group.id === optionGroupId)?.options
+                .length ?? 0) === 0 && (
+                <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
+                  No choices in this group yet — add the first one above.
+                </p>
+              )}
             {!optionGroupId && groups.length > 0 && (
               <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
                 Choose a group to see its choices.
               </p>
             )}
           </div>
-          </div>
-        )}
+        </div>
+      )}
 
-        {optionsTab === "assign" && (
-          <div className="mt-6">
-            <Form
-              id="options-assign-form"
-              className="space-y-4"
-              initialValues={attachValues}
-              validationSchema={attachSchema}
-              onSubmit={submitAttachment}
-            >
-              {(formik) => {
-                const itemError = fieldError(formik, "itemId")
-                const groupError = fieldError(formik, "groupId")
-                return (
-                  <>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field data-invalid={Boolean(itemError)}>
-                        <FieldLabel>Menu item</FieldLabel>
-                        <Select
-                          value={formik.values.itemId}
-                          onValueChange={(value) => {
-                            void formik.setFieldValue("itemId", value ?? "")
-                          }}
-                        >
-                          <SelectTrigger className="w-full"><SelectValue placeholder="Choose item" /></SelectTrigger>
-                          <SelectContent>{items.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <FieldError>{itemError}</FieldError>
-                      </Field>
-                      <Field data-invalid={Boolean(groupError)}>
-                        <FieldLabel>Modifier group</FieldLabel>
-                        <Select
-                          value={formik.values.groupId}
-                          onValueChange={(value) => {
-                            const next = value ?? ""
-                            void formik.setFieldValue("groupId", next)
-                            setAttachGroupId(next)
-                          }}
-                        >
-                          <SelectTrigger className="w-full"><SelectValue placeholder="Choose group" /></SelectTrigger>
-                          <SelectContent>{groups.map((group) => <SelectItem key={group.id} value={group.id} disabled={group.options.length < group.maxSelections}>{group.name}{group.options.length < group.maxSelections ? " · add options first" : ""}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <FieldError>{groupError}</FieldError>
-                      </Field>
-                    </div>
-                    {selectedAttachGroup && !attachGroupReady && <FieldError>Add at least {selectedAttachGroup.maxSelections} options before attaching this group.</FieldError>}
-                  </>
-                )
-              }}
-            </Form>
-          </div>
-        )}
+      {optionsTab === "assign" && (
+        <div className="mt-6">
+          <Form
+            id="options-assign-form"
+            className="space-y-4"
+            initialValues={attachValues}
+            validationSchema={attachSchema}
+            onSubmit={submitAttachment}
+          >
+            {(formik) => {
+              const itemError = fieldError(formik, "itemId")
+              const groupError = fieldError(formik, "groupId")
+              return (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field data-invalid={Boolean(itemError)}>
+                      <FieldLabel>Menu item</FieldLabel>
+                      <Select
+                        value={formik.values.itemId}
+                        onValueChange={(value) => {
+                          void formik.setFieldValue("itemId", value ?? "")
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Choose item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {items.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldError>{itemError}</FieldError>
+                    </Field>
+                    <Field data-invalid={Boolean(groupError)}>
+                      <FieldLabel>Modifier group</FieldLabel>
+                      <Select
+                        value={formik.values.groupId}
+                        onValueChange={(value) => {
+                          const next = value ?? ""
+                          void formik.setFieldValue("groupId", next)
+                          setAttachGroupId(next)
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Choose group" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {groups.map((group) => (
+                            <SelectItem
+                              key={group.id}
+                              value={group.id}
+                              disabled={
+                                group.options.length < group.maxSelections
+                              }
+                            >
+                              {group.name}
+                              {group.options.length < group.maxSelections
+                                ? " · add options first"
+                                : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldError>{groupError}</FieldError>
+                    </Field>
+                  </div>
+                  {selectedAttachGroup && !attachGroupReady && (
+                    <FieldError>
+                      Add at least {selectedAttachGroup.maxSelections} options
+                      before attaching this group.
+                    </FieldError>
+                  )}
+                </>
+              )
+            }}
+          </Form>
+        </div>
+      )}
     </MenuDialog>
   )
 }

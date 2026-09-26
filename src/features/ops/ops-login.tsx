@@ -5,7 +5,12 @@ import { useNavigate } from "@tanstack/react-router"
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { setOpsToken } from "@/lib/ops-token"
@@ -13,9 +18,7 @@ import { setOpsToken } from "@/lib/ops-token"
 const opsLoginValues = { email: "", password: "" }
 
 const opsLoginSchema = Yup.object({
-  email: Yup.string()
-    .trim()
-    .required("Enter your admin email and password."),
+  email: Yup.string().trim().required("Enter your admin email and password."),
   password: Yup.string().required("Enter your admin email and password."),
 })
 
@@ -117,7 +120,11 @@ export function OpsLogin() {
                     <FieldError>{passwordError}</FieldError>
                   </Field>
                 </FieldGroup>
-                <Button type="submit" className="mt-7 w-full" disabled={loading}>
+                <Button
+                  type="submit"
+                  className="mt-7 w-full"
+                  disabled={loading}
+                >
                   {loading ? "Signing in…" : "Sign in"}
                 </Button>
               </>

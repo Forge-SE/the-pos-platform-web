@@ -64,7 +64,7 @@ const itemSchema = Yup.object({
   price: Yup.string().test(
     "cedis",
     "Use a valid cedi amount with no more than two decimal places.",
-    (value) => cedisToPesewas(value ?? "") !== null,
+    (value) => cedisToPesewas(value ?? "") !== null
   ),
 })
 
@@ -97,7 +97,11 @@ function StepIndicator({ step }: { step: number }) {
                       : "bg-muted text-muted-foreground"
                 }`}
               >
-                {state === "done" ? <CheckCircleIcon className="size-3.5" /> : stepNumber}
+                {state === "done" ? (
+                  <CheckCircleIcon className="size-3.5" />
+                ) : (
+                  stepNumber
+                )}
               </span>
               {index < STEPS.length - 1 && (
                 <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
@@ -130,9 +134,9 @@ export function AddItemModal({
   groups: ModifierGroup[]
   onAddCategory: () => void
 }) {
-  const [createItem, itemMutation] = useMutation<{ createMenuItem: CreatedItem }>(
-    CREATE_ITEM
-  )
+  const [createItem, itemMutation] = useMutation<{
+    createMenuItem: CreatedItem
+  }>(CREATE_ITEM)
   const [attachGroup, attachMutation] = useMutation(ATTACH_MODIFIER_GROUP)
   const [completeImageUpload] = useMutation(COMPLETE_ITEM_IMAGE_UPLOAD)
 
@@ -147,7 +151,9 @@ export function AddItemModal({
 
   const detailsRef = useRef<FormikProps<typeof itemValues> | null>(null)
   const [modalError, setModalError] = useState<string | null>(null)
-  const [modalUpload, setModalUpload] = useState<UploadState>({ status: "idle" })
+  const [modalUpload, setModalUpload] = useState<UploadState>({
+    status: "idle",
+  })
   const [modalPreview, setModalPreview] = useState<string | null>(null)
   const [attachedGroups, setAttachedGroups] = useState<string[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
@@ -183,7 +189,9 @@ export function AddItemModal({
       setStep(2)
       onChanged()
     } catch (mutationError) {
-      setModalError(mutationMessage(mutationError, "Could not create menu item."))
+      setModalError(
+        mutationMessage(mutationError, "Could not create menu item.")
+      )
     }
   }
 
@@ -313,56 +321,94 @@ export function AddItemModal({
             const priceError = fieldError(formik, "price")
             return (
               <>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field data-invalid={Boolean(categoryError)}>
-              <FieldLabel>Category</FieldLabel>
-              <Select value={formik.values.categoryId} onValueChange={(value) => void formik.setFieldValue("categoryId", value ?? "")}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose category">
-                    {(value) =>
-                      categories.find((category) => category.id === value)?.name ?? "Choose category"
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>{categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}</SelectContent>
-              </Select>
-              <FieldError>{categoryError}</FieldError>
-            </Field>
-            <Field data-invalid={Boolean(nameError)}>
-              <FieldLabel htmlFor="new-item-name">Item name</FieldLabel>
-              <Input id="new-item-name" name="name" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="Jollof rice" aria-invalid={Boolean(nameError)} />
-              <FieldError>{nameError}</FieldError>
-            </Field>
-          </div>
-          <Field>
-            <FieldLabel htmlFor="new-item-description">Description</FieldLabel>
-            <Textarea id="new-item-description" name="description" value={formik.values.description} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="Optional description" />
-          </Field>
-          <Field className="max-w-48" data-invalid={Boolean(priceError)}>
-            <FieldLabel htmlFor="new-item-price">Price (GHS)</FieldLabel>
-            <Input id="new-item-price" name="price" inputMode="decimal" value={formik.values.price} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="25.00" aria-invalid={Boolean(priceError)} />
-            <FieldDescription>Up to two decimal places.</FieldDescription>
-            <FieldError>{priceError}</FieldError>
-          </Field>
-          {categories.length === 0 && (
-            <p className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-              <InfoIcon
-                aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0"
-              />
-              <span>
-                No categories yet — you&apos;ll need one before adding
-                dishes.{" "}
-                <button
-                  type="button"
-                  className="font-medium underline underline-offset-2 hover:text-foreground"
-                  onClick={onAddCategory}
-                >
-                  Add new category
-                </button>
-              </span>
-            </p>
-          )}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field data-invalid={Boolean(categoryError)}>
+                    <FieldLabel>Category</FieldLabel>
+                    <Select
+                      value={formik.values.categoryId}
+                      onValueChange={(value) =>
+                        void formik.setFieldValue("categoryId", value ?? "")
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose category">
+                          {(value) =>
+                            categories.find((category) => category.id === value)
+                              ?.name ?? "Choose category"
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldError>{categoryError}</FieldError>
+                  </Field>
+                  <Field data-invalid={Boolean(nameError)}>
+                    <FieldLabel htmlFor="new-item-name">Item name</FieldLabel>
+                    <Input
+                      id="new-item-name"
+                      name="name"
+                      value={formik.values.name}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      placeholder="Jollof rice"
+                      aria-invalid={Boolean(nameError)}
+                    />
+                    <FieldError>{nameError}</FieldError>
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor="new-item-description">
+                    Description
+                  </FieldLabel>
+                  <Textarea
+                    id="new-item-description"
+                    name="description"
+                    value={formik.values.description}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Optional description"
+                  />
+                </Field>
+                <Field className="max-w-48" data-invalid={Boolean(priceError)}>
+                  <FieldLabel htmlFor="new-item-price">Price (GHS)</FieldLabel>
+                  <Input
+                    id="new-item-price"
+                    name="price"
+                    inputMode="decimal"
+                    value={formik.values.price}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="25.00"
+                    aria-invalid={Boolean(priceError)}
+                  />
+                  <FieldDescription>Up to two decimal places.</FieldDescription>
+                  <FieldError>{priceError}</FieldError>
+                </Field>
+                {categories.length === 0 && (
+                  <p className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+                    <InfoIcon
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0"
+                    />
+                    <span>
+                      No categories yet — you&apos;ll need one before adding
+                      dishes.{" "}
+                      <button
+                        type="button"
+                        className="font-medium underline underline-offset-2 hover:text-foreground"
+                        onClick={onAddCategory}
+                      >
+                        Add new category
+                      </button>
+                    </span>
+                  </p>
+                )}
               </>
             )
           }}
@@ -396,7 +442,11 @@ export function AddItemModal({
             className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border/70 bg-muted/20 text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:cursor-wait disabled:opacity-70"
           >
             {modalPreview ? (
-              <img src={modalPreview} alt="" className="size-full object-cover" />
+              <img
+                src={modalPreview}
+                alt=""
+                className="size-full object-cover"
+              />
             ) : (
               <>
                 <ImageIcon className="size-8" />
@@ -407,7 +457,9 @@ export function AddItemModal({
                       ? "Verifying…"
                       : "Choose a photo for this dish"}
                 </span>
-                <span className="text-xs">JPEG, PNG, or WebP · up to 5 MiB</span>
+                <span className="text-xs">
+                  JPEG, PNG, or WebP · up to 5 MiB
+                </span>
               </>
             )}
           </button>
@@ -482,9 +534,8 @@ export function AddItemModal({
             })}
             {groups.length === 0 && (
               <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
-                No modifier groups yet. Create them with Configure Menu
-                Options — you can finish this dish now and attach groups
-                later.
+                No modifier groups yet. Create them with Configure Menu Options
+                — you can finish this dish now and attach groups later.
               </p>
             )}
           </div>

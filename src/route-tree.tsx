@@ -119,7 +119,10 @@ const noIndexMeta = [{ name: "robots", content: "noindex, nofollow" }]
 const onboardingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/onboarding",
-  component: lazyRouteComponent(() => import("@/pages/Onboarding"), "Onboarding"),
+  component: lazyRouteComponent(
+    () => import("@/pages/Onboarding"),
+    "Onboarding"
+  ),
   head: () => ({
     meta: [
       { title: "Set up your till | Ovaal" },
@@ -151,7 +154,7 @@ const opsRestaurantsRoute = createRoute({
   path: "/ops",
   component: lazyRouteComponent(
     () => import("@/pages/OpsRestaurants"),
-    "OpsRestaurants",
+    "OpsRestaurants"
   ),
   head: () => ({
     meta: [{ title: "Restaurants | Platform" }, ...noIndexMeta],
@@ -163,7 +166,7 @@ const opsProvisionRoute = createRoute({
   path: "/ops/new",
   component: lazyRouteComponent(
     () => import("@/pages/OpsProvision"),
-    "OpsProvision",
+    "OpsProvision"
   ),
   head: () => ({
     meta: [{ title: "Add restaurant | Platform" }, ...noIndexMeta],
@@ -175,7 +178,7 @@ const opsMetricsRoute = createRoute({
   path: "/ops/metrics",
   component: lazyRouteComponent(
     () => import("@/pages/OpsMetrics"),
-    "OpsMetrics",
+    "OpsMetrics"
   ),
   head: () => ({
     meta: [{ title: "Metrics | Platform" }, ...noIndexMeta],
@@ -187,7 +190,7 @@ const opsSubscriptionsRoute = createRoute({
   path: "/ops/subscriptions",
   component: lazyRouteComponent(
     () => import("@/pages/OpsSubscriptions"),
-    "OpsSubscriptions",
+    "OpsSubscriptions"
   ),
   head: () => ({
     meta: [{ title: "Subscriptions | Platform" }, ...noIndexMeta],

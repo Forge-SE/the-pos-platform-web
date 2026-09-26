@@ -75,7 +75,7 @@ export function CreateStaffDialog({
 
   async function submit(
     values: typeof createStaffValues,
-    helpers: { resetForm: () => void },
+    helpers: { resetForm: () => void }
   ) {
     try {
       setFormError(null)
@@ -92,7 +92,7 @@ export function CreateStaffDialog({
         await uploadStaffAvatar(
           (variables) => completeUpload({ variables }),
           staffId,
-          photo,
+          photo
         )
       }
       resetForm(helpers)
@@ -152,82 +152,84 @@ export function CreateStaffDialog({
           const nameError = fieldError(formik, "name")
           return (
             <>
-        <div className="flex items-center gap-4">
-          <StaffAvatar
-            name={formik.values.name || "New staff"}
-            url={previewUrl}
-            className="size-16 text-base"
-          />
-          <div>
-            <input
-              id="staff-photo"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              onChange={(event) => {
-                setPhoto(event.target.files?.[0] ?? null)
-                event.currentTarget.value = ""
-              }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => document.getElementById("staff-photo")?.click()}
-            >
-              <ImageIcon data-icon="inline-start" />
-              {photo ? "Change photo" : "Add photo"}
-            </Button>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              JPEG, PNG, or WebP. Optional, up to 5 MB.
-            </p>
-          </div>
-        </div>
+              <div className="flex items-center gap-4">
+                <StaffAvatar
+                  name={formik.values.name || "New staff"}
+                  url={previewUrl}
+                  className="size-16 text-base"
+                />
+                <div>
+                  <input
+                    id="staff-photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(event) => {
+                      setPhoto(event.target.files?.[0] ?? null)
+                      event.currentTarget.value = ""
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      document.getElementById("staff-photo")?.click()
+                    }
+                  >
+                    <ImageIcon data-icon="inline-start" />
+                    {photo ? "Change photo" : "Add photo"}
+                  </Button>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    JPEG, PNG, or WebP. Optional, up to 5 MB.
+                  </p>
+                </div>
+              </div>
 
-        <Field data-invalid={Boolean(nameError)}>
-          <FieldLabel htmlFor="staff-name">Name</FieldLabel>
-          <Input
-            id="staff-name"
-            name="name"
-            value={formik.values.name}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            placeholder="Ama Mensah"
-            autoComplete="off"
-            aria-invalid={Boolean(nameError)}
-          />
-          <FieldError>{nameError}</FieldError>
-        </Field>
+              <Field data-invalid={Boolean(nameError)}>
+                <FieldLabel htmlFor="staff-name">Name</FieldLabel>
+                <Input
+                  id="staff-name"
+                  name="name"
+                  value={formik.values.name}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Ama Mensah"
+                  autoComplete="off"
+                  aria-invalid={Boolean(nameError)}
+                />
+                <FieldError>{nameError}</FieldError>
+              </Field>
 
-        <Field>
-          <FieldLabel>Role</FieldLabel>
-          <Select
-            value={formik.values.role}
-            onValueChange={(value) =>
-              void formik.setFieldValue(
-                "role",
-                (value as StaffRole | null) ?? "CASHIER",
-              )
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(roleLabels).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+              <Field>
+                <FieldLabel>Role</FieldLabel>
+                <Select
+                  value={formik.values.role}
+                  onValueChange={(value) =>
+                    void formik.setFieldValue(
+                      "role",
+                      (value as StaffRole | null) ?? "CASHIER"
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(roleLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
 
-        {formError && (
-          <FieldError className="flex items-start gap-2">
-            <WarningCircleIcon className="mt-0.5 size-4 shrink-0" />
-            {formError}
-          </FieldError>
-        )}
+              {formError && (
+                <FieldError className="flex items-start gap-2">
+                  <WarningCircleIcon className="mt-0.5 size-4 shrink-0" />
+                  {formError}
+                </FieldError>
+              )}
             </>
           )
         }}

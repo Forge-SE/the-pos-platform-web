@@ -49,8 +49,12 @@ export function OpsRestaurants() {
   const [offset, setOffset] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [suspendTarget, setSuspendTarget] = useState<PlatformRestaurant | null>(null)
-  const [ownerTarget, setOwnerTarget] = useState<PlatformRestaurant | null>(null)
+  const [suspendTarget, setSuspendTarget] = useState<PlatformRestaurant | null>(
+    null
+  )
+  const [ownerTarget, setOwnerTarget] = useState<PlatformRestaurant | null>(
+    null
+  )
   const [actionError, setActionError] = useState<string | null>(null)
 
   function onSearchChange(value: string) {
@@ -59,7 +63,7 @@ export function OpsRestaurants() {
     window.clearTimeout((onSearchChange as { timer?: number }).timer)
     ;(onSearchChange as { timer?: number }).timer = window.setTimeout(
       () => setDebounced(value.trim() || null),
-      300,
+      300
     )
   }
 
@@ -76,12 +80,18 @@ export function OpsRestaurants() {
     context: opsAuthContext(),
   })
   useOpsAuthError(error)
-  const [setSuspended, { loading: suspending }] = useMutation(SET_RESTAURANT_SUSPENDED, {
-    context: opsAuthContext(),
-  })
-  const [setStaffActive, { loading: togglingOwner }] = useMutation(SET_STAFF_ACTIVE, {
-    context: opsAuthContext(),
-  })
+  const [setSuspended, { loading: suspending }] = useMutation(
+    SET_RESTAURANT_SUSPENDED,
+    {
+      context: opsAuthContext(),
+    }
+  )
+  const [setStaffActive, { loading: togglingOwner }] = useMutation(
+    SET_STAFF_ACTIVE,
+    {
+      context: opsAuthContext(),
+    }
+  )
 
   const items = data?.platformRestaurants?.items ?? []
   const total = data?.platformRestaurants?.total ?? 0
@@ -91,7 +101,10 @@ export function OpsRestaurants() {
     try {
       setActionError(null)
       await setSuspended({
-        variables: { id: suspendTarget.id, suspended: !suspendTarget.suspended },
+        variables: {
+          id: suspendTarget.id,
+          suspended: !suspendTarget.suspended,
+        },
       })
       setSuspendTarget(null)
       await refetch()
@@ -101,8 +114,8 @@ export function OpsRestaurants() {
           mutationError,
           suspendTarget.suspended
             ? "Could not reinstate this restaurant."
-            : "Could not suspend this restaurant.",
-        ),
+            : "Could not suspend this restaurant."
+        )
       )
     }
   }
@@ -126,8 +139,8 @@ export function OpsRestaurants() {
           mutationError,
           ownerTarget.owner.active
             ? "Could not deactivate the owner."
-            : "Could not reactivate the owner.",
-        ),
+            : "Could not reactivate the owner."
+        )
       )
     }
   }
@@ -201,8 +214,9 @@ export function OpsRestaurants() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {[restaurant.city, restaurant.region].filter(Boolean).join(", ") ||
-                      "—"}
+                    {[restaurant.city, restaurant.region]
+                      .filter(Boolean)
+                      .join(", ") || "—"}
                   </td>
                   <td className="px-4 py-3">
                     <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
@@ -210,14 +224,21 @@ export function OpsRestaurants() {
                     </code>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant={restaurant.suspended ? "destructive" : "secondary"}>
+                    <Badge
+                      variant={
+                        restaurant.suspended ? "destructive" : "secondary"
+                      }
+                    >
                       {restaurant.suspended ? "Suspended" : "Active"}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatWhen(restaurant.createdAt)}
                   </td>
-                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                  <td
+                    className="px-4 py-3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
@@ -271,14 +292,17 @@ export function OpsRestaurants() {
         </div>
         <div className="flex items-center justify-between border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">
           <span>
-            {total === 0 ? "0" : `${offset + 1}–${offset + items.length}`} of {total}
+            {total === 0 ? "0" : `${offset + 1}–${offset + items.length}`} of{" "}
+            {total}
           </span>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               disabled={offset === 0}
-              onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
+              onClick={() =>
+                setOffset((current) => Math.max(0, current - PAGE_SIZE))
+              }
             >
               Previous
             </Button>
@@ -307,7 +331,11 @@ export function OpsRestaurants() {
         onOpenChange={(open) => {
           if (!open) setSuspendTarget(null)
         }}
-        title={suspendTarget?.suspended ? "Reinstate restaurant" : "Suspend restaurant"}
+        title={
+          suspendTarget?.suspended
+            ? "Reinstate restaurant"
+            : "Suspend restaurant"
+        }
         description={
           suspendTarget?.suspended
             ? `${suspendTarget.name} can sign in and take orders again.`
@@ -344,7 +372,9 @@ export function OpsRestaurants() {
         onOpenChange={(open) => {
           if (!open) setOwnerTarget(null)
         }}
-        title={ownerTarget?.owner?.active ? "Deactivate owner" : "Reactivate owner"}
+        title={
+          ownerTarget?.owner?.active ? "Deactivate owner" : "Reactivate owner"
+        }
         description={
           ownerTarget?.owner?.active
             ? `${ownerTarget.owner.name} won’t be able to sign in to ${ownerTarget.name} until you reactivate them.`
@@ -424,9 +454,12 @@ function RestaurantDrawer({
   })
   useOpsAuthError(error)
   const [pending, setPending] = useState<StaffMember | null>(null)
-  const [setStaffActive, { loading: toggling }] = useMutation(SET_STAFF_ACTIVE, {
-    context: opsAuthContext(),
-  })
+  const [setStaffActive, { loading: toggling }] = useMutation(
+    SET_STAFF_ACTIVE,
+    {
+      context: opsAuthContext(),
+    }
+  )
 
   const detail = data?.platformRestaurant
   const restaurant = detail?.restaurant
@@ -461,7 +494,9 @@ function RestaurantDrawer({
           <p className="text-sm text-muted-foreground">Loading restaurant…</p>
         )}
         {error && (
-          <p className="text-sm text-destructive">Couldn’t load this restaurant.</p>
+          <p className="text-sm text-destructive">
+            Couldn’t load this restaurant.
+          </p>
         )}
         {restaurant && detail && (
           <div className="space-y-6">
@@ -519,7 +554,9 @@ function RestaurantDrawer({
                       </span>
                       <span className="mt-1 flex items-center gap-1.5">
                         <Badge variant="secondary">{member.role}</Badge>
-                        {!member.active && <Badge variant="outline">Inactive</Badge>}
+                        {!member.active && (
+                          <Badge variant="outline">Inactive</Badge>
+                        )}
                       </span>
                     </span>
                     {member.role !== "OWNER" && (
@@ -537,7 +574,9 @@ function RestaurantDrawer({
             </Section>
             <Section title="Recent activity">
               {(data.platformAuditLogs?.items ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No audit entries.</p>
+                <p className="text-sm text-muted-foreground">
+                  No audit entries.
+                </p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {data.platformAuditLogs.items.map((entry) => (
@@ -604,7 +643,9 @@ function LoginCode({ code }: { code: string }) {
     <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2.5">
       <div>
         <p className="text-xs font-medium text-muted-foreground">Login code</p>
-        <code className="font-mono text-sm font-bold tracking-widest">{code}</code>
+        <code className="font-mono text-sm font-bold tracking-widest">
+          {code}
+        </code>
       </div>
       <Button
         variant="outline"

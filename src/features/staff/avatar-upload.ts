@@ -7,7 +7,7 @@ export async function uploadStaffAvatar(
     objectKey: string
   }) => Promise<unknown>,
   staffId: string,
-  file: File,
+  file: File
 ) {
   validateImageFile(file)
   const secureUrl = await uploadImageToCloudinary(file)

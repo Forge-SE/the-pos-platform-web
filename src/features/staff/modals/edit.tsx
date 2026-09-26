@@ -1,7 +1,11 @@
 import { useState } from "react"
 import { useMutation } from "@apollo/client/react"
 import { Dialog } from "@base-ui/react/dialog"
-import { ImageIcon, SpinnerGapIcon, WarningCircleIcon } from "@phosphor-icons/react"
+import {
+  ImageIcon,
+  SpinnerGapIcon,
+  WarningCircleIcon,
+} from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -14,10 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { uploadStaffAvatar } from "@/features/staff/avatar-upload"
-import {
-  COMPLETE_STAFF_AVATAR,
-  roleLabels,
-} from "@/features/staff/model"
+import { COMPLETE_STAFF_AVATAR, roleLabels } from "@/features/staff/model"
 import type { StaffMember } from "@/features/staff/model"
 import { StaffAvatar } from "@/features/staff/staff-avatar"
 
@@ -46,12 +47,12 @@ export function EditStaffDialog({
       await uploadStaffAvatar(
         (variables) => completeUpload({ variables }),
         member.id,
-        file,
+        file
       )
       onUpdated()
     } catch (error) {
       setFormError(
-        error instanceof Error ? error.message : "Could not update the photo.",
+        error instanceof Error ? error.message : "Could not update the photo."
       )
     } finally {
       setUploading(false)

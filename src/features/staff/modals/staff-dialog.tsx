@@ -35,13 +35,17 @@ export function StaffDialog({
             </div>
             <Dialog.Close
               render={
-                <Button variant="ghost" size="icon-sm" aria-label="Close dialog">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Close dialog"
+                >
                   <XIcon />
                 </Button>
               }
             />
           </div>
-          <div className="min-h-0 flex-1 overflow-y-scroll px-4 py-6 [scrollbar-width:thin] sm:px-5">
+          <div className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-scroll px-4 py-6 sm:px-5">
             {children}
           </div>
           {footer ? (

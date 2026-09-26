@@ -81,28 +81,38 @@ export function OpsMetrics() {
   const [category, setCategory] = useState("")
   const [status, setStatus] = useState("")
   const [diningType, setDiningType] = useState("")
-  const { data, loading, error } = useQuery<
-    {
-      platformMetricOptions: { regions: string[]; categories: string[] }
-      platformOrderMetrics: {
+  const { data, loading, error } = useQuery<{
+    platformMetricOptions: { regions: string[]; categories: string[] }
+    platformOrderMetrics: {
+      orderCount: number
+      revenue: number
+      subscriptionPaymentCount: number
+      subscriptionRevenue: number
+      byDay: Array<{
+        day: string
         orderCount: number
         revenue: number
-        subscriptionPaymentCount: number
+        subscriptionCount: number
         subscriptionRevenue: number
-        byDay: Array<{
-          day: string
-          orderCount: number
-          revenue: number
-          subscriptionCount: number
-          subscriptionRevenue: number
-        }>
-        byRegion: Array<{ region: string; orderCount: number; revenue: number }>
-        byCategory: Array<{ category: string; orderCount: number; revenue: number }>
-        subscriptionByPlan: Array<{ label: string; paymentCount: number; revenue: number }>
-        subscriptionByRegion: Array<{ label: string; paymentCount: number; revenue: number }>
-      }
+      }>
+      byRegion: Array<{ region: string; orderCount: number; revenue: number }>
+      byCategory: Array<{
+        category: string
+        orderCount: number
+        revenue: number
+      }>
+      subscriptionByPlan: Array<{
+        label: string
+        paymentCount: number
+        revenue: number
+      }>
+      subscriptionByRegion: Array<{
+        label: string
+        paymentCount: number
+        revenue: number
+      }>
     }
-  >(METRICS_QUERY, {
+  }>(METRICS_QUERY, {
     variables: {
       from: from || null,
       to: to || null,
@@ -126,10 +136,18 @@ export function OpsMetrics() {
       <section className="mx-4 mb-8 space-y-4 lg:mx-8">
         <div className="grid gap-3 rounded-xl border border-border/70 bg-card p-4 sm:grid-cols-2 lg:grid-cols-3">
           <Filter label="From">
-            <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+            <Input
+              type="date"
+              value={from}
+              onChange={(event) => setFrom(event.target.value)}
+            />
           </Filter>
           <Filter label="To">
-            <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+            <Input
+              type="date"
+              value={to}
+              onChange={(event) => setTo(event.target.value)}
+            />
           </Filter>
           <Choice
             label="Region"
@@ -157,7 +175,11 @@ export function OpsMetrics() {
             value={diningType}
             onChange={setDiningType}
             options={["DINE_IN", "TAKEAWAY", "DELIVERY"]}
-            labels={{ DINE_IN: "Dine-In", TAKEAWAY: "Pickup", DELIVERY: "Delivery" }}
+            labels={{
+              DINE_IN: "Dine-In",
+              TAKEAWAY: "Pickup",
+              DELIVERY: "Delivery",
+            }}
             placeholder="All types"
           />
         </div>
@@ -169,18 +191,25 @@ export function OpsMetrics() {
         )}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Orders" value={loading ? "—" : String(metrics?.orderCount ?? 0)} />
+          <Stat
+            label="Orders"
+            value={loading ? "—" : String(metrics?.orderCount ?? 0)}
+          />
           <Stat
             label="Order revenue"
             value={loading ? "—" : formatMoney(metrics?.revenue ?? 0)}
           />
           <Stat
             label="Subscription payments"
-            value={loading ? "—" : String(metrics?.subscriptionPaymentCount ?? 0)}
+            value={
+              loading ? "—" : String(metrics?.subscriptionPaymentCount ?? 0)
+            }
           />
           <Stat
             label="Subscription revenue"
-            value={loading ? "—" : formatMoney(metrics?.subscriptionRevenue ?? 0)}
+            value={
+              loading ? "—" : formatMoney(metrics?.subscriptionRevenue ?? 0)
+            }
           />
         </div>
 
@@ -325,7 +354,9 @@ function Breakdown({
 }) {
   return (
     <section className="overflow-hidden rounded-xl border border-border/70 bg-card">
-      <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">{title}</h2>
+      <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">
+        {title}
+      </h2>
       <table className="w-full text-left text-sm">
         <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
           <tr>

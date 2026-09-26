@@ -12,7 +12,10 @@ import {
   RosterCard,
   ShiftProgressCard,
 } from "@/features/performance/live"
-import { PERFORMANCE_QUERY, STAFF_ROSTER_QUERY } from "@/features/performance/model"
+import {
+  PERFORMANCE_QUERY,
+  STAFF_ROSTER_QUERY,
+} from "@/features/performance/model"
 import type {
   PerformanceData,
   StaffRosterData,
@@ -42,14 +45,19 @@ const TABS: Array<{ id: PerfTab; label: string }> = [
 ]
 
 function isTab(value: string | null): value is PerfTab {
-  return value === "all" || value === "revenue" || value === "orders" || value === "staff"
+  return (
+    value === "all" ||
+    value === "revenue" ||
+    value === "orders" ||
+    value === "staff"
+  )
 }
 
 function ComingSoonNote() {
   return (
     <p className="mt-4 text-xs text-muted-foreground">
-      Placeholder visuals on synthetic sample data — needs backend work
-      before going live.
+      Placeholder visuals on synthetic sample data — needs backend work before
+      going live.
     </p>
   )
 }
@@ -58,18 +66,23 @@ export function Performance() {
   const profile = getAccessTokenProfile()
   const canSeeSales = hasPermission(profile, "REPORTS_VIEW")
   const tabs = TABS.filter(
-    (entry) => canSeeSales || (entry.id !== "revenue" && entry.id !== "staff"),
+    (entry) => canSeeSales || (entry.id !== "revenue" && entry.id !== "staff")
   )
   const [tabParam, setTabParam] = useUrlState("perfTab")
   const tab: PerfTab =
-    isTab(tabParam) && tabs.some((entry) => entry.id === tabParam) ? tabParam : "all"
+    isTab(tabParam) && tabs.some((entry) => entry.id === tabParam)
+      ? tabParam
+      : "all"
   const [rangeParam, setRangeParam] = useUrlState("range")
   const [fromParam, setFromParam] = useUrlState("from")
   const [toParam, setToParam] = useUrlState("to")
   const presets = defaultPresets()
   const range: DateRange | undefined =
     rangeParam === "custom" && fromParam
-      ? { from: new Date(fromParam), to: toParam ? new Date(toParam) : undefined }
+      ? {
+          from: new Date(fromParam),
+          to: toParam ? new Date(toParam) : undefined,
+        }
       : (presets.find((preset) => preset.id === (rangeParam ?? "30d"))
           ?.dateRange ?? presets[2].dateRange)
   function handleRangeChange(next: DateRange | undefined) {
@@ -85,7 +98,9 @@ export function Performance() {
       const from = preset.dateRange.from
       const to = preset.dateRange.to
       return (
-        from != null && to != null && nextTo != null &&
+        from != null &&
+        to != null &&
+        nextTo != null &&
         isSameDay(nextFrom, from) &&
         isSameDay(nextTo, to)
       )
@@ -104,8 +119,10 @@ export function Performance() {
     PERFORMANCE_QUERY,
     { pollInterval: 60_000 }
   )
-  const { data: staffData, loading: staffLoading } =
-    useQuery<StaffRosterData>(STAFF_ROSTER_QUERY, { skip: !canSeeSales })
+  const { data: staffData, loading: staffLoading } = useQuery<StaffRosterData>(
+    STAFF_ROSTER_QUERY,
+    { skip: !canSeeSales }
+  )
 
   const salesProps = {
     sales: data?.salesToday,
@@ -131,7 +148,9 @@ export function Performance() {
                 type="button"
                 role="tab"
                 aria-selected={selected}
-                onClick={() => setTabParam(entry.id === "all" ? null : entry.id)}
+                onClick={() =>
+                  setTabParam(entry.id === "all" ? null : entry.id)
+                }
                 className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
                   selected
                     ? "bg-card text-foreground shadow-xs"
@@ -157,12 +176,15 @@ export function Performance() {
         </div>
       ) : (
         <div className="mt-8">
-          {canSeeSales && (tab === "all" || tab === "revenue" || tab === "orders") && (
-            <HeroStats {...salesProps} />
-          )}
+          {canSeeSales &&
+            (tab === "all" || tab === "revenue" || tab === "orders") && (
+              <HeroStats {...salesProps} />
+            )}
 
           {tab === "all" && (
-            <div className={`mt-4 grid gap-4 ${canSeeSales ? "xl:grid-cols-2" : ""}`}>
+            <div
+              className={`mt-4 grid gap-4 ${canSeeSales ? "xl:grid-cols-2" : ""}`}
+            >
               {canSeeSales && <PaymentSplitCard {...salesProps} />}
               <div className="grid content-start gap-4">
                 <ShiftProgressCard
@@ -198,7 +220,10 @@ export function Performance() {
 
           {tab === "staff" && canSeeSales && (
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              <RosterCard staff={staffData?.staff} staffLoading={staffLoading} />
+              <RosterCard
+                staff={staffData?.staff}
+                staffLoading={staffLoading}
+              />
               <StaffLeaderboardCard />
             </div>
           )}
@@ -246,7 +271,6 @@ export function Performance() {
               </div>
             </div>
           )}
-
         </div>
       )}
     </SectionPage>

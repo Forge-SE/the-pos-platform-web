@@ -468,7 +468,10 @@ export function Overview() {
               searching={Boolean(search.trim())}
             />
             {canSeeSales && (
-              <PaymentMix loading={salesLoading} sales={salesData?.salesToday} />
+              <PaymentMix
+                loading={salesLoading}
+                sales={salesData?.salesToday}
+              />
             )}
           </div>
         </>

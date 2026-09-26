@@ -39,7 +39,7 @@ const momoSchema = Yup.object({
   phone: Yup.string().test(
     "ghana-phone",
     "Enter a Ghana mobile number, for example 024 123 4567.",
-    (value) => Boolean(normalizeGhanaPhone(value ?? "")),
+    (value) => Boolean(normalizeGhanaPhone(value ?? ""))
   ),
 })
 
@@ -53,7 +53,7 @@ export function MomoAccounts({
   const canManage = hasPermission(profile, "SETTINGS_MANAGE")
   const { data, loading, error, refetch } = useQuery<MomoData>(
     MOMO_ACCOUNTS_QUERY,
-    { skip: !canManage },
+    { skip: !canManage }
   )
   const [addAccount, addState] = useMutation(ADD_MOMO_ACCOUNT)
   const [removeAccount, removeState] = useMutation(REMOVE_MOMO_ACCOUNT)
@@ -64,7 +64,7 @@ export function MomoAccounts({
 
   async function submit(
     values: typeof momoValues,
-    helpers: { resetForm: (next?: { values: typeof momoValues }) => void },
+    helpers: { resetForm: (next?: { values: typeof momoValues }) => void }
   ) {
     const normalized = normalizeGhanaPhone(values.phone)
     if (!normalized) return
@@ -87,7 +87,7 @@ export function MomoAccounts({
       setFormError(
         mutationError instanceof Error
           ? mutationError.message
-          : "Could not save that number.",
+          : "Could not save that number."
       )
     }
   }
@@ -102,7 +102,7 @@ export function MomoAccounts({
       setFormError(
         mutationError instanceof Error
           ? mutationError.message
-          : "Could not remove that number.",
+          : "Could not remove that number."
       )
     } finally {
       setRemovingId(null)
@@ -160,7 +160,9 @@ export function MomoAccounts({
               </fieldset>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field data-invalid={Boolean(nameError)}>
-                  <FieldLabel htmlFor="momo-account-name">Account name</FieldLabel>
+                  <FieldLabel htmlFor="momo-account-name">
+                    Account name
+                  </FieldLabel>
                   <Input
                     id="momo-account-name"
                     name="accountName"
@@ -251,8 +253,8 @@ export function MomoAccounts({
             Mobile money payouts
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Numbers where this restaurant receives MoMo payments. Add as many
-            as you need across MTN, AirtelTigo, and Telecel.
+            Numbers where this restaurant receives MoMo payments. Add as many as
+            you need across MTN, AirtelTigo, and Telecel.
           </p>
         </div>
       </div>

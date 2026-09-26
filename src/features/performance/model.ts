@@ -36,11 +36,7 @@ export const STAFF_ROSTER_QUERY = gql`
 
 export type PaymentMethod = "CASH" | "MOMO" | "TRANSFER"
 export type OrderStatus =
-  | "NEW"
-  | "PREPARING"
-  | "READY"
-  | "COMPLETED"
-  | "CANCELLED"
+  "NEW" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED"
 
 export interface SalesToday {
   totalSales: number
@@ -121,7 +117,15 @@ export const SAMPLE_BEST_SELLERS: RankedItem[] = [
   { name: "Chicken wings", orders: 50, revenue: 100000 },
 ]
 
-export const SAMPLE_HEATMAP_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+export const SAMPLE_HEATMAP_DAYS = [
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri",
+  "Sat",
+  "Sun",
+]
 export const SAMPLE_HEATMAP_HOURS = ["9a", "12p", "3p", "6p", "9p"]
 /** Synthetic intensity 0–4 per [day][hour]. */
 export const SAMPLE_HEATMAP: number[][] = [

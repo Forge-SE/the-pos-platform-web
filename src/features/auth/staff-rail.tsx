@@ -63,7 +63,7 @@ export function StaffRail({
       )}
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-px-2 px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory scroll-px-2 [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {profiles.map((profile) => (
           <button

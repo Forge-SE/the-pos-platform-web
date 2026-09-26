@@ -42,10 +42,7 @@ import {
   mutationMessage,
   uploadMenuImage,
 } from "@/features/menu/model"
-import type {
-  MenuItem,
-  UploadState,
-} from "@/features/menu/model"
+import type { MenuItem, UploadState } from "@/features/menu/model"
 import type { MenuManagementData } from "@/features/menu/model"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
@@ -179,7 +176,11 @@ export function MenuManagement() {
         </header>
         <div className="flex flex-wrap items-center gap-2">
           <Menu.Root open={configMenuOpen} onOpenChange={setConfigMenuOpen}>
-            <div className="inline-flex items-center" role="group" aria-label="Menu setup options">
+            <div
+              className="inline-flex items-center"
+              role="group"
+              aria-label="Menu setup options"
+            >
               <Button
                 variant="outline"
                 className="rounded-r-none border-r-0"
@@ -223,7 +224,10 @@ export function MenuManagement() {
                     className="flex min-h-9 cursor-default items-center gap-2 rounded-md px-2.5 text-xs font-medium outline-none select-none data-highlighted:bg-muted data-highlighted:text-foreground"
                     onClick={openOptions}
                   >
-                    <SlidersHorizontalIcon aria-hidden="true" className="size-4" />
+                    <SlidersHorizontalIcon
+                      aria-hidden="true"
+                      className="size-4"
+                    />
                     Configure menu options
                   </Menu.Item>
                 </Menu.Popup>
@@ -249,7 +253,9 @@ export function MenuManagement() {
 
       {error ? (
         <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center">
-          <p className="font-semibold text-destructive">Could not load menu setup</p>
+          <p className="font-semibold text-destructive">
+            Could not load menu setup
+          </p>
           <Button className="mt-4" variant="outline" onClick={() => refetch()}>
             Try again
           </Button>
@@ -269,13 +275,20 @@ export function MenuManagement() {
               />
             </InputGroup>
             <div className="flex sm:ml-auto">
-              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value ?? "ALL")}>
-                <SelectTrigger className="w-full sm:w-44" aria-label="Filter by category">
+              <Select
+                value={categoryFilter}
+                onValueChange={(value) => setCategoryFilter(value ?? "ALL")}
+              >
+                <SelectTrigger
+                  className="w-full sm:w-44"
+                  aria-label="Filter by category"
+                >
                   <SelectValue placeholder="All categories">
                     {(value) =>
                       value === "ALL" || value == null
                         ? "All categories"
-                        : (categories.find((category) => category.id === value)?.name ?? "All categories")
+                        : (categories.find((category) => category.id === value)
+                            ?.name ?? "All categories")
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -337,8 +350,9 @@ export function MenuManagement() {
                     </h2>
                     <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                       {category.items.map((item) => {
-                        const uploadState =
-                          uploadStates[item.id] ?? { status: "idle" as const }
+                        const uploadState = uploadStates[item.id] ?? {
+                          status: "idle" as const,
+                        }
                         const busy =
                           uploadState.status === "uploading" ||
                           uploadState.status === "verifying"
@@ -402,7 +416,8 @@ export function MenuManagement() {
                                   disabled={busy}
                                   onChange={(event) => {
                                     const file = event.target.files?.[0]
-                                    if (file) void uploadItemImage(item.id, file)
+                                    if (file)
+                                      void uploadItemImage(item.id, file)
                                     event.currentTarget.value = ""
                                   }}
                                 />
@@ -425,12 +440,18 @@ export function MenuManagement() {
                               {item.modifierGroups.length > 0 && (
                                 <ul className="mt-2.5 flex flex-wrap gap-1.5">
                                   {item.modifierGroups.flatMap((attached) => {
-                                    const group = groups.find((entry) => entry.id === attached.id)
-                                    const options = (group?.options ?? []).filter((option) => option.active)
+                                    const group = groups.find(
+                                      (entry) => entry.id === attached.id
+                                    )
+                                    const options = (
+                                      group?.options ?? []
+                                    ).filter((option) => option.active)
                                     if (options.length === 0) {
                                       return [
                                         <li key={attached.id}>
-                                          <Badge variant="outline">{attached.name}</Badge>
+                                          <Badge variant="outline">
+                                            {attached.name}
+                                          </Badge>
                                         </li>,
                                       ]
                                     }
@@ -446,7 +467,9 @@ export function MenuManagement() {
                                             className="size-5 shrink-0 rounded-full object-cover"
                                           />
                                         ) : null}
-                                        <span className="truncate">{option.name}</span>
+                                        <span className="truncate">
+                                          {option.name}
+                                        </span>
                                       </li>
                                     ))
                                   })}
@@ -489,7 +512,6 @@ export function MenuManagement() {
                 ))}
             </div>
           )}
-
         </>
       )}
 

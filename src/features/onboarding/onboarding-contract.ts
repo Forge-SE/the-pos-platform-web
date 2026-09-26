@@ -97,7 +97,7 @@ const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 export function onboardingStepSchema(
   step: number,
-  options?: { setupSecretRequired?: boolean },
+  options?: { setupSecretRequired?: boolean }
 ) {
   if (step === 0) {
     return Yup.object({
@@ -108,7 +108,7 @@ export function onboardingStepSchema(
       slug: Yup.string()
         .matches(
           slugPattern,
-          "Use lowercase letters, numbers, and single hyphens.",
+          "Use lowercase letters, numbers, and single hyphens."
         )
         .required("Use lowercase letters, numbers, and single hyphens."),
     })
@@ -138,7 +138,7 @@ export function onboardingStepSchema(
           if (value == null || value.trim() === "") return false
           const discount = Number(value)
           return Number.isFinite(discount) && discount >= 0 && discount <= 100
-        },
+        }
       ),
       reconciliationVarianceGhs: Yup.string().test(
         "amount",
@@ -147,7 +147,7 @@ export function onboardingStepSchema(
           if (value == null || value.trim() === "") return false
           const variance = Number(value)
           return Number.isFinite(variance) && variance >= 0
-        },
+        }
       ),
     }
     if (options?.setupSecretRequired !== false) {
@@ -164,7 +164,7 @@ export function onboardingStepSchema(
 export function validateOnboardingStep(
   step: number,
   values: RestaurantOnboardingValues,
-  options?: { setupSecretRequired?: boolean },
+  options?: { setupSecretRequired?: boolean }
 ): OnboardingErrors {
   try {
     onboardingStepSchema(step, options).validateSync(values, {

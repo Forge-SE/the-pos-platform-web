@@ -28,7 +28,9 @@ function writeParam(key: string, value: string | null) {
  * no navigation occurs). Dialogs, modal steps, and tabs built on this are
  * deep-linkable and survive refreshes and back/forward navigation.
  */
-export function useUrlState(key: string): [string | null, (value: string | null) => void] {
+export function useUrlState(
+  key: string
+): [string | null, (value: string | null) => void] {
   const [value, setValue] = useState<string | null>(() => readParam(key))
 
   useEffect(() => {

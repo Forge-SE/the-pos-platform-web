@@ -152,7 +152,11 @@ export function DateRangePicker({
       <Popover.Root open={open} onOpenChange={handleOpenChange}>
         <Popover.Trigger
           render={
-            <Button variant="outline" aria-label={label} title={display ?? label}>
+            <Button
+              variant="outline"
+              aria-label={label}
+              title={display ?? label}
+            >
               <CalendarBlankIcon data-icon="inline-start" />
               {display ?? "Select a range"}
             </Button>
@@ -210,9 +214,15 @@ export function DateRangePicker({
                     components={{
                       Chevron: ({ orientation }) =>
                         orientation === "left" ? (
-                          <CaretLeftIcon aria-hidden="true" className="size-4" />
+                          <CaretLeftIcon
+                            aria-hidden="true"
+                            className="size-4"
+                          />
                         ) : (
-                          <CaretRightIcon aria-hidden="true" className="size-4" />
+                          <CaretRightIcon
+                            aria-hidden="true"
+                            className="size-4"
+                          />
                         ),
                     }}
                   />

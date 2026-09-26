@@ -62,7 +62,7 @@ export const PERMISSION_META: Record<
 
 export function resolvePermissions(
   role: StaffRole,
-  overrides?: { permission: string; granted: boolean }[],
+  overrides?: { permission: string; granted: boolean }[]
 ): Permission[] {
   const resolved = new Set<Permission>(ROLE_PERMISSIONS[role] ?? [])
   for (const override of overrides ?? []) {
@@ -81,12 +81,12 @@ export function resolvePermissions(
  */
 export function hasPermission(
   profile: Pick<AccessTokenProfile, "role" | "permissions"> | null | undefined,
-  permission: Permission,
+  permission: Permission
 ): boolean {
   if (!profile) return false
   if (profile.permissions) return profile.permissions.includes(permission)
   return (ROLE_PERMISSIONS[profile.role as StaffRole] ?? []).includes(
-    permission,
+    permission
   )
 }
 

@@ -17,7 +17,7 @@ export function ShiftBanner() {
   const opensShift = profile?.role === "CASHIER" || profile?.role === "KITCHEN"
   const { data, loading } = useQuery<{ currentShift: { id: string } | null }>(
     SHIFT_BANNER_QUERY,
-    { pollInterval: 30_000 },
+    { pollInterval: 30_000 }
   )
   if (loading || data?.currentShift) return null
 
@@ -27,7 +27,10 @@ export function ShiftBanner() {
       {opensShift && (
         <>
           {" "}
-          <Link to="/shift" className="font-semibold underline underline-offset-4">
+          <Link
+            to="/shift"
+            className="font-semibold underline underline-offset-4"
+          >
             Open the register
           </Link>{" "}
           before taking orders.

@@ -696,28 +696,28 @@ function OrderCard({
       )}
 
       {!readOnly && (
-      <div className="border-t border-border/60 p-3">
-        <Button
-          className="w-full"
-          variant={order.status === "READY" ? "secondary" : "default"}
-          onClick={() => onAdvance(order)}
-          disabled={!canAdvance || pending}
-        >
-          {pending ? (
-            <SpinnerGapIcon
-              aria-hidden="true"
-              className="animate-spin motion-reduce:animate-none"
-              data-icon="inline-start"
-            />
-          ) : (
-            <ActionIcon aria-hidden="true" data-icon="inline-start" />
-          )}
-          {pending ? "Updating…" : actionLabel[order.status]}
-          {!pending && (
-            <ArrowRightIcon aria-hidden="true" data-icon="inline-end" />
-          )}
-        </Button>
-      </div>
+        <div className="border-t border-border/60 p-3">
+          <Button
+            className="w-full"
+            variant={order.status === "READY" ? "secondary" : "default"}
+            onClick={() => onAdvance(order)}
+            disabled={!canAdvance || pending}
+          >
+            {pending ? (
+              <SpinnerGapIcon
+                aria-hidden="true"
+                className="animate-spin motion-reduce:animate-none"
+                data-icon="inline-start"
+              />
+            ) : (
+              <ActionIcon aria-hidden="true" data-icon="inline-start" />
+            )}
+            {pending ? "Updating…" : actionLabel[order.status]}
+            {!pending && (
+              <ArrowRightIcon aria-hidden="true" data-icon="inline-end" />
+            )}
+          </Button>
+        </div>
       )}
     </article>
   )
@@ -764,7 +764,9 @@ function TableView({
             <th className="px-4 py-3 font-semibold">Items</th>
             <th className="px-4 py-3 font-semibold">Stage</th>
             <th className="px-4 py-3 font-semibold">Elapsed</th>
-            {!readOnly && <th className="px-4 py-3 text-right font-semibold">Action</th>}
+            {!readOnly && (
+              <th className="px-4 py-3 text-right font-semibold">Action</th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
@@ -784,7 +786,10 @@ function TableView({
                 <td className="max-w-lg px-4 py-4">
                   <ul className="space-y-2">
                     {order.items.map((item) => (
-                      <li key={item.id} className="flex items-center gap-2 font-medium">
+                      <li
+                        key={item.id}
+                        className="flex items-center gap-2 font-medium"
+                      >
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -793,7 +798,8 @@ function TableView({
                           />
                         ) : null}
                         <span>
-                          <span className="tabular-nums">{item.quantity}×</span> {item.name}
+                          <span className="tabular-nums">{item.quantity}×</span>{" "}
+                          {item.name}
                         </span>
                       </li>
                     ))}
@@ -811,25 +817,28 @@ function TableView({
                   {elapsedLabel(order.createdAt, now)}
                 </td>
                 {!readOnly && (
-                <td className="px-4 py-4 text-right">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={!canAdvance || pending}
-                    onClick={() => onAdvance(order)}
-                  >
-                    {pending ? (
-                      <SpinnerGapIcon
-                        aria-hidden="true"
-                        className="animate-spin motion-reduce:animate-none"
-                        data-icon="inline-start"
-                      />
-                    ) : (
-                      <ActionIcon aria-hidden="true" data-icon="inline-start" />
-                    )}
-                    {pending ? "Updating…" : actionLabel[order.status]}
-                  </Button>
-                </td>
+                  <td className="px-4 py-4 text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!canAdvance || pending}
+                      onClick={() => onAdvance(order)}
+                    >
+                      {pending ? (
+                        <SpinnerGapIcon
+                          aria-hidden="true"
+                          className="animate-spin motion-reduce:animate-none"
+                          data-icon="inline-start"
+                        />
+                      ) : (
+                        <ActionIcon
+                          aria-hidden="true"
+                          data-icon="inline-start"
+                        />
+                      )}
+                      {pending ? "Updating…" : actionLabel[order.status]}
+                    </Button>
+                  </td>
                 )}
               </tr>
             )

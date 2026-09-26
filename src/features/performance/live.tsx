@@ -7,10 +7,7 @@ import {
   WalletIcon,
 } from "@phosphor-icons/react"
 
-import {
-  PaymentDonut,
-  PaymentDonutSkeleton,
-} from "@/components/payment-donut"
+import { PaymentDonut, PaymentDonutSkeleton } from "@/components/payment-donut"
 import { Badge } from "@/components/ui/badge"
 import { formatMoney, averageOrderValue } from "@/features/performance/model"
 import type {
@@ -76,7 +73,9 @@ export function HeroStats({
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading ? "—" : formatMoney(total)}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">Settled sales today</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Settled sales today
+        </p>
       </article>
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -174,26 +173,26 @@ export function ShiftProgressCard({
           </div>
         )}
         <ul className="grid grid-cols-3 gap-3">
-            {(
-              [
-                { label: "New", value: inProgress.NEW },
-                { label: "Preparing", value: inProgress.PREPARING },
-                { label: "Ready", value: inProgress.READY },
-              ] as const
-            ).map((stage) => (
-              <li
-                key={stage.label}
-                className="rounded-lg bg-muted/35 px-3 py-3 text-center"
-              >
-                <p className="text-2xl font-semibold tabular-nums">
-                  {stage.value}
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {stage.label}
-                </p>
-              </li>
-            ))}
-          </ul>
+          {(
+            [
+              { label: "New", value: inProgress.NEW },
+              { label: "Preparing", value: inProgress.PREPARING },
+              { label: "Ready", value: inProgress.READY },
+            ] as const
+          ).map((stage) => (
+            <li
+              key={stage.label}
+              className="rounded-lg bg-muted/35 px-3 py-3 text-center"
+            >
+              <p className="text-2xl font-semibold tabular-nums">
+                {stage.value}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {stage.label}
+              </p>
+            </li>
+          ))}
+        </ul>
       </div>
     </Card>
   )

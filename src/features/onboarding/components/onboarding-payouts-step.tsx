@@ -17,7 +17,9 @@ export function OnboardingPayoutsStep({
   onFinish: () => void
   finishing: boolean
 }) {
-  const { data } = useQuery<{ momoAccounts: MomoAccount[] }>(MOMO_ACCOUNTS_QUERY)
+  const { data } = useQuery<{ momoAccounts: MomoAccount[] }>(
+    MOMO_ACCOUNTS_QUERY
+  )
   const [error, setError] = useState<string | null>(null)
   const ready = (data?.momoAccounts.length ?? 0) > 0
 
@@ -26,7 +28,12 @@ export function OnboardingPayoutsStep({
       <MomoAccounts embedded />
       {error && <FieldError className="mt-3">{error}</FieldError>}
       <div className="mt-8 flex items-center justify-between gap-3 border-t pt-5">
-        <Button type="button" variant="ghost" onClick={onBack} disabled={finishing}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onBack}
+          disabled={finishing}
+        >
           <ArrowLeftIcon aria-hidden="true" data-icon="inline-start" />
           Back
         </Button>
