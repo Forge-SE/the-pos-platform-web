@@ -126,7 +126,7 @@ export function StaffManagement() {
             <Select
               value={roleFilter}
               onValueChange={(value) => {
-                setRoleFilter((value as RoleFilter | null) ?? "ALL")
+                setRoleFilter((value) ?? "ALL")
                 setPage(1)
               }}
             >
@@ -148,7 +148,7 @@ export function StaffManagement() {
             <Select
               value={statusFilter}
               onValueChange={(value) => {
-                setStatusFilter((value as StatusFilter | null) ?? "ALL")
+                setStatusFilter((value) ?? "ALL")
                 setPage(1)
               }}
             >
@@ -298,7 +298,7 @@ export function StaffManagement() {
                       ? "Use “Add new staff” to create the first account."
                       : "Try a different search or clear the filters."}
                   </p>
-                  {filtered.length === 0 && (data?.staff.length ?? 0) > 0 && (
+                  {(data?.staff.length ?? 0) > 0 && (
                     <Button
                       className="mt-4"
                       variant="outline"

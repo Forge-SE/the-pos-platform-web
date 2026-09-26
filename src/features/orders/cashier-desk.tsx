@@ -14,7 +14,8 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { diningLabel, type DiningType } from "@/features/orders/labels"
+import { diningLabel  } from "@/features/orders/labels"
+import type {DiningType} from "@/features/orders/labels";
 import {
   cedisToPesewas,
   formatMoney,
@@ -342,12 +343,15 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           },
         })
         const attempt = (
-          charged.data as {
-            initiateMomoPayment?: {
-              displayText?: string | null
-              failureReason?: string | null
-            }
-          }
+          charged.data as
+            | {
+                initiateMomoPayment?: {
+                  displayText?: string | null
+                  failureReason?: string | null
+                }
+              }
+            | null
+            | undefined
         )?.initiateMomoPayment
         setNotice(
           attempt?.displayText ||
@@ -625,7 +629,7 @@ function CustomizeDialog({
   const optionIds = Object.values(selected).flat()
   const unit = item.price + optionPrice(item, optionIds)
   const missing = item.modifierGroups.find(
-    (group) => (selected[group.id]?.length ?? 0) < group.minSelections
+    (group) => selected[group.id].length < group.minSelections
   )
 
   function toggle(group: ModifierGroup, optionId: string) {

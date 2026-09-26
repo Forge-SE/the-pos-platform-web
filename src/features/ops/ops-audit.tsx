@@ -46,8 +46,8 @@ export function OpsAudit() {
   })
   useOpsAuthError(error)
 
-  const items = data?.platformAuditLogs?.items ?? []
-  const total = data?.platformAuditLogs?.total ?? 0
+  const items = data?.platformAuditLogs.items ?? []
+  const total = data?.platformAuditLogs.total ?? 0
 
   return (
     <>

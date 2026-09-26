@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react"
+import { useState  } from "react"
+import type {ReactNode} from "react";
 import { useMutation, useQuery } from "@apollo/client/react"
 import {
   PauseIcon,
@@ -93,8 +94,8 @@ export function OpsRestaurants() {
     }
   )
 
-  const items = data?.platformRestaurants?.items ?? []
-  const total = data?.platformRestaurants?.total ?? 0
+  const items = data?.platformRestaurants.items ?? []
+  const total = data?.platformRestaurants.total ?? 0
 
   async function confirmSuspension() {
     if (!suspendTarget) return
@@ -463,6 +464,7 @@ function RestaurantDrawer({
 
   const detail = data?.platformRestaurant
   const restaurant = detail?.restaurant
+  const auditEntries = data?.platformAuditLogs.items ?? []
 
   async function confirmToggle() {
     if (!pending || !restaurantId) return
@@ -498,7 +500,7 @@ function RestaurantDrawer({
             Couldn’t load this restaurant.
           </p>
         )}
-        {restaurant && detail && (
+        {restaurant && (
           <div className="space-y-6">
             <Badge variant={restaurant.suspended ? "destructive" : "secondary"}>
               {restaurant.suspended ? "Suspended" : "Active"}
@@ -573,13 +575,13 @@ function RestaurantDrawer({
               </ul>
             </Section>
             <Section title="Recent activity">
-              {(data.platformAuditLogs?.items ?? []).length === 0 ? (
+              {auditEntries.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No audit entries.
                 </p>
               ) : (
                 <ul className="space-y-2 text-sm">
-                  {data.platformAuditLogs.items.map((entry) => (
+                  {auditEntries.map((entry) => (
                     <li key={entry.id}>
                       <span className="font-medium">{entry.action}</span>
                       <span className="text-muted-foreground">

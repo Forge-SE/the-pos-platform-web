@@ -8,6 +8,7 @@ import {
 import { OvaalMark } from "@/components/ovaal-mark"
 import { ProfileMenu } from "@/components/layout/profile-menu"
 import type { AccessTokenProfile } from "@/lib/auth-token"
+
 export function MobileHeader({
   profile,
   onSignOut,

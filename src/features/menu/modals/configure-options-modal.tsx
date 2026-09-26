@@ -30,6 +30,8 @@ import {
 } from "@/features/menu/model"
 import type { MenuItem, ModifierGroup } from "@/features/menu/model"
 
+import { MenuDialog } from "./menu-dialog"
+
 const groupValues = { name: "", minimum: "0", maximum: "1" }
 const optionValues = { groupId: "", name: "", price: "0" }
 const attachValues = { itemId: "", groupId: "" }
@@ -42,7 +44,7 @@ const groupSchema = Yup.object({
   minimum: Yup.string(),
   maximum: Yup.string(),
 }).test("limits", limitsMessage, function (value) {
-  if (!value?.name?.trim()) return true
+  if (!value.name.trim()) return true
   const minimum =
     (value.minimum ?? "").trim() === "" ? 0 : Number(value.minimum)
   const maximum = Number(value.maximum)
@@ -69,8 +71,6 @@ const attachSchema = Yup.object({
   itemId: Yup.string().required("Choose an item."),
   groupId: Yup.string().required("Choose a modifier group."),
 })
-
-import { MenuDialog } from "./menu-dialog"
 
 type OptionsTab = "groups" | "options" | "assign"
 

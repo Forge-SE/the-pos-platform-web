@@ -36,10 +36,10 @@ export function useUrlState(
   useEffect(() => {
     const sync = () => setValue(readParam(key))
     window.addEventListener("popstate", sync)
-    window.addEventListener(CHANGE_EVENT, sync as EventListener)
+    window.addEventListener(CHANGE_EVENT, sync)
     return () => {
       window.removeEventListener("popstate", sync)
-      window.removeEventListener(CHANGE_EVENT, sync as EventListener)
+      window.removeEventListener(CHANGE_EVENT, sync)
     }
   }, [key])
 

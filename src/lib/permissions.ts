@@ -64,7 +64,7 @@ export function resolvePermissions(
   role: StaffRole,
   overrides?: { permission: string; granted: boolean }[]
 ): Permission[] {
-  const resolved = new Set<Permission>(ROLE_PERMISSIONS[role] ?? [])
+  const resolved = new Set<Permission>(ROLE_PERMISSIONS[role])
   for (const override of overrides ?? []) {
     if (!(PERMISSIONS as readonly string[]).includes(override.permission))
       continue
@@ -85,11 +85,9 @@ export function hasPermission(
 ): boolean {
   if (!profile) return false
   if (profile.permissions) return profile.permissions.includes(permission)
-  return (ROLE_PERMISSIONS[profile.role as StaffRole] ?? []).includes(
-    permission
-  )
+  return ROLE_PERMISSIONS[profile.role].includes(permission)
 }
 
 export function permissionsForRole(role: StaffRole): Permission[] {
-  return [...(ROLE_PERMISSIONS[role] ?? [])]
+  return [...ROLE_PERMISSIONS[role]]
 }

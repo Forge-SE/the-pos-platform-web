@@ -7,7 +7,7 @@ export const diningLabels: Record<DiningType, string> = {
 }
 
 export function diningLabel(value: string) {
-  return diningLabels[value as DiningType] ?? value
+  return value in diningLabels ? diningLabels[value as DiningType] : value
 }
 
 export const statusLabels: Record<string, string> = {

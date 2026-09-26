@@ -177,7 +177,7 @@ export function Overview() {
   const [retrying, setRetrying] = useState(false)
   const profile = getAccessTokenProfile() as AccessTokenProfile
   const canSeeSales = hasPermission(profile, "REPORTS_VIEW")
-  const opensShift = profile?.role === "CASHIER" || profile?.role === "KITCHEN"
+  const opensShift = profile.role === "CASHIER" || profile.role === "KITCHEN"
   const { data, loading, error, refetch, subscribeToMore } =
     useQuery<OperationsData>(OPERATIONS_QUERY, { pollInterval: 30_000 })
   const [openShift, { loading: openingShift }] = useMutation<

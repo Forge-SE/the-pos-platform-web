@@ -76,7 +76,7 @@ export function OnboardingStaffStep({
       const result = await createStaff({
         variables: { input: { name: values.name.trim(), role: values.role } },
       })
-      const staffId = result.data?.createStaff?.id
+      const staffId = result.data?.createStaff.id
       if (!staffId) throw new Error("The staff profile was not created.")
       const pendingPhoto = photo
       helpers.resetForm()
@@ -171,7 +171,7 @@ export function OnboardingStaffStep({
                     onValueChange={(value) =>
                       void formik.setFieldValue(
                         "role",
-                        (value as StaffRole | null) ?? "CASHIER"
+                        (value) ?? "CASHIER"
                       )
                     }
                   >

@@ -7,9 +7,10 @@ import { XIcon } from "@phosphor-icons/react"
 import { Badge } from "@/components/ui/badge"
 import {
   diningLabel,
-  statusLabels,
-  type DiningType,
+  statusLabels
+  
 } from "@/features/orders/labels"
+import type {DiningType} from "@/features/orders/labels";
 import { formatMoney } from "@/features/menu/model"
 
 interface OwnerOrder {

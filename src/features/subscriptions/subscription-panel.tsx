@@ -215,7 +215,7 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
         <Form
           className="mt-6 grid gap-4 border-t border-border/70 pt-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
           initialValues={{
-            planId: subscription?.plan.id ?? plans[0]?.id ?? "",
+            planId: subscription?.plan.id ?? plans[0].id,
             email: subscription?.billingEmail ?? "",
           }}
           validationSchema={checkoutSchema}

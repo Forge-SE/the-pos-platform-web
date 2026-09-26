@@ -150,7 +150,7 @@ export function RestaurantEditModal({
     variables: { id: restaurantId },
     context: opsAuthContext(),
   })
-  const restaurant = data?.platformRestaurant?.restaurant
+  const restaurant = data?.platformRestaurant.restaurant
   const [formError, setFormError] = useState<string | null>(null)
   const [updateRestaurant, { loading }] = useMutation(UPDATE_RESTAURANT, {
     context: opsAuthContext(),
@@ -239,9 +239,12 @@ export function RestaurantEditModal({
               if (!result.data)
                 throw new Error("Could not save restaurant details.")
               await onSaved()
-            } catch (error) {
+            } catch (mutationError) {
               setFormError(
-                mutationMessage(error, "Could not save restaurant details.")
+                mutationMessage(
+                  mutationError,
+                  "Could not save restaurant details."
+                )
               )
             }
           }}

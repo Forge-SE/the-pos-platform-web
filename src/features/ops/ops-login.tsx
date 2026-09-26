@@ -49,7 +49,7 @@ export function OpsLogin() {
       const result = await login({
         variables: { email: values.email.trim(), password: values.password },
       })
-      const token = result.data?.platformAdminLogin?.token
+      const token = result.data?.platformAdminLogin.token
       if (!token) throw new Error("Missing login response")
       setOpsToken(token)
       navigate({ to: "/ops" })

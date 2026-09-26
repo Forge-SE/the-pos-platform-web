@@ -72,8 +72,8 @@ function rangesEqual(a: DateRange | undefined, b: DateRange | undefined) {
   return (
     a?.from != null &&
     b?.from != null &&
-    a?.to != null &&
-    b?.to != null &&
+    a.to != null &&
+    b.to != null &&
     isSameDay(a.from, b.from) &&
     isSameDay(a.to, b.to)
   )

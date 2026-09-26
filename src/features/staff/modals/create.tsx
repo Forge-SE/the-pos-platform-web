@@ -84,7 +84,7 @@ export function CreateStaffDialog({
         const result = await createStaff({
           variables: { input: { name: values.name.trim(), role: values.role } },
         })
-        staffId = result.data?.createStaff?.id ?? null
+        staffId = result.data?.createStaff.id ?? null
         if (!staffId) throw new Error("The staff profile was not created.")
         setCreatedId(staffId)
       }
@@ -207,7 +207,7 @@ export function CreateStaffDialog({
                   onValueChange={(value) =>
                     void formik.setFieldValue(
                       "role",
-                      (value as StaffRole | null) ?? "CASHIER"
+                      (value) ?? "CASHIER"
                     )
                   }
                 >

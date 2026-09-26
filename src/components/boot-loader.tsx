@@ -12,7 +12,7 @@ export function BootLoader() {
 
   useEffect(() => {
     const startedAt = performance.now()
-    let raf = 0
+    const raf = 0
     let timer: ReturnType<typeof setTimeout> | undefined
 
     const hide = () => {

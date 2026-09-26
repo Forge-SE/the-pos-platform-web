@@ -111,7 +111,7 @@ export function OnboardingMenuStep({
         const created = await createCategory({
           variables: { input: { name: values.categoryName.trim() } },
         })
-        categoryId = created.data?.createMenuCategory?.id
+        categoryId = created.data?.createMenuCategory.id
       }
       if (!categoryId) throw new Error("The category was not created.")
       await createItem({
