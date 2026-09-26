@@ -16,10 +16,12 @@ import {
 } from "@phosphor-icons/react"
 
 import { PaymentDonut, PaymentDonutSkeleton } from "@/components/payment-donut"
+import { diningLabel } from "@/features/orders/labels"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import type { AccessTokenProfile } from "@/lib/auth-token"
+import { hasPermission } from "@/lib/permissions"
 
 const ACTIVE_ORDER_FIELDS = gql`
   fragment OverviewActiveOrder on Order {
@@ -103,7 +105,7 @@ interface Shift {
 interface ActiveOrder {
   id: string
   status: "NEW" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED"
-  diningType: "DINE_IN" | "TAKEAWAY"
+  diningType: "DINE_IN" | "TAKEAWAY" | "DELIVERY"
   total: number
   createdAt: string
   items: Array<{ id: string; name: string; quantity: number }>
@@ -144,13 +146,6 @@ interface OpenShiftVariables {
   }
 }
 
-const roleLabels: Record<AccessTokenProfile["role"], string> = {
-  CASHIER: "Cashier",
-  KITCHEN: "Kitchen",
-  MANAGER: "Manager",
-  OWNER: "Owner",
-}
-
 const statusStyles: Record<ActiveOrder["status"], string> = {
   NEW: "border-amber-200 bg-amber-50 text-amber-800",
   PREPARING: "border-sky-200 bg-sky-50 text-sky-800",
@@ -181,8 +176,8 @@ export function Overview() {
   const [shiftActionError, setShiftActionError] = useState<string | null>(null)
   const [retrying, setRetrying] = useState(false)
   const profile = getAccessTokenProfile() as AccessTokenProfile
-  const canSeeSales = profile.role === "MANAGER" || profile.role === "OWNER"
-  const canStartShift = profile.role !== "KITCHEN"
+  const canSeeSales = hasPermission(profile, "REPORTS_VIEW")
+  const opensShift = profile?.role === "CASHIER" || profile?.role === "KITCHEN"
   const { data, loading, error, refetch, subscribeToMore } =
     useQuery<OperationsData>(OPERATIONS_QUERY, { pollInterval: 30_000 })
   const [openShift, { loading: openingShift }] = useMutation<
@@ -340,7 +335,7 @@ export function Overview() {
               className="h-10 w-52 rounded-md border border-input bg-muted/40 pr-3 pl-9 text-sm transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/20"
             />
           </label>
-          {!loading && !shift && canStartShift ? (
+          {!loading && !shift && opensShift ? (
             <Button onClick={startShift} disabled={openingShift}>
               {openingShift ? (
                 <SpinnerGapIcon
@@ -368,34 +363,49 @@ export function Overview() {
         </p>
       )}
 
+      {!loading && opensShift && shift && (
+        <Link
+          to="/shift"
+          className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-card px-4 py-3 transition-colors hover:bg-muted/40"
+        >
+          <span>
+            <span className="block text-sm font-semibold">Shift is open</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              {`Opened ${new Date(shift.openedAt).toLocaleTimeString("en-GH", { hour: "numeric", minute: "2-digit" })} · float ${formatMoney(shift.openingFloat)}`}
+            </span>
+          </span>
+          <span className="text-sm font-medium text-secondary">Manage</span>
+        </Link>
+      )}
+
       <section
         aria-label="Today at a glance"
         className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
       >
-        <QuickStat
-          icon={WalletIcon}
-          label="Today's sales"
-          value={
-            salesLoading
-              ? "—"
-              : canSeeSales
-                ? formatMoney(salesData?.salesToday.totalSales ?? 0)
-                : "Private"
-          }
-          detail={canSeeSales ? "Settled today" : "Manager access"}
-        />
-        <QuickStat
-          icon={ReceiptIcon}
-          label="Today's orders"
-          value={
-            salesLoading
-              ? "—"
-              : canSeeSales
-                ? String(salesData?.salesToday.orderCount ?? 0)
-                : "Private"
-          }
-          detail={canSeeSales ? "Completed today" : "Manager access"}
-        />
+        {canSeeSales && (
+          <>
+            <QuickStat
+              icon={WalletIcon}
+              label="Today's sales"
+              value={
+                salesLoading
+                  ? "—"
+                  : formatMoney(salesData?.salesToday.totalSales ?? 0)
+              }
+              detail="Settled today"
+            />
+            <QuickStat
+              icon={ReceiptIcon}
+              label="Today's orders"
+              value={
+                salesLoading
+                  ? "—"
+                  : String(salesData?.salesToday.orderCount ?? 0)
+              }
+              detail="Completed today"
+            />
+          </>
+        )}
         <QuickStat
           icon={ReceiptIcon}
           label="Active orders"
@@ -449,18 +459,17 @@ export function Overview() {
         />
       ) : (
         <>
-          <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)]">
+          <div
+            className={`mt-6 grid gap-6 ${canSeeSales ? "xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)]" : ""}`}
+          >
             <ActiveOrders
               orders={visibleOrders}
               loading={loading}
               searching={Boolean(search.trim())}
             />
-            <PaymentMix
-              canSeeSales={canSeeSales}
-              loading={salesLoading}
-              sales={salesData?.salesToday}
-              profileRole={profile.role}
-            />
+            {canSeeSales && (
+              <PaymentMix loading={salesLoading} sales={salesData?.salesToday} />
+            )}
           </div>
         </>
       )}
@@ -529,7 +538,7 @@ function ActiveOrders({
                     .join(", ") || "Order items"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {order.diningType === "DINE_IN" ? "Dine in" : "Takeaway"} ·{" "}
+                  {diningLabel(order.diningType)} ·{" "}
                   {new Date(order.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -555,15 +564,11 @@ function ActiveOrders({
 }
 
 function PaymentMix({
-  canSeeSales,
   loading,
   sales,
-  profileRole,
 }: {
-  canSeeSales: boolean
   loading: boolean
   sales?: SalesData["salesToday"]
-  profileRole: AccessTokenProfile["role"]
 }) {
   return (
     <section className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
@@ -584,14 +589,7 @@ function PaymentMix({
           />
         </span>
       </div>
-      {!canSeeSales ? (
-        <StatePanel
-          className="mt-5 min-h-48"
-          icon={WalletIcon}
-          title="Visible to managers"
-          description={`Sales totals are hidden for the ${roleLabels[profileRole].toLowerCase()} role. Order activity remains available.`}
-        />
-      ) : loading ? (
+      {loading ? (
         <div className="mt-6">
           <PaymentDonutSkeleton />
         </div>

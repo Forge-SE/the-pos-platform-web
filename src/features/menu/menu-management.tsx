@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useMutation, useQuery } from "@apollo/client/react"
+import { Navigate } from "@tanstack/react-router"
 import { Menu } from "@base-ui/react/menu"
 import {
   CaretDownIcon,
@@ -7,6 +8,7 @@ import {
   ForkKnifeIcon,
   ImageIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
   SlidersHorizontalIcon,
   SpinnerGapIcon,
@@ -31,35 +33,32 @@ import { Switch } from "@/components/ui/switch"
 import { AddItemModal } from "@/features/menu/modals/add-item-modal"
 import { CategoryModal } from "@/features/menu/modals/category-modal"
 import { ConfigureOptionsModal } from "@/features/menu/modals/configure-options-modal"
+import { EditItemModal } from "@/features/menu/modals/edit-item-modal"
 import {
   COMPLETE_ITEM_IMAGE_UPLOAD,
   MENU_MANAGEMENT_QUERY,
-  REQUEST_ITEM_IMAGE_UPLOAD,
   SET_ITEM_AVAILABILITY,
   formatMoney,
   mutationMessage,
   uploadMenuImage,
 } from "@/features/menu/model"
 import type {
-  ImageUploadData,
   MenuItem,
   UploadState,
 } from "@/features/menu/model"
 import type { MenuManagementData } from "@/features/menu/model"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
 
 export function MenuManagement() {
   const profile = getAccessTokenProfile()
-  const canManage = profile?.role === "MANAGER" || profile?.role === "OWNER"
+  const canManage = hasPermission(profile, "MENU_MANAGE")
   const { data, loading, error, refetch } = useQuery<MenuManagementData>(
     MENU_MANAGEMENT_QUERY,
     { skip: !canManage }
   )
   const [setAvailability] = useMutation(SET_ITEM_AVAILABILITY)
-  const [requestImageUpload] = useMutation<ImageUploadData>(
-    REQUEST_ITEM_IMAGE_UPLOAD
-  )
   const [completeImageUpload] = useMutation(COMPLETE_ITEM_IMAGE_UPLOAD)
 
   const [search, setSearch] = useState("")
@@ -76,11 +75,13 @@ export function MenuManagement() {
   const optionsOpen = optionsParam !== null
   const [categoryParam, setCategoryParam] = useUrlState("category")
   const categoryOpen = categoryParam === "new"
+  const [editItemParam, setEditItemParam] = useUrlState("editItem")
   const [configMenuOpen, setConfigMenuOpen] = useState(false)
 
   const categories = data?.menuCategories ?? []
   const items = data?.menuItems ?? []
   const groups = data?.modifierGroups ?? []
+  const editingItem = items.find((item) => item.id === editItemParam) ?? null
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -102,26 +103,7 @@ export function MenuManagement() {
     [categories, filteredItems]
   )
 
-  if (!canManage) {
-    return (
-      <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <header>
-          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            Menu
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Build the sellable menu and its modifier choices.
-          </p>
-        </header>
-        <div className="mt-8 rounded-xl border border-border/70 bg-muted/20 p-8 text-center">
-          <p className="font-semibold">Manager access required</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Only managers and owners can change menu configuration.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  if (!canManage) return <Navigate to="/overview" replace />
 
   function openAddModal() {
     setAddItemParam("1")
@@ -160,7 +142,6 @@ export function MenuManagement() {
         [itemId]: { status: "uploading" },
       }))
       await uploadMenuImage(
-        (variables) => requestImageUpload({ variables }),
         (variables) => completeImageUpload({ variables }),
         itemId,
         file
@@ -289,8 +270,14 @@ export function MenuManagement() {
             </InputGroup>
             <div className="flex sm:ml-auto">
               <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value ?? "ALL")}>
-                <SelectTrigger className="w-full sm:w-36" aria-label="Filter by category">
-                  <SelectValue />
+                <SelectTrigger className="w-full sm:w-44" aria-label="Filter by category">
+                  <SelectValue placeholder="All categories">
+                    {(value) =>
+                      value === "ALL" || value == null
+                        ? "All categories"
+                        : (categories.find((category) => category.id === value)?.name ?? "All categories")
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All categories</SelectItem>
@@ -436,13 +423,34 @@ export function MenuManagement() {
                                 </p>
                               )}
                               {item.modifierGroups.length > 0 && (
-                                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                                  {item.modifierGroups.map((group) => (
-                                    <Badge key={group.id} variant="outline">
-                                      {group.name}
-                                    </Badge>
-                                  ))}
-                                </div>
+                                <ul className="mt-2.5 flex flex-wrap gap-1.5">
+                                  {item.modifierGroups.flatMap((attached) => {
+                                    const group = groups.find((entry) => entry.id === attached.id)
+                                    const options = (group?.options ?? []).filter((option) => option.active)
+                                    if (options.length === 0) {
+                                      return [
+                                        <li key={attached.id}>
+                                          <Badge variant="outline">{attached.name}</Badge>
+                                        </li>,
+                                      ]
+                                    }
+                                    return options.map((option) => (
+                                      <li
+                                        key={option.id}
+                                        className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/70 px-2 py-1 text-xs"
+                                      >
+                                        {option.imageUrl ? (
+                                          <img
+                                            src={option.imageUrl}
+                                            alt=""
+                                            className="size-5 shrink-0 rounded-full object-cover"
+                                          />
+                                        ) : null}
+                                        <span className="truncate">{option.name}</span>
+                                      </li>
+                                    ))
+                                  })}
+                                </ul>
                               )}
                               {uploadState.status === "error" && (
                                 <p className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
@@ -451,16 +459,26 @@ export function MenuManagement() {
                                 </p>
                               )}
                               <div className="mt-3.5 flex items-center justify-between border-t border-border/60 pt-3">
-                                <span className="text-xs text-muted-foreground">
-                                  {item.active ? "On sale" : "Hidden from sale"}
-                                </span>
-                                <Switch
-                                  checked={item.active}
-                                  onCheckedChange={(active) =>
-                                    void toggleAvailability(item, active)
-                                  }
-                                  aria-label={`${item.active ? "Make" : "Mark"} ${item.name} ${item.active ? "unavailable" : "available"}`}
-                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditItemParam(item.id)}
+                                >
+                                  <PencilSimpleIcon data-icon="inline-start" />
+                                  Edit
+                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    {item.active ? "On sale" : "Hidden"}
+                                  </span>
+                                  <Switch
+                                    checked={item.active}
+                                    onCheckedChange={(active) =>
+                                      void toggleAvailability(item, active)
+                                    }
+                                    aria-label={`${item.active ? "Make" : "Mark"} ${item.name} ${item.active ? "unavailable" : "available"}`}
+                                  />
+                                </div>
                               </div>
                             </div>
                           </article>
@@ -486,6 +504,20 @@ export function MenuManagement() {
         categories={categories}
         groups={groups}
         onAddCategory={openCategoryModal}
+      />
+      <EditItemModal
+        item={editingItem}
+        open={editItemParam !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditItemParam(null)
+        }}
+        onSaved={() => {
+          setEditItemParam(null)
+          void refetch()
+        }}
+        onChanged={() => refetch()}
+        categories={categories}
+        groups={groups}
       />
       <CategoryModal
         open={categoryOpen}

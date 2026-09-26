@@ -1,3 +1,5 @@
+import * as Yup from "yup"
+
 export type DiningType = "DINE_IN" | "TAKEAWAY"
 
 export interface RestaurantOnboardingValues {
@@ -91,58 +93,93 @@ export function toPlatformSetupInput(
 export type OnboardingField = keyof RestaurantOnboardingValues
 export type OnboardingErrors = Partial<Record<OnboardingField, string>>
 
-export function validateOnboardingStep(
-  step: number,
-  values: RestaurantOnboardingValues,
-  options?: { setupSecretRequired?: boolean }
-): OnboardingErrors {
-  const errors: OnboardingErrors = {}
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
+export function onboardingStepSchema(
+  step: number,
+  options?: { setupSecretRequired?: boolean },
+) {
   if (step === 0) {
-    if (values.name.trim().length < 2) {
-      errors.name = "Enter the restaurant name."
-    }
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(values.slug)) {
-      errors.slug = "Use lowercase letters, numbers, and single hyphens."
-    }
+    return Yup.object({
+      name: Yup.string()
+        .trim()
+        .min(2, "Enter the restaurant name.")
+        .required("Enter the restaurant name."),
+      slug: Yup.string()
+        .matches(
+          slugPattern,
+          "Use lowercase letters, numbers, and single hyphens.",
+        )
+        .required("Use lowercase letters, numbers, and single hyphens."),
+    })
   }
 
   if (step === 1) {
-    if (values.ownerName.trim().length < 2) {
-      errors.ownerName = "Enter the owner’s name."
-    }
-    if (!/^\d{4}$/.test(values.ownerPin)) {
-      errors.ownerPin = "Enter a four-digit PIN."
-    }
-    if (values.confirmOwnerPin !== values.ownerPin) {
-      errors.confirmOwnerPin = "The PINs do not match."
-    }
+    return Yup.object({
+      ownerName: Yup.string()
+        .trim()
+        .min(2, "Enter the owner’s name.")
+        .required("Enter the owner’s name."),
+      ownerPin: Yup.string()
+        .matches(/^\d{4}$/, "Enter a four-digit PIN.")
+        .required("Enter a four-digit PIN."),
+      confirmOwnerPin: Yup.string()
+        .required("The PINs do not match.")
+        .oneOf([Yup.ref("ownerPin")], "The PINs do not match."),
+    })
   }
 
   if (step === 2) {
-    const discount = Number(values.managerDiscountThresholdPercent)
-    const variance = Number(values.reconciliationVarianceGhs)
-
-    if (
-      values.managerDiscountThresholdPercent.trim() === "" ||
-      !Number.isFinite(discount) ||
-      discount < 0 ||
-      discount > 100
-    ) {
-      errors.managerDiscountThresholdPercent =
-        "Enter a percentage from 0 to 100."
+    const shape: Record<string, Yup.AnySchema> = {
+      managerDiscountThresholdPercent: Yup.string().test(
+        "percent",
+        "Enter a percentage from 0 to 100.",
+        (value) => {
+          if (value == null || value.trim() === "") return false
+          const discount = Number(value)
+          return Number.isFinite(discount) && discount >= 0 && discount <= 100
+        },
+      ),
+      reconciliationVarianceGhs: Yup.string().test(
+        "amount",
+        "Enter zero or a positive amount.",
+        (value) => {
+          if (value == null || value.trim() === "") return false
+          const variance = Number(value)
+          return Number.isFinite(variance) && variance >= 0
+        },
+      ),
     }
-    if (
-      values.reconciliationVarianceGhs.trim() === "" ||
-      !Number.isFinite(variance) ||
-      variance < 0
-    ) {
-      errors.reconciliationVarianceGhs = "Enter zero or a positive amount."
+    if (options?.setupSecretRequired !== false) {
+      shape.setupSecret = Yup.string()
+        .trim()
+        .required("Enter the setup access code.")
     }
-    if (options?.setupSecretRequired !== false && !values.setupSecret.trim()) {
-      errors.setupSecret = "Enter the setup access code."
-    }
+    return Yup.object(shape)
   }
 
-  return errors
+  return Yup.object({})
+}
+
+export function validateOnboardingStep(
+  step: number,
+  values: RestaurantOnboardingValues,
+  options?: { setupSecretRequired?: boolean },
+): OnboardingErrors {
+  try {
+    onboardingStepSchema(step, options).validateSync(values, {
+      abortEarly: false,
+    })
+    return {}
+  } catch (error) {
+    if (!(error instanceof Yup.ValidationError)) return {}
+    const errors: OnboardingErrors = {}
+    const issues = error.inner.length > 0 ? error.inner : [error]
+    for (const issue of issues) {
+      const path = issue.path as OnboardingField | undefined
+      if (!path || errors[path]) continue
+      errors[path] = issue.message
+    }
+    return errors
+  }
 }

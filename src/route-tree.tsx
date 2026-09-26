@@ -116,9 +116,21 @@ const legacyDashboardRoute = createRoute({
 
 const noIndexMeta = [{ name: "robots", content: "noindex, nofollow" }]
 
-// Internal platform-admin area. Deliberately unlisted: no nav links point
-// here, unauthenticated visits render the 404 page, and the API enforces
-// PLATFORM_ADMIN on every resolver via requirePlatformAdmin.
+const onboardingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/onboarding",
+  component: lazyRouteComponent(() => import("@/pages/Onboarding"), "Onboarding"),
+  head: () => ({
+    meta: [
+      { title: "Set up your till | Ovaal" },
+      {
+        name: "description",
+        content: "Add your team and opening menu the first time you sign in.",
+      },
+    ],
+  }),
+})
+
 const opsLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/ops/login",
@@ -128,12 +140,66 @@ const opsLoginRoute = createRoute({
   }),
 })
 
-const opsRoute = createRoute({
+const opsLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/ops",
+  id: "_ops",
   component: lazyRouteComponent(() => import("@/pages/Ops"), "Ops"),
+})
+
+const opsRestaurantsRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops",
+  component: lazyRouteComponent(
+    () => import("@/pages/OpsRestaurants"),
+    "OpsRestaurants",
+  ),
   head: () => ({
-    meta: [{ title: "Platform overview | POS Platform" }, ...noIndexMeta],
+    meta: [{ title: "Restaurants | Platform" }, ...noIndexMeta],
+  }),
+})
+
+const opsProvisionRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/new",
+  component: lazyRouteComponent(
+    () => import("@/pages/OpsProvision"),
+    "OpsProvision",
+  ),
+  head: () => ({
+    meta: [{ title: "Add restaurant | Platform" }, ...noIndexMeta],
+  }),
+})
+
+const opsMetricsRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/metrics",
+  component: lazyRouteComponent(
+    () => import("@/pages/OpsMetrics"),
+    "OpsMetrics",
+  ),
+  head: () => ({
+    meta: [{ title: "Metrics | Platform" }, ...noIndexMeta],
+  }),
+})
+
+const opsSubscriptionsRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/subscriptions",
+  component: lazyRouteComponent(
+    () => import("@/pages/OpsSubscriptions"),
+    "OpsSubscriptions",
+  ),
+  head: () => ({
+    meta: [{ title: "Subscriptions | Platform" }, ...noIndexMeta],
+  }),
+})
+
+const opsAuditRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/audit",
+  component: lazyRouteComponent(() => import("@/pages/OpsAudit"), "OpsAudit"),
+  head: () => ({
+    meta: [{ title: "Audit log | Platform" }, ...noIndexMeta],
   }),
 })
 
@@ -149,6 +215,13 @@ export const routeTree = rootRoute.addChildren([
     settingsRoute,
   ]),
   legacyDashboardRoute,
+  onboardingRoute,
   opsLoginRoute,
-  opsRoute,
+  opsLayoutRoute.addChildren([
+    opsRestaurantsRoute,
+    opsProvisionRoute,
+    opsMetricsRoute,
+    opsSubscriptionsRoute,
+    opsAuditRoute,
+  ]),
 ])

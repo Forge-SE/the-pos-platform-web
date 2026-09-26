@@ -9,8 +9,13 @@ import {
 } from "@phosphor-icons/react"
 
 import { SectionPage } from "@/components/layout/section-page"
+import { MomoAccounts } from "@/features/payouts/momo-accounts"
+import { SubscriptionPanel } from "@/features/subscriptions/subscription-panel"
 import { Button } from "@/components/ui/button"
+import { validateImageFile } from "@/features/menu/model"
+import { uploadImageToCloudinary } from "@/lib/cloudinary"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { hasPermission } from "@/lib/permissions"
 
 const RESTAURANT_QUERY = gql`
   query RestaurantBranding {
@@ -22,20 +27,6 @@ const RESTAURANT_QUERY = gql`
       currency
       timezone
       logoUrl
-    }
-  }
-`
-
-const REQUEST_LOGO_UPLOAD = gql`
-  mutation RequestRestaurantLogoUpload($contentType: String!) {
-    requestRestaurantLogoUpload(contentType: $contentType) {
-      objectKey
-      url
-      method
-      headers {
-        name
-        value
-      }
     }
   }
 `
@@ -63,60 +54,35 @@ interface RestaurantData {
   }
 }
 
-interface LogoUploadData {
-  requestRestaurantLogoUpload: {
-    objectKey: string
-    url: string
-    method: string
-    headers: Array<{ name: string; value: string }>
-  }
-}
-
 export function RestaurantBranding() {
   const profile = getAccessTokenProfile()
-  const canManage = profile?.role === "MANAGER" || profile?.role === "OWNER"
+  const canManage = hasPermission(profile, "SETTINGS_MANAGE")
   const { data, loading, error, refetch } =
     useQuery<RestaurantData>(RESTAURANT_QUERY)
-  const [requestUpload] = useMutation<LogoUploadData>(REQUEST_LOGO_UPLOAD)
   const [completeUpload] = useMutation(COMPLETE_LOGO_UPLOAD)
   const [status, setStatus] = useState<LogoStatus>("idle")
   const [message, setMessage] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function uploadLogo(file: File) {
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    try {
+      validateImageFile(file)
+    } catch (validationError) {
       setStatus("error")
-      setMessage("Use JPEG, PNG, or WebP.")
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setStatus("error")
-      setMessage("Logo must be 5 MiB or smaller.")
+      setMessage(
+        validationError instanceof Error
+          ? validationError.message
+          : "Use JPEG, PNG, or WebP.",
+      )
       return
     }
     try {
       setStatus("uploading")
       setMessage(null)
-      const request = await requestUpload({
-        variables: { contentType: file.type },
-      })
-      const upload = request.data?.requestRestaurantLogoUpload
-      if (!upload) throw new Error("The upload could not be prepared.")
-      const response = await fetch(upload.url, {
-        method: upload.method,
-        headers: Object.fromEntries(
-          upload.headers.map((header: { name: string; value: string }) => [
-            header.name,
-            header.value,
-          ]),
-        ),
-        body: file,
-      })
-      if (!response.ok) throw new Error("The logo upload failed.")
-
+      const secureUrl = await uploadImageToCloudinary(file)
       setStatus("verifying")
       await completeUpload({
-        variables: { objectKey: upload.objectKey },
+        variables: { objectKey: secureUrl },
       })
       await refetch()
       setStatus("done")
@@ -135,7 +101,7 @@ export function RestaurantBranding() {
   return (
     <SectionPage
       title="Settings"
-      description="Manage restaurant details and branding."
+      description="Manage branding, the subscription, and the mobile money numbers that receive payments."
     >
       <div className="mt-8 grid gap-6 xl:grid-cols-2">
         <section className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
@@ -240,6 +206,8 @@ export function RestaurantBranding() {
           )}
         </section>
       </div>
+      <SubscriptionPanel canManage={canManage} />
+      <MomoAccounts />
     </SectionPage>
   )
 }

@@ -2,6 +2,7 @@ import { onError } from "@apollo/client/link/error"
 
 export const APOLLO_ERROR_EVENT = "apollo:error"
 export const APOLLO_UNAUTHENTICATED_EVENT = "apollo:unauthenticated"
+export const APOLLO_RESTAURANT_SUSPENDED_EVENT = "apollo:restaurant-suspended"
 
 export interface ApolloErrorDetail {
   message: string
@@ -69,5 +70,9 @@ export const apolloErrorLink = onError((options) => {
 
   if (isAuthenticationError(payload)) {
     window.dispatchEvent(new Event(APOLLO_UNAUTHENTICATED_EVENT))
+  }
+
+  if (/suspended/i.test(rawMessage ?? "")) {
+    window.dispatchEvent(new Event(APOLLO_RESTAURANT_SUSPENDED_EVENT))
   }
 })

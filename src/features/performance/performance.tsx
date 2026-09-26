@@ -1,5 +1,4 @@
 import { useQuery } from "@apollo/client/react"
-import { WarningCircleIcon } from "@phosphor-icons/react"
 
 import { isSameDay } from "date-fns"
 
@@ -30,6 +29,7 @@ import {
   VarianceCard,
 } from "@/features/performance/preview"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
 
 type PerfTab = "all" | "revenue" | "orders" | "staff"
@@ -56,10 +56,13 @@ function ComingSoonNote() {
 
 export function Performance() {
   const profile = getAccessTokenProfile()
-  const canSeeSales =
-    profile?.role === "MANAGER" || profile?.role === "OWNER"
+  const canSeeSales = hasPermission(profile, "REPORTS_VIEW")
+  const tabs = TABS.filter(
+    (entry) => canSeeSales || (entry.id !== "revenue" && entry.id !== "staff"),
+  )
   const [tabParam, setTabParam] = useUrlState("perfTab")
-  const tab: PerfTab = isTab(tabParam) ? tabParam : "all"
+  const tab: PerfTab =
+    isTab(tabParam) && tabs.some((entry) => entry.id === tabParam) ? tabParam : "all"
   const [rangeParam, setRangeParam] = useUrlState("range")
   const [fromParam, setFromParam] = useUrlState("from")
   const [toParam, setToParam] = useUrlState("to")
@@ -107,7 +110,6 @@ export function Performance() {
   const salesProps = {
     sales: data?.salesToday,
     salesLoading: loading || !data,
-    canSeeSales,
   }
 
   return (
@@ -119,9 +121,9 @@ export function Performance() {
         <div
           role="tablist"
           aria-label="Analytics categories"
-          className="grid grid-cols-4 gap-1 rounded-lg bg-muted/50 p-1 sm:max-w-md"
+          className={`grid gap-1 rounded-lg bg-muted/50 p-1 sm:max-w-md ${tabs.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}
         >
-          {TABS.map((entry) => {
+          {tabs.map((entry) => {
             const selected = entry.id === tab
             return (
               <button
@@ -155,13 +157,13 @@ export function Performance() {
         </div>
       ) : (
         <div className="mt-8">
-          {(tab === "all" || tab === "revenue" || tab === "orders") && (
+          {canSeeSales && (tab === "all" || tab === "revenue" || tab === "orders") && (
             <HeroStats {...salesProps} />
           )}
 
           {tab === "all" && (
-            <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              <PaymentSplitCard {...salesProps} />
+            <div className={`mt-4 grid gap-4 ${canSeeSales ? "xl:grid-cols-2" : ""}`}>
+              {canSeeSales && <PaymentSplitCard {...salesProps} />}
               <div className="grid content-start gap-4">
                 <ShiftProgressCard
                   shift={data?.currentShift ?? null}
@@ -209,13 +211,6 @@ export function Performance() {
                 </h2>
               </div>
               <ComingSoonNote />
-              {!canSeeSales && (
-                <p className="mt-2 flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-                  <WarningCircleIcon className="mt-0.5 size-4 shrink-0" />
-                  Full analytics will be manager and owner only, like live
-                  sales figures.
-                </p>
-              )}
               <div className="mt-4 grid gap-4 xl:grid-cols-2">
                 <SalesTrendCard />
                 <BestSellersCard />
@@ -252,15 +247,6 @@ export function Performance() {
             </div>
           )}
 
-          {tab === "staff" && !canSeeSales && (
-            <div className="mt-10">
-              <ComingSoonNote />
-              <p className="mt-2 flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-                <WarningCircleIcon className="mt-0.5 size-4 shrink-0" />
-                Staff analytics will be manager and owner only.
-              </p>
-            </div>
-          )}
         </div>
       )}
     </SectionPage>

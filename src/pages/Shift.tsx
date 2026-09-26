@@ -1,10 +1,11 @@
-import { SectionPage } from "@/components/layout/section-page"
+import { getAccessTokenProfile } from "@/lib/auth-token"
+import { ShiftDesk } from "@/features/shifts/shift-desk"
+import { ShiftReview } from "@/features/shifts/shift-review"
 
 export function Shift() {
-  return (
-    <SectionPage
-      title="Shift & cash"
-      description="Open shifts, monitor cash activity, and reconcile the register."
-    />
-  )
+  const profile = getAccessTokenProfile()
+  if (profile?.role === "OWNER" || profile?.role === "MANAGER") {
+    return <ShiftReview />
+  }
+  return <ShiftDesk />
 }

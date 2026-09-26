@@ -1,6 +1,7 @@
 import { useRef, useState } from "react"
-import type { FormEvent } from "react"
 import { useMutation } from "@apollo/client/react"
+import type { FormikProps } from "formik"
+import * as Yup from "yup"
 import { Dialog } from "@base-ui/react/dialog"
 import {
   CaretLeftIcon,
@@ -16,8 +17,10 @@ import { Button } from "@/components/ui/button"
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldLabel,
 } from "@/components/ui/field"
+import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -32,14 +35,12 @@ import {
   ATTACH_MODIFIER_GROUP,
   COMPLETE_ITEM_IMAGE_UPLOAD,
   CREATE_ITEM,
-  REQUEST_ITEM_IMAGE_UPLOAD,
   cedisToPesewas,
   mutationMessage,
   uploadMenuImage,
 } from "@/features/menu/model"
 import type {
   CreatedItem,
-  ImageUploadData,
   MenuCategory,
   ModifierGroup,
   UploadState,
@@ -48,6 +49,24 @@ import type {
 import { MenuDialog } from "./menu-dialog"
 
 const STEPS = ["Details", "Photo", "Modifiers"] as const
+
+const itemValues = {
+  categoryId: "",
+  name: "",
+  description: "",
+  price: "",
+}
+
+const itemSchema = Yup.object({
+  categoryId: Yup.string().required("Choose a category."),
+  name: Yup.string().trim().required("Enter an item name."),
+  description: Yup.string(),
+  price: Yup.string().test(
+    "cedis",
+    "Use a valid cedi amount with no more than two decimal places.",
+    (value) => cedisToPesewas(value ?? "") !== null,
+  ),
+})
 
 function StepIndicator({ step }: { step: number }) {
   return (
@@ -115,9 +134,6 @@ export function AddItemModal({
     CREATE_ITEM
   )
   const [attachGroup, attachMutation] = useMutation(ATTACH_MODIFIER_GROUP)
-  const [requestImageUpload] = useMutation<ImageUploadData>(
-    REQUEST_ITEM_IMAGE_UPLOAD
-  )
   const [completeImageUpload] = useMutation(COMPLETE_ITEM_IMAGE_UPLOAD)
 
   const [itemStepParam, setItemStepParam] = useUrlState("itemStep")
@@ -129,10 +145,7 @@ export function AddItemModal({
   const setStep = (next: number) =>
     setItemStepParam(next === 1 ? null : String(next))
 
-  const [itemCategoryId, setItemCategoryId] = useState("")
-  const [itemName, setItemName] = useState("")
-  const [itemDescription, setItemDescription] = useState("")
-  const [itemPrice, setItemPrice] = useState("")
+  const detailsRef = useRef<FormikProps<typeof itemValues> | null>(null)
   const [modalError, setModalError] = useState<string | null>(null)
   const [modalUpload, setModalUpload] = useState<UploadState>({ status: "idle" })
   const [modalPreview, setModalPreview] = useState<string | null>(null)
@@ -142,33 +155,24 @@ export function AddItemModal({
   function reset() {
     setItemStepParam(null)
     setCreatedItem(null)
-    setItemCategoryId("")
-    setItemName("")
-    setItemDescription("")
-    setItemPrice("")
+    detailsRef.current?.resetForm()
     setModalError(null)
     setModalUpload({ status: "idle" })
     setModalPreview(null)
     setAttachedGroups([])
   }
 
-  async function submitNewItem(event: FormEvent) {
-    event.preventDefault()
-    const price = cedisToPesewas(itemPrice)
-    if (!itemCategoryId || !itemName.trim() || price === null) {
-      setModalError(
-        "Choose a category, enter an item name, and use a valid cedi amount with no more than two decimal places."
-      )
-      return
-    }
+  async function submitNewItem(values: typeof itemValues) {
+    const price = cedisToPesewas(values.price)
+    if (price === null) return
     try {
       setModalError(null)
       const result = await createItem({
         variables: {
           input: {
-            categoryId: itemCategoryId,
-            name: itemName.trim(),
-            description: itemDescription.trim() || null,
+            categoryId: values.categoryId,
+            name: values.name.trim(),
+            description: values.description.trim() || null,
             price,
           },
         },
@@ -189,7 +193,6 @@ export function AddItemModal({
     try {
       setModalUpload({ status: "uploading" })
       await uploadMenuImage(
-        (variables) => requestImageUpload({ variables }),
         (variables) => completeImageUpload({ variables }),
         createdItem.id,
         file
@@ -296,32 +299,50 @@ export function AddItemModal({
       )}
 
       {step === 1 && (
-        <form
+        <Form
           id="add-item-details-form"
           className="mt-6 space-y-4"
+          initialValues={itemValues}
+          validationSchema={itemSchema}
           onSubmit={submitNewItem}
         >
+          {(formik) => {
+            detailsRef.current = formik
+            const categoryError = fieldError(formik, "categoryId")
+            const nameError = fieldError(formik, "name")
+            const priceError = fieldError(formik, "price")
+            return (
+              <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field>
+            <Field data-invalid={Boolean(categoryError)}>
               <FieldLabel>Category</FieldLabel>
-              <Select value={itemCategoryId} onValueChange={(value) => setItemCategoryId(value ?? "")}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="Choose category" /></SelectTrigger>
+              <Select value={formik.values.categoryId} onValueChange={(value) => void formik.setFieldValue("categoryId", value ?? "")}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose category">
+                    {(value) =>
+                      categories.find((category) => category.id === value)?.name ?? "Choose category"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>{categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}</SelectContent>
               </Select>
+              <FieldError>{categoryError}</FieldError>
             </Field>
-            <Field>
+            <Field data-invalid={Boolean(nameError)}>
               <FieldLabel htmlFor="new-item-name">Item name</FieldLabel>
-              <Input id="new-item-name" value={itemName} onChange={(event) => setItemName(event.target.value)} placeholder="Jollof rice" />
+              <Input id="new-item-name" name="name" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="Jollof rice" aria-invalid={Boolean(nameError)} />
+              <FieldError>{nameError}</FieldError>
             </Field>
           </div>
           <Field>
             <FieldLabel htmlFor="new-item-description">Description</FieldLabel>
-            <Textarea id="new-item-description" value={itemDescription} onChange={(event) => setItemDescription(event.target.value)} placeholder="Optional description" />
+            <Textarea id="new-item-description" name="description" value={formik.values.description} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="Optional description" />
           </Field>
-          <Field className="max-w-48">
+          <Field className="max-w-48" data-invalid={Boolean(priceError)}>
             <FieldLabel htmlFor="new-item-price">Price (GHS)</FieldLabel>
-            <Input id="new-item-price" inputMode="decimal" value={itemPrice} onChange={(event) => setItemPrice(event.target.value)} placeholder="25.00" />
+            <Input id="new-item-price" name="price" inputMode="decimal" value={formik.values.price} onChange={formik.handleChange} onBlur={formik.handleBlur} placeholder="25.00" aria-invalid={Boolean(priceError)} />
             <FieldDescription>Up to two decimal places.</FieldDescription>
+            <FieldError>{priceError}</FieldError>
           </Field>
           {categories.length === 0 && (
             <p className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
@@ -342,7 +363,10 @@ export function AddItemModal({
               </span>
             </p>
           )}
-        </form>
+              </>
+            )
+          }}
+        </Form>
       )}
 
       {step === 2 && createdItem && (

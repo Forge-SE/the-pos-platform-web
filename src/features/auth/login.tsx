@@ -1,30 +1,82 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { gql } from "@apollo/client"
-import { useMutation } from "@apollo/client/react"
+import { useLazyQuery, useMutation } from "@apollo/client/react"
 import { useNavigate } from "@tanstack/react-router"
+import type { FormikProps } from "formik"
+import * as Yup from "yup"
 import {
   CheckCircleIcon,
   CopyrightIcon,
   QuestionIcon,
   SpinnerGapIcon,
 } from "@phosphor-icons/react"
+import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr"
 
-import { Button } from "@/components/ui/button"
 import { OvaalMark } from "@/components/ovaal-mark"
+import { Button } from "@/components/ui/button"
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
+import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { PinInput } from "@/components/ui/pin-input"
+import { StaffRail } from "@/features/auth/staff-rail"
+import type { SignInProfile } from "@/features/auth/staff-rail"
 import { clearAccessToken, setAccessToken } from "@/lib/auth-token"
-import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr"
+
+function readableAuthError(error: unknown) {
+  if (error && typeof error === "object" && "errors" in error) {
+    const errors = (error as { errors?: Array<{ message?: string }> }).errors
+    const joined = errors
+      ?.map((item) => item.message)
+      .filter((message): message is string => Boolean(message))
+      .join(" ")
+    if (joined) return joined
+  }
+  return error instanceof Error ? error.message : ""
+}
+
+const STAFF_DIRECTORY = gql`
+  query StaffDirectory($code: String!) {
+    staffDirectory(code: $code) {
+      restaurantName
+      profiles {
+        id
+        name
+        role
+        avatarUrl
+        pinSet
+      }
+    }
+  }
+`
 
 const LOGIN = gql`
-  mutation Login($restaurantId: ID!, $pin: String!) {
-    login(restaurantId: $restaurantId, pin: $pin) {
+  mutation Login($userId: ID!, $pin: String!) {
+    login(userId: $userId, pin: $pin) {
+      token
+      user {
+        id
+        restaurantId
+        name
+        role
+      }
+    }
+  }
+`
+
+const ONBOARDING_QUERY = gql`
+  query OwnerOnboardingAfterSignIn {
+    ownerOnboardingRequired
+  }
+`
+
+const SET_STAFF_PIN = gql`
+  mutation SetStaffPin($userId: ID!, $pin: String!) {
+    setStaffPin(userId: $userId, pin: $pin) {
       token
       user {
         id
@@ -37,22 +89,64 @@ const LOGIN = gql`
 `
 
 type Role = "CASHIER" | "KITCHEN" | "MANAGER" | "OWNER"
+type Step = "restaurant" | "profiles" | "pin" | "set-pin" | "confirm-pin"
 
-interface LoginResult {
-  login: {
-    token: string
-    user: {
-      id: string
-      restaurantId: string
-      name: string
-      role: Role
-    }
+interface AuthUser {
+  id: string
+  restaurantId: string
+  name: string
+  role: Role
+}
+
+interface AuthPayload {
+  token: string
+  user: AuthUser
+}
+
+interface DirectoryData {
+  staffDirectory: {
+    restaurantName: string
+    profiles: SignInProfile[]
   }
 }
 
-interface LoginVariables {
-  restaurantId: string
-  pin: string
+const loginValues = {
+  restaurantCode: "",
+  pin: "",
+  confirmPin: "",
+}
+
+function loginSchema(step: Step) {
+  if (step === "restaurant") {
+    return Yup.object({
+      restaurantCode: Yup.string()
+        .trim()
+        .required("Enter your restaurant code."),
+    })
+  }
+  if (step === "set-pin") {
+    return Yup.object({
+      pin: Yup.string()
+        .matches(/^\d{4}$/, "Choose a four-digit PIN.")
+        .required("Choose a four-digit PIN."),
+    })
+  }
+  if (step === "confirm-pin") {
+    return Yup.object({
+      confirmPin: Yup.string()
+        .matches(/^\d{4}$/, "Enter the same four digits again.")
+        .required("Enter the same four digits again.")
+        .oneOf([Yup.ref("pin")], "The PINs do not match."),
+    })
+  }
+  if (step === "pin") {
+    return Yup.object({
+      pin: Yup.string()
+        .matches(/^\d{4}$/, "Enter your four-digit PIN.")
+        .required("Enter your four-digit PIN."),
+    })
+  }
+  return Yup.object({})
 }
 
 const roleLabels: Record<Role, string> = {
@@ -64,89 +158,205 @@ const roleLabels: Record<Role, string> = {
 
 export function Login() {
   const navigate = useNavigate()
-  const [step, setStep] = useState<"restaurant" | "pin">("restaurant")
-  const [restaurantId, setRestaurantId] = useState("")
-  const [pin, setPin] = useState("")
-  const [fieldErrors, setFieldErrors] = useState<{
-    restaurantId?: string
-    pin?: string
-  }>({})
+  const [step, setStep] = useState<Step>("restaurant")
+  const [restaurantCode, setRestaurantCode] = useState("")
+  const [restaurantName, setRestaurantName] = useState("")
+  const [profiles, setProfiles] = useState<SignInProfile[]>([])
+  const [selected, setSelected] = useState<SignInProfile | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
-  const [signedInUser, setSignedInUser] = useState<
-    LoginResult["login"]["user"] | null
-  >(null)
 
-  const [login, { loading }] = useMutation<LoginResult, LoginVariables>(LOGIN)
+  useEffect(() => {
+    const notice = sessionStorage.getItem("pos.suspended-notice")
+    if (!notice) return
+    sessionStorage.removeItem("pos.suspended-notice")
+    setAuthError(notice)
+  }, [])
+  const formikRef = useRef<FormikProps<typeof loginValues> | null>(null)
+  const [signedInUser, setSignedInUser] = useState<AuthUser | null>(null)
+  const [nextPath, setNextPath] = useState<"/overview" | "/onboarding">("/overview")
+
+  const [loadDirectory, directoryState] = useLazyQuery<
+    DirectoryData,
+    { code: string }
+  >(STAFF_DIRECTORY)
+  const [login, loginState] = useMutation<
+    { login: AuthPayload },
+    { userId: string; pin: string }
+  >(LOGIN)
+  const [setStaffPin, setPinState] = useMutation<
+    { setStaffPin: AuthPayload },
+    { userId: string; pin: string }
+  >(SET_STAFF_PIN)
+  const [loadOnboarding] = useLazyQuery<{ ownerOnboardingRequired: boolean }>(
+    ONBOARDING_QUERY,
+    { fetchPolicy: "network-only" },
+  )
+
+  const busy =
+    directoryState.loading || loginState.loading || setPinState.loading
 
   useEffect(() => {
     if (!signedInUser) return
     const id = window.setTimeout(() => {
-      navigate({ to: "/overview", replace: true })
+      navigate({ to: nextPath, replace: true })
     }, 1400)
     return () => window.clearTimeout(id)
-  }, [navigate, signedInUser])
+  }, [navigate, nextPath, signedInUser])
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function finishSignIn(payload: AuthPayload) {
+    setAccessToken(payload.token)
+    let destination: "/overview" | "/onboarding" = "/overview"
+    if (payload.user.role === "OWNER") {
+      const result = await loadOnboarding()
+      if (result.data?.ownerOnboardingRequired) destination = "/onboarding"
+    }
+    setNextPath(destination)
+    setSignedInUser(payload.user)
+  }
 
+  function clearPinFields() {
+    const formik = formikRef.current
+    void formik?.setFieldValue("pin", "")
+    void formik?.setFieldValue("confirmPin", "")
+    formik?.setErrors({})
+    void formik?.setTouched({})
+    setAuthError(null)
+  }
+
+  async function submit(values: typeof loginValues) {
     if (step === "restaurant") {
-      if (!restaurantId.trim()) {
-        setFieldErrors({ restaurantId: "Enter your restaurant code." })
+      const trimmed = values.restaurantCode.trim()
+      const code = trimmed.length <= 12 ? trimmed.toUpperCase() : trimmed
+      setRestaurantCode(code)
+      try {
         setAuthError(null)
-        return
+        const result = await loadDirectory({ variables: { code } })
+        if (result.error) throw result.error
+        const directory = result.data?.staffDirectory
+        if (!directory) throw new Error("Restaurant not found")
+        setRestaurantName(directory.restaurantName)
+        setProfiles(directory.profiles)
+        setStep("profiles")
+      } catch (error) {
+        const message = readableAuthError(error)
+        setAuthError(
+          /suspended/i.test(message)
+            ? "This restaurant is suspended. Contact the platform team to restore access."
+            : /not found/i.test(message)
+              ? "We couldn’t find that restaurant. Check the code and try again."
+              : "We couldn’t look up that restaurant. Check the code and try again.",
+        )
       }
-      setFieldErrors({})
-      setAuthError(null)
-      // Short codes are case-insensitive; UUIDs pass through untouched.
-      const trimmed = restaurantId.trim()
-      if (trimmed.length <= 12) setRestaurantId(trimmed.toUpperCase())
-      else setRestaurantId(trimmed)
-      setStep("pin")
       return
     }
 
-    if (!/^\d{4}$/.test(pin)) {
-      setFieldErrors({ pin: "Enter your four-digit PIN." })
+    if (!selected) return
+
+    if (step === "set-pin") {
       setAuthError(null)
+      void formikRef.current?.setFieldValue("confirmPin", "")
+      formikRef.current?.setFieldError("confirmPin", undefined)
+      setStep("confirm-pin")
+      return
+    }
+
+    if (step === "confirm-pin") {
+      try {
+        setAuthError(null)
+        const result = await setStaffPin({
+          variables: { userId: selected.id, pin: values.pin },
+        })
+        const payload = result.data?.setStaffPin
+        if (!payload) throw new Error("Missing response")
+        await finishSignIn(payload)
+      } catch (error) {
+        const message = readableAuthError(error)
+        setAuthError(
+          /suspended/i.test(message)
+            ? "This restaurant is suspended. Contact the platform team to restore access."
+            : message || "We couldn’t save that PIN. Try a different four digits.",
+        )
+      }
       return
     }
 
     try {
-      setFieldErrors({})
       setAuthError(null)
       const result = await login({
-        variables: { restaurantId: restaurantId.trim(), pin },
+        variables: { userId: selected.id, pin: values.pin },
       })
       const payload = result.data?.login
       if (!payload) throw new Error("Missing login response")
-      setAccessToken(payload.token)
-      setSignedInUser(payload.user)
-    } catch {
+      await finishSignIn(payload)
+    } catch (error) {
+      const message = readableAuthError(error)
       setAuthError(
-        "We couldn’t sign you in. Check your restaurant code and PIN, then try again."
+        /suspended/i.test(message)
+          ? "This restaurant is suspended. Contact the platform team to restore access."
+          : "That PIN doesn’t match this profile. Try again.",
       )
     }
+  }
+
+  function chooseProfile(profile: SignInProfile) {
+    setSelected(profile)
+    clearPinFields()
+    setStep(profile.pinSet ? "pin" : "set-pin")
   }
 
   function resetLogin() {
     clearAccessToken()
     setSignedInUser(null)
-    setPin("")
-    setAuthError(null)
+    setSelected(null)
+    setProfiles([])
+    setRestaurantName("")
+    clearPinFields()
     setStep("restaurant")
   }
 
   function goBack() {
-    setPin("")
-    setFieldErrors({})
-    setAuthError(null)
+    if (step === "confirm-pin") {
+      void formikRef.current?.setFieldValue("confirmPin", "")
+      formikRef.current?.setFieldError("confirmPin", undefined)
+      setAuthError(null)
+      setStep("set-pin")
+      return
+    }
+    clearPinFields()
+    if (step === "pin" || step === "set-pin") {
+      setSelected(null)
+      setStep("profiles")
+      return
+    }
     setStep("restaurant")
   }
+
+  const heading =
+    step === "restaurant"
+      ? "Sign in"
+      : step === "profiles"
+        ? "Who’s signing in?"
+        : step === "set-pin"
+          ? "Choose your PIN"
+          : step === "confirm-pin"
+            ? "Confirm your PIN"
+            : "Enter your PIN"
+
+  const description =
+    step === "restaurant"
+      ? "Enter your restaurant code to see the team."
+      : step === "profiles"
+        ? `Choose your profile at ${restaurantName || restaurantCode}.`
+        : step === "set-pin"
+          ? `${selected?.name}, this is your first sign-in. Pick a four-digit PIN you’ll use from now on.`
+          : step === "confirm-pin"
+            ? `${selected?.name}, enter those four digits again.`
+            : `${selected?.name}, enter the four-digit PIN for ${restaurantName || restaurantCode}.`
 
   return (
     <main className="place-items-left relative grid min-h-svh bg-[url('/auth.jpg')] bg-cover bg-center px-4 py-8 sm:px-6">
       <div aria-hidden="true" className="absolute inset-0 bg-black/60" />
-      <section className="relative flex min-h-[560px] w-full max-w-md flex-col rounded-xl bg-card p-5 text-card-foreground sm:p-8">
+      <section className="relative flex min-h-[560px] w-full max-w-lg flex-col rounded-xl bg-card p-5 text-card-foreground sm:p-8">
         <div className="flex justify-end">
           <a
             href="mailto:support@ovaal.app"
@@ -161,19 +371,18 @@ export function Login() {
           {signedInUser ? (
             <SignedIn
               user={signedInUser}
-              onContinue={() => navigate({ to: "/overview", replace: true })}
+              continueLabel={nextPath === "/onboarding" ? "Continue setup" : "Go to overview"}
+              onContinue={() => navigate({ to: nextPath, replace: true })}
               onReset={resetLogin}
             />
           ) : (
             <div className="w-full">
               <header className="mt-7 text-center">
                 <h1 className="text-2xl font-medium tracking-[-0.025em]">
-                  {step === "restaurant" ? "Sign in" : "Enter your PIN"}
+                  {heading}
                 </h1>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {step === "restaurant"
-                    ? "Enter your restaurant code to continue."
-                    : `Signing in to ${restaurantId.trim()}. Enter your four-digit PIN.`}
+                  {description}
                 </p>
               </header>
 
@@ -186,30 +395,38 @@ export function Login() {
                 </div>
               )}
 
-              <form className="mt-6" onSubmit={submit} noValidate>
-                {step === "restaurant" ? (
+              <Form
+                className="mt-6"
+                initialValues={loginValues}
+                validationSchema={loginSchema(step)}
+                onSubmit={submit}
+              >
+                {(formik) => {
+                  formikRef.current = formik
+                  const codeError = fieldError(formik, "restaurantCode")
+                  const pinError = fieldError(formik, "pin")
+                  const confirmError = fieldError(formik, "confirmPin")
+                  return step === "restaurant" ? (
                   <>
                     <FieldGroup className="gap-5">
-                      <Field data-invalid={Boolean(fieldErrors.restaurantId)}>
+                      <Field data-invalid={Boolean(codeError)}>
                         <FieldLabel htmlFor="restaurant-id">
                           Restaurant code
                         </FieldLabel>
                         <Input
                           id="restaurant-id"
-                          value={restaurantId}
+                          name="restaurantCode"
+                          value={formik.values.restaurantCode}
                           onChange={(event) => {
-                            setRestaurantId(event.target.value)
-                            setFieldErrors((current) => ({
-                              ...current,
-                              restaurantId: undefined,
-                            }))
+                            formik.handleChange(event)
                             setAuthError(null)
                           }}
+                          onBlur={formik.handleBlur}
                           autoComplete="organization"
                           autoCapitalize="characters"
                           spellCheck={false}
                           placeholder="e.g. RR0093"
-                          aria-invalid={Boolean(fieldErrors.restaurantId)}
+                          aria-invalid={Boolean(codeError)}
                           aria-describedby="restaurant-id-error"
                           autoFocus
                         />
@@ -236,59 +453,115 @@ export function Login() {
                           </div>
                         </div>
                         <FieldError id="restaurant-id-error">
-                          {fieldErrors.restaurantId}
+                          {codeError}
                         </FieldError>
-                      </Field>
-                    </FieldGroup>
-
-                    <Button type="submit" className="mt-7 w-full">
-                      <div className="flex items-center justify-center gap-2">
-                        Continue
-                        <CaretRightIcon
-                          aria-hidden="true"
-                          data-icon="inline-end"
-                        />
-                      </div>
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <FieldGroup className="gap-5">
-                      <Field data-invalid={Boolean(fieldErrors.pin)}>
-                        <PinInput
-                          id="staff-pin"
-                          value={pin}
-                          onChange={(value) => {
-                            setPin(value)
-                            setFieldErrors((current) => ({
-                              ...current,
-                              pin: undefined,
-                            }))
-                            setAuthError(null)
-                          }}
-                          invalid={Boolean(fieldErrors.pin)}
-                        />
-                        <FieldError>{fieldErrors.pin}</FieldError>
                       </Field>
                     </FieldGroup>
 
                     <Button
                       type="submit"
                       className="mt-7 w-full"
-                      disabled={loading}
+                      disabled={busy}
                     >
-                      {loading ? (
+                      {directoryState.loading ? (
                         <>
                           <SpinnerGapIcon
                             aria-hidden="true"
                             className="animate-spin motion-reduce:animate-none"
                             data-icon="inline-start"
                           />
-                          Signing in…
+                          Looking up restaurant…
                         </>
                       ) : (
                         <div className="flex items-center justify-center gap-2">
-                          Sign in
+                          Continue
+                          <CaretRightIcon
+                            aria-hidden="true"
+                            data-icon="inline-end"
+                          />
+                        </div>
+                      )}
+                    </Button>
+                  </>
+                ) : step === "profiles" ? (
+                  <>
+                    {profiles.length === 0 ? (
+                      <p className="rounded-lg border border-border/70 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                        No active staff profiles yet. An owner needs to add the
+                        team before anyone can sign in.
+                      </p>
+                    ) : (
+                      <StaffRail profiles={profiles} onChoose={chooseProfile} />
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-4 w-full"
+                      onClick={goBack}
+                    >
+                      Back
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <FieldGroup className="gap-5">
+                      {step === "confirm-pin" ? (
+                        <Field data-invalid={Boolean(confirmError)}>
+                          <FieldLabel htmlFor="staff-pin-confirm" className="sr-only">
+                            Confirm PIN
+                          </FieldLabel>
+                          <PinInput
+                            id="staff-pin-confirm"
+                            value={formik.values.confirmPin}
+                            onChange={(value) => {
+                              void formik.setFieldValue("confirmPin", value)
+                              setAuthError(null)
+                            }}
+                            invalid={Boolean(confirmError)}
+                            autoComplete="new-password"
+                          />
+                          <FieldError>{confirmError}</FieldError>
+                        </Field>
+                      ) : (
+                        <Field data-invalid={Boolean(pinError)}>
+                          <PinInput
+                            id="staff-pin"
+                            value={formik.values.pin}
+                            onChange={(value) => {
+                              void formik.setFieldValue("pin", value)
+                              setAuthError(null)
+                            }}
+                            invalid={Boolean(pinError)}
+                            autoComplete={
+                              step === "set-pin" ? "new-password" : "current-password"
+                            }
+                          />
+                          <FieldError>{pinError}</FieldError>
+                        </Field>
+                      )}
+                    </FieldGroup>
+
+                    <Button
+                      type="submit"
+                      className="mt-7 w-full"
+                      disabled={busy}
+                    >
+                      {busy ? (
+                        <>
+                          <SpinnerGapIcon
+                            aria-hidden="true"
+                            className="animate-spin motion-reduce:animate-none"
+                            data-icon="inline-start"
+                          />
+                          {step === "confirm-pin" ? "Saving PIN…" : "Signing in…"}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          {step === "set-pin"
+                            ? "Continue"
+                            : step === "confirm-pin"
+                              ? "Save PIN and sign in"
+                              : "Sign in"}
                           <CaretRightIcon
                             aria-hidden="true"
                             data-icon="inline-end"
@@ -301,13 +574,14 @@ export function Login() {
                       variant="ghost"
                       className="mt-2 w-full"
                       onClick={goBack}
-                      disabled={loading}
+                      disabled={busy}
                     >
                       Back
                     </Button>
                   </>
-                )}
-              </form>
+                )
+                }}
+              </Form>
             </div>
           )}
         </div>
@@ -384,10 +658,12 @@ function RotatingTagline() {
 
 function SignedIn({
   user,
+  continueLabel,
   onContinue,
   onReset,
 }: {
-  user: LoginResult["login"]["user"]
+  user: AuthUser
+  continueLabel: string
   onContinue: () => void
   onReset: () => void
 }) {
@@ -403,11 +679,13 @@ function SignedIn({
         Welcome, {user.name}
       </h2>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        You’re signed in as {roleLabels[user.role]}. Taking you to your
-        workspace now.
+        You’re signed in as {roleLabels[user.role]}.
+        {continueLabel === "Continue setup"
+          ? " Next you’ll add your team and opening menu."
+          : " Taking you to your workspace now."}
       </p>
       <Button className="mt-6 w-full" onClick={onContinue}>
-        Go to overview
+        {continueLabel}
         <CaretRightIcon aria-hidden="true" data-icon="inline-end" />
       </Button>
       <Button className="mt-2 w-full" variant="ghost" onClick={onReset}>

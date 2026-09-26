@@ -1,5 +1,7 @@
 import { gql } from "@apollo/client"
 
+import { uploadImageToCloudinary } from "@/lib/cloudinary"
+
 export const MENU_MANAGEMENT_QUERY = gql`
   query MenuManagement {
     menuCategories {
@@ -30,6 +32,7 @@ export const MENU_MANAGEMENT_QUERY = gql`
         name
         priceDelta
         active
+        imageUrl
       }
     }
   }
@@ -52,6 +55,16 @@ export const CREATE_ITEM = gql`
   }
 `
 
+export const UPDATE_ITEM = gql`
+  mutation UpdateMenuItem($input: UpdateMenuItemInput!) {
+    updateMenuItem(input: $input) {
+      id
+      name
+      price
+    }
+  }
+`
+
 export const SET_ITEM_AVAILABILITY = gql`
   mutation SetMenuItemAvailability($itemId: ID!, $active: Boolean!) {
     setMenuItemAvailability(itemId: $itemId, active: $active) {
@@ -69,9 +82,29 @@ export const CREATE_MODIFIER_GROUP = gql`
   }
 `
 
+export const COMPLETE_OPTION_IMAGE = gql`
+  mutation CompleteModifierOptionImageUpload($optionId: ID!, $objectKey: String!) {
+    completeModifierOptionImageUpload(optionId: $optionId, objectKey: $objectKey) {
+      id
+      imageUrl
+    }
+  }
+`
+
 export const CREATE_MODIFIER_OPTION = gql`
   mutation CreateModifierOption($input: CreateModifierOptionInput!) {
     createModifierOption(input: $input) {
+      id
+    }
+  }
+`
+
+export const DETACH_MODIFIER_GROUP = gql`
+  mutation DetachModifierGroup($menuItemId: ID!, $modifierGroupId: ID!) {
+    detachModifierGroup(
+      menuItemId: $menuItemId
+      modifierGroupId: $modifierGroupId
+    ) {
       id
     }
   }
@@ -128,6 +161,7 @@ export interface ModifierOption {
   name: string
   priceDelta: number
   active: boolean
+  imageUrl?: string | null
 }
 
 export interface ModifierGroup {
@@ -209,19 +243,20 @@ export function validateImageFile(file: File) {
   }
 }
 
-interface UploadRequest {
-  requestMenuItemImageUpload: ImageUploadData["requestMenuItemImageUpload"]
+export async function uploadOptionImage(
+  completeUpload: (variables: {
+    optionId: string
+    objectKey: string
+  }) => Promise<unknown>,
+  optionId: string,
+  file: File,
+) {
+  validateImageFile(file)
+  const secureUrl = await uploadImageToCloudinary(file)
+  await completeUpload({ optionId, objectKey: secureUrl })
 }
 
-/**
- * Runs the full image upload: presigned PUT followed by server verification.
- * Takes the mutation callers so cards and the add-item flow can share it.
- */
 export async function uploadMenuImage(
-  requestUpload: (variables: {
-    menuItemId: string
-    contentType: string
-  }) => Promise<{ data?: UploadRequest }>,
   completeUpload: (variables: {
     menuItemId: string
     objectKey: string
@@ -230,19 +265,6 @@ export async function uploadMenuImage(
   file: File
 ) {
   validateImageFile(file)
-  const request = await requestUpload({
-    menuItemId: itemId,
-    contentType: file.type,
-  })
-  const upload = request.data?.requestMenuItemImageUpload
-  if (!upload) throw new Error("The upload could not be prepared.")
-  const response = await fetch(upload.url, {
-    method: upload.method,
-    headers: Object.fromEntries(
-      upload.headers.map((header) => [header.name, header.value])
-    ),
-    body: file,
-  })
-  if (!response.ok) throw new Error("The image upload failed.")
-  await completeUpload({ menuItemId: itemId, objectKey: upload.objectKey })
+  const secureUrl = await uploadImageToCloudinary(file)
+  await completeUpload({ menuItemId: itemId, objectKey: secureUrl })
 }

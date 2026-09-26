@@ -26,6 +26,7 @@ export interface AccessTokenProfile {
   restaurantId: string
   name: string
   role: RestaurantRole
+  permissions?: string[]
   exp?: number
 }
 
@@ -45,6 +46,12 @@ export function getAccessTokenProfile(): AccessTokenProfile | null {
       !payload.restaurantId ||
       !payload.name ||
       !payload.role
+    ) {
+      return null
+    }
+    if (
+      payload.permissions !== undefined &&
+      !Array.isArray(payload.permissions)
     ) {
       return null
     }

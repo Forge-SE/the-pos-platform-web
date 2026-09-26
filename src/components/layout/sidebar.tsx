@@ -1,6 +1,9 @@
+import { gql } from "@apollo/client"
+import { useQuery } from "@apollo/client/react"
 import type { Icon } from "@phosphor-icons/react"
 import {
   ChartLineUpIcon,
+  CookingPotIcon,
   ForkKnifeIcon,
   GearSixIcon,
   HouseIcon,
@@ -13,9 +16,11 @@ import { Link, useRouterState } from "@tanstack/react-router"
 
 import { ProfileMenu } from "@/components/layout/profile-menu"
 import { OvaalMark } from "@/components/ovaal-mark"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import type { AccessTokenProfile } from "@/lib/auth-token"
+import { hasPermission } from "@/lib/permissions"
+import type { Permission } from "@/lib/permissions"
 
 const roleLabels: Record<AccessTokenProfile["role"], string> = {
   CASHIER: "Cashier",
@@ -24,18 +29,56 @@ const roleLabels: Record<AccessTokenProfile["role"], string> = {
   OWNER: "Owner",
 }
 
-const primaryNavigation = [
-  { label: "Overview", to: "/overview", icon: HouseIcon },
-  { label: "Orders", to: "/orders", icon: ReceiptIcon },
-  { label: "Performance", to: "/performance", icon: ChartLineUpIcon },
-] as const
+export function primaryNavigationFor(role: AccessTokenProfile["role"]) {
+  const kitchen = role === "KITCHEN" || role === "MANAGER"
+  return [
+    { label: "Overview", to: "/overview", icon: HouseIcon },
+    {
+      label: kitchen ? "Kitchen" : "Orders",
+      to: "/orders",
+      icon: kitchen ? CookingPotIcon : ReceiptIcon,
+    },
+    { label: "Performance", to: "/performance", icon: ChartLineUpIcon },
+  ] as const
+}
 
-const managementNavigation = [
-  { label: "Menu", to: "/menu", icon: ForkKnifeIcon },
-  { label: "Shift & cash", to: "/shift", icon: WalletIcon },
-  { label: "Team", to: "/team", icon: UsersThreeIcon },
-  { label: "Settings", to: "/settings", icon: GearSixIcon },
-] as const
+export const managementNavigation = [
+  { label: "Menu", to: "/menu", icon: ForkKnifeIcon, permission: "MENU_MANAGE" },
+  {
+    label: "Shift & cash",
+    to: "/shift",
+    icon: WalletIcon,
+    permission: "SHIFTS_MANAGE",
+  },
+  { label: "Team", to: "/team", icon: UsersThreeIcon, permission: "STAFF_MANAGE" },
+  {
+    label: "Settings",
+    to: "/settings",
+    icon: GearSixIcon,
+    permission: "SETTINGS_MANAGE",
+  },
+] as const satisfies ReadonlyArray<{
+  label: string
+  to: string
+  icon: Icon
+  permission: Permission
+}>
+
+export function seesManagementItem(
+  profile: AccessTokenProfile,
+  item: (typeof managementNavigation)[number],
+) {
+  if (item.to === "/shift") return true
+  return hasPermission(profile, item.permission)
+}
+
+const SIDEBAR_PROFILE_QUERY = gql`
+  query SidebarProfile {
+    me {
+      avatarUrl
+    }
+  }
+`
 
 function initials(name: string) {
   return name
@@ -52,7 +95,12 @@ function NavigationSection({
   collapsed,
 }: {
   label: string
-  items: ReadonlyArray<{ label: string; to: string; icon: Icon }>
+  items: ReadonlyArray<{
+    label: string
+    to: string
+    icon: Icon
+    permission?: Permission
+  }>
   collapsed: boolean
 }) {
   const pathname = useRouterState({
@@ -108,9 +156,12 @@ export function Sidebar({
   onCollapsedChange: () => void
   onSignOut: () => void
 }) {
+  const me = useQuery<{ me: { avatarUrl: string | null } }>(SIDEBAR_PROFILE_QUERY)
+  const avatarUrl = me.data?.me.avatarUrl
+
   return (
     <aside
-      className={`sticky top-2 hidden h-[calc(100svh-1rem)] flex-col py-4 lg:flex ${collapsed ? "px-2" : "px-3"}`}
+      className={`sticky top-2 hidden h-[calc(100svh-1rem)] flex-col py-4 lg:flex lg:h-full ${collapsed ? "px-2" : "px-3"}`}
     >
       <div
         className={`flex min-h-12 items-center ${collapsed ? "justify-center" : "gap-2"}`}
@@ -126,7 +177,7 @@ export function Sidebar({
                 Ovaal
               </span>
               <span className="block truncate text-[10px] text-muted-foreground">
-                Point of Sale (POS)
+                Point of Sale
               </span>
             </span>
           </Link>
@@ -149,33 +200,34 @@ export function Sidebar({
 
       <NavigationSection
         label="General"
-        items={primaryNavigation}
+        items={primaryNavigationFor(profile.role)}
         collapsed={collapsed}
       />
-      <NavigationSection
-        label="Manage"
-        items={managementNavigation}
-        collapsed={collapsed}
-      />
+      {managementNavigation.some((item) => seesManagementItem(profile, item)) && (
+        <NavigationSection
+          label="Manage"
+          items={managementNavigation.filter((item) => seesManagementItem(profile, item))}
+          collapsed={collapsed}
+        />
+      )}
 
       <div className="mt-auto border-t border-sidebar-border pt-4">
         <div
           className={`flex items-center ${collapsed ? "justify-center" : "gap-3 px-2"}`}
         >
+          <Avatar size="lg">
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
+            <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+              {initials(profile.name)}
+            </AvatarFallback>
+          </Avatar>
           {!collapsed && (
-            <>
-              <Avatar size="lg">
-                <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
-                  {initials(profile.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold">{profile.name}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {roleLabels[profile.role]}
-                </p>
-              </div>
-            </>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold">{profile.name}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {roleLabels[profile.role]}
+              </p>
+            </div>
           )}
           <ProfileMenu onSignOut={onSignOut} />
         </div>

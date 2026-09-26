@@ -44,18 +44,6 @@ function Card({
   )
 }
 
-function Restricted({ label }: { label: string }) {
-  return (
-    <div className="rounded-lg bg-muted/20 px-4 py-10 text-center">
-      <WalletIcon className="mx-auto size-6 text-muted-foreground" />
-      <p className="mt-3 text-sm font-medium">Visible to managers</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {label} is hidden for your role.
-      </p>
-    </div>
-  )
-}
-
 function LoadingBars() {
   return (
     <div className="space-y-3" aria-label="Loading">
@@ -72,11 +60,9 @@ function LoadingBars() {
 export function HeroStats({
   sales,
   salesLoading,
-  canSeeSales,
 }: {
   sales?: PerformanceData["salesToday"]
   salesLoading: boolean
-  canSeeSales: boolean
 }) {
   const total = sales?.totalSales ?? 0
   const count = sales?.orderCount ?? 0
@@ -88,7 +74,7 @@ export function HeroStats({
           Today&apos;s revenue
         </div>
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
-          {salesLoading ? "—" : canSeeSales ? formatMoney(total) : "Private"}
+          {salesLoading ? "—" : formatMoney(total)}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">Settled sales today</p>
       </article>
@@ -98,7 +84,7 @@ export function HeroStats({
           Orders today
         </div>
         <p className="mt-3 text-3xl font-semibold tracking-[-0.03em] tabular-nums">
-          {salesLoading ? "—" : canSeeSales ? count : "Private"}
+          {salesLoading ? "—" : count}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">Completed orders</p>
       </article>
@@ -108,11 +94,7 @@ export function HeroStats({
           Average order value
         </div>
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
-          {salesLoading
-            ? "—"
-            : canSeeSales && sales
-              ? formatMoney(averageOrderValue(sales))
-              : "Private"}
+          {salesLoading || !sales ? "—" : formatMoney(averageOrderValue(sales))}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           Revenue ÷ orders, calculated live
@@ -125,20 +107,16 @@ export function HeroStats({
 export function PaymentSplitCard({
   sales,
   salesLoading,
-  canSeeSales,
 }: {
   sales?: PerformanceData["salesToday"]
   salesLoading: boolean
-  canSeeSales: boolean
 }) {
   return (
     <Card
       title="Payment method split"
       description="How today's settled sales were collected."
     >
-      {!canSeeSales ? (
-        <Restricted label="Payment breakdown" />
-      ) : salesLoading ? (
+      {salesLoading ? (
         <PaymentDonutSkeleton />
       ) : (
         <PaymentDonut breakdown={sales?.paymentBreakdown ?? []} />
@@ -175,13 +153,11 @@ export function ShiftProgressCard({
             />
             Shift open
           </Badge>
-        ) : (
-          <Badge variant="outline">No open shift</Badge>
-        )
+        ) : null
       }
     >
-      {shift ? (
-        <div className="space-y-4">
+      <div className="space-y-4">
+        {shift && (
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <ClockIcon aria-hidden="true" className="size-4" />
@@ -196,7 +172,8 @@ export function ShiftProgressCard({
               Float {formatMoney(shift.openingFloat)}
             </span>
           </div>
-          <ul className="grid grid-cols-3 gap-3">
+        )}
+        <ul className="grid grid-cols-3 gap-3">
             {(
               [
                 { label: "New", value: inProgress.NEW },
@@ -217,16 +194,7 @@ export function ShiftProgressCard({
               </li>
             ))}
           </ul>
-        </div>
-      ) : (
-        <div className="rounded-lg bg-muted/20 px-4 py-10 text-center">
-          <ClockIcon className="mx-auto size-6 text-muted-foreground" />
-          <p className="mt-3 text-sm font-medium">No shift open</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Open a shift to start tracking live orders.
-          </p>
-        </div>
-      )}
+      </div>
     </Card>
   )
 }

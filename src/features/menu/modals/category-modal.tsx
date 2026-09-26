@@ -1,10 +1,11 @@
 import { useState } from "react"
-import type { FormEvent } from "react"
 import { useMutation } from "@apollo/client/react"
 import { PlusIcon, WarningCircleIcon } from "@phosphor-icons/react"
+import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
   CREATE_CATEGORY,
@@ -12,6 +13,15 @@ import {
 } from "@/features/menu/model"
 
 import { MenuDialog } from "./menu-dialog"
+
+const categoryValues = { name: "" }
+
+const categorySchema = Yup.object({
+  name: Yup.string()
+    .trim()
+    .min(1, "Enter a category name.")
+    .required("Enter a category name."),
+})
 
 export function CategoryModal({
   open,
@@ -23,29 +33,18 @@ export function CategoryModal({
   onSaved: () => void
 }) {
   const [createCategory, categoryMutation] = useMutation(CREATE_CATEGORY)
-  const [categoryName, setCategoryName] = useState("")
-  const [sortOrder, setSortOrder] = useState("")
   const [categoryError, setCategoryError] = useState<string | null>(null)
 
-  function reset() {
-    setCategoryName("")
-    setSortOrder("")
-    setCategoryError(null)
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault()
-    const order = sortOrder.trim() === "" ? undefined : Number(sortOrder)
-    if (!categoryName.trim() || (order !== undefined && !Number.isInteger(order))) {
-      setCategoryError("Enter a category name and a whole-number sort order.")
-      return
-    }
+  async function submit(
+    values: typeof categoryValues,
+    helpers: { resetForm: () => void },
+  ) {
     try {
       setCategoryError(null)
       await createCategory({
-        variables: { input: { name: categoryName.trim(), sortOrder: order } },
+        variables: { input: { name: values.name.trim() } },
       })
-      reset()
+      helpers.resetForm()
       onSaved()
     } catch (mutationError) {
       setCategoryError(
@@ -58,11 +57,11 @@ export function CategoryModal({
     <MenuDialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) reset()
+        if (!next) setCategoryError(null)
         onOpenChange(next)
       }}
       title="Add new category"
-      description="Create a section customers and staff use to browse the menu."
+      description="Name this section of the menu."
     >
       {categoryError && (
         <div
@@ -73,39 +72,42 @@ export function CategoryModal({
           {categoryError}
         </div>
       )}
-      <form
-        className={`grid gap-4 sm:grid-cols-[1fr_120px_auto] ${categoryError ? "mt-4" : ""}`}
+      <Form
+        className={`flex items-end gap-3 ${categoryError ? "mt-4" : ""}`}
+        key={String(open)}
+        initialValues={categoryValues}
+        validationSchema={categorySchema}
         onSubmit={submit}
       >
-        <Field>
-          <FieldLabel htmlFor="modal-category-name">Name</FieldLabel>
-          <Input
-            id="modal-category-name"
-            value={categoryName}
-            onChange={(event) => setCategoryName(event.target.value)}
-            placeholder="Drinks"
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="modal-category-order">Sort order</FieldLabel>
-          <Input
-            id="modal-category-order"
-            type="number"
-            step="1"
-            value={sortOrder}
-            onChange={(event) => setSortOrder(event.target.value)}
-            placeholder="0"
-          />
-        </Field>
-        <Button
-          type="submit"
-          className="self-end"
-          disabled={categoryMutation.loading}
-        >
-          <PlusIcon data-icon="inline-start" />
-          {categoryMutation.loading ? "Adding…" : "Add"}
-        </Button>
-      </form>
+        {(formik) => {
+          const nameError = fieldError(formik, "name")
+          return (
+            <>
+              <Field className="min-w-0 flex-1" data-invalid={Boolean(nameError)}>
+                <FieldLabel htmlFor="modal-category-name">Name</FieldLabel>
+                <Input
+                  id="modal-category-name"
+                  name="name"
+                  value={formik.values.name}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Drinks"
+                  aria-invalid={Boolean(nameError)}
+                />
+                <FieldError>{nameError}</FieldError>
+              </Field>
+              <Button
+                type="submit"
+                className="self-end"
+                disabled={categoryMutation.loading}
+              >
+                <PlusIcon data-icon="inline-start" />
+                {categoryMutation.loading ? "Adding…" : "Add"}
+              </Button>
+            </>
+          )
+        }}
+      </Form>
     </MenuDialog>
   )
 }

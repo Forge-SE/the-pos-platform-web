@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { gql } from "@apollo/client"
 import { useMutation } from "@apollo/client/react"
+import type { FormikHelpers, FormikProps } from "formik"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -8,17 +9,26 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import Form, { fieldError } from "@/components/ui/form"
 import { setAccessToken } from "@/lib/auth-token"
 import { opsAuthContext } from "@/lib/ops-token"
 
 import { OnboardingComplete } from "./components/onboarding-complete"
+import { OnboardingMenuStep } from "./components/onboarding-menu-step"
+import { OnboardingPayoutsStep } from "./components/onboarding-payouts-step"
 import { OnboardingReviewStep } from "./components/onboarding-review-step"
-import { OnboardingShell, onboardingSteps } from "./components/onboarding-shell"
+import { OnboardingStaffStep } from "./components/onboarding-staff-step"
+import {
+  OnboardingShell,
+  onboardingSteps,
+  ownerOnboardingSteps,
+} from "./components/onboarding-shell"
 import { OperatingControlsStep } from "./components/operating-controls-step"
 import { OwnerAccessStep } from "./components/owner-access-step"
 import { RestaurantProfileStep } from "./components/restaurant-profile-step"
 import {
   initialOnboardingValues,
+  onboardingStepSchema,
   toPlatformSetupInput,
   toSetupRestaurantInput,
   validateOnboardingStep,
@@ -144,7 +154,47 @@ const stepCopy = [
     description:
       "Review the operating profile before the restaurant and owner account are created.",
   },
+  {
+    eyebrow: "Opening menu",
+    title: "Put the first dishes on the till",
+    description:
+      "Add at least one category and dish. Prices are in Ghana cedis. You can add photos and modifiers after setup.",
+  },
+  {
+    eyebrow: "Staff",
+    title: "Add the people on the till",
+    description:
+      "Profiles show up on the sign-in screen. Each person sets their own PIN the first time they sign in.",
+  },
+  {
+    eyebrow: "Payouts",
+    title: "Where should MoMo payments land?",
+    description:
+      "Add every mobile money number that should receive money. MTN, AirtelTigo, and Telecel can all be saved, and you can add more than one.",
+  },
 ]
+
+const onboardingFields = [
+  "setupSecret",
+  "name",
+  "slug",
+  "ownerName",
+  "ownerPin",
+  "confirmOwnerPin",
+  "managerDiscountThresholdPercent",
+  "reconciliationVarianceGhs",
+] as const satisfies readonly OnboardingField[]
+
+function shownOnboardingErrors(
+  formik: FormikProps<RestaurantOnboardingValues>,
+): OnboardingErrors {
+  const errors: OnboardingErrors = {}
+  for (const field of onboardingFields) {
+    const message = fieldError(formik, field)
+    if (message) errors[field] = message
+  }
+  return errors
+}
 
 export interface RestaurantOnboardingProps {
   mode?: "public" | "platform"
@@ -156,11 +206,8 @@ export function RestaurantOnboarding({
   onCompleted,
 }: RestaurantOnboardingProps = {}) {
   const isPlatform = mode === "platform"
+  const steps = isPlatform ? onboardingSteps : ownerOnboardingSteps
   const [step, setStep] = useState(0)
-  const [values, setValues] = useState<RestaurantOnboardingValues>(
-    initialOnboardingValues
-  )
-  const [errors, setErrors] = useState<OnboardingErrors>({})
   const [slugEdited, setSlugEdited] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
   const [completed, setCompleted] = useState<
@@ -178,43 +225,17 @@ export function RestaurantOnboarding({
     titleRef.current?.focus()
   }, [step])
 
-  function updateField<TField extends OnboardingField>(
-    field: TField,
-    value: RestaurantOnboardingValues[TField]
-  ) {
-    setValues((current) => ({ ...current, [field]: value }))
-    setErrors((current) => ({ ...current, [field]: undefined }))
-    setApiError(null)
-  }
-
-  function showValidationErrors(nextErrors: OnboardingErrors) {
-    setErrors(nextErrors)
-    requestAnimationFrame(() => errorSummaryRef.current?.focus())
-  }
-
-  function nextStep() {
-    const nextErrors = validateOnboardingStep(step, values, {
-      setupSecretRequired: !isPlatform,
-    })
-    if (Object.keys(nextErrors).length) {
-      showValidationErrors(nextErrors)
-      return
-    }
-    setErrors({})
-    setStep((current) => Math.min(current + 1, onboardingSteps.length - 1))
-  }
-
   function previousStep() {
-    setErrors({})
     setApiError(null)
     setStep((current) => Math.max(current - 1, 0))
   }
 
-  async function submitOnboarding(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
+  async function submitOnboarding(
+    values: RestaurantOnboardingValues,
+    helpers: FormikHelpers<RestaurantOnboardingValues>,
+  ) {
     if (step < onboardingSteps.length - 1) {
-      nextStep()
+      setStep((current) => Math.min(current + 1, steps.length - 1))
       return
     }
 
@@ -237,8 +258,19 @@ export function RestaurantOnboarding({
             })
           ).length
       )
-      showValidationErrors(allErrors)
       if (firstInvalidStep !== undefined) setStep(firstInvalidStep)
+      const stepErrors =
+        firstInvalidStep === undefined
+          ? allErrors
+          : validateOnboardingStep(firstInvalidStep, values, {
+              setupSecretRequired: !isPlatform,
+            })
+      void helpers.setTouched(
+        Object.fromEntries(Object.keys(stepErrors).map((key) => [key, true])),
+        false,
+      )
+      helpers.setErrors(stepErrors)
+      requestAnimationFrame(() => errorSummaryRef.current?.focus())
       return
     }
 
@@ -272,7 +304,9 @@ export function RestaurantOnboarding({
       const payload = result.data?.setupRestaurant
       if (!payload) throw new Error("The setup service returned no restaurant.")
       setAccessToken(payload.token)
+      setStep(4)
       setCompleted(payload)
+      return
     } catch (error) {
       setApiError(
         error instanceof Error
@@ -283,29 +317,34 @@ export function RestaurantOnboarding({
     }
   }
 
-  if (completed) return <OnboardingComplete result={completed} />
+  if (completed && (isPlatform || step > 6)) {
+    return <OnboardingComplete result={completed} steps={steps} />
+  }
 
-  const copy = stepCopy[step]
-  const visibleErrors = Object.entries(errors).filter(([, message]) => message)
-  const stepProps = { values, errors, updateField }
-
+  const copy = {
+    ...stepCopy[step],
+    description:
+      !isPlatform && step === 3
+        ? "Create the workspace, then add the opening menu, staff profiles, and the mobile money numbers that receive payments."
+        : stepCopy[step].description,
+  }
   return (
-    <OnboardingShell currentStep={step}>
+    <OnboardingShell currentStep={step} steps={steps}>
       <section className="rounded-xl bg-card p-5 text-card-foreground shadow-[0_0_0_1px_oklch(0_0_0/0.04),0_12px_32px_oklch(0.18_0.03_150/0.08)] sm:p-8">
         <div className="lg:hidden">
           <div className="flex items-center justify-between text-xs font-medium">
             <span className="text-primary">
-              Step {step + 1} of {onboardingSteps.length}
+              Step {step + 1} of {steps.length}
             </span>
             <span className="text-muted-foreground">
-              {onboardingSteps[step].label}
+              {steps[step].label}
             </span>
           </div>
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-primary transition-[width] duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none"
               style={{
-                width: `${((step + 1) / onboardingSteps.length) * 100}%`,
+                width: `${((step + 1) / steps.length) * 100}%`,
               }}
             />
           </div>
@@ -327,75 +366,134 @@ export function RestaurantOnboarding({
           </p>
         </header>
 
-        {(visibleErrors.length > 0 || apiError) && (
-          <div
-            ref={errorSummaryRef}
-            tabIndex={-1}
-            role="alert"
-            className="mt-6 rounded-lg border border-destructive/30 bg-destructive/5 p-3.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-destructive/20"
-          >
-            <p className="font-semibold text-destructive">
-              {apiError ?? "Review the highlighted fields."}
-            </p>
-            {!apiError && visibleErrors.length > 1 && (
-              <p className="mt-1 text-muted-foreground">
-                {visibleErrors.length} fields need your attention.
-              </p>
-            )}
-          </div>
+        {step === 4 && <OnboardingMenuStep onContinue={() => setStep(5)} />}
+        {step === 5 && (
+          <OnboardingStaffStep
+            onBack={() => setStep(4)}
+            onContinue={() => setStep(6)}
+          />
+        )}
+        {step === 6 && (
+          <OnboardingPayoutsStep
+            onBack={() => setStep(5)}
+            onFinish={() => setStep(7)}
+            finishing={false}
+          />
         )}
 
-        <form className="mt-7" onSubmit={submitOnboarding} noValidate>
-          {step === 0 && (
-            <RestaurantProfileStep
-              {...stepProps}
-              slugEdited={slugEdited}
-              onSlugEdited={() => setSlugEdited(true)}
-            />
-          )}
-          {step === 1 && <OwnerAccessStep {...stepProps} />}
-          {step === 2 && (
-            <OperatingControlsStep
-              {...stepProps}
-              hideSetupSecret={isPlatform}
-            />
-          )}
-          {step === 3 && (
-            <OnboardingReviewStep values={values} onEdit={setStep} />
-          )}
+        {step <= 3 && (
+          <Form
+            className="mt-7"
+            initialValues={initialOnboardingValues}
+            validationSchema={onboardingStepSchema(step, {
+              setupSecretRequired: !isPlatform,
+            })}
+            onSubmit={submitOnboarding}
+          >
+            {(formik) => {
+              const errors = shownOnboardingErrors(formik)
+              const visibleErrors = Object.entries(errors).filter(
+                ([, message]) => message,
+              )
+              const updateField = <TField extends OnboardingField>(
+                field: TField,
+                value: RestaurantOnboardingValues[TField],
+              ) => {
+                void formik.setFieldValue(field, value)
+                setApiError(null)
+              }
+              const stepProps = { values: formik.values, errors, updateField }
 
-          <div className="mt-8 flex items-center justify-between gap-3 border-t pt-5">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={previousStep}
-              disabled={step === 0 || loading}
-              className={step === 0 ? "invisible" : undefined}
-            >
-              <ArrowLeftIcon aria-hidden="true" data-icon="inline-start" />
-              Back
-            </Button>
-            <Button type="submit" disabled={loading} className="min-w-32">
-              {loading ? (
+              return (
                 <>
-                  <SpinnerGapIcon
-                    aria-hidden="true"
-                    className="animate-spin motion-reduce:animate-none"
-                    data-icon="inline-start"
-                  />
-                  Creating…
+                  {(visibleErrors.length > 0 || apiError) && (
+                    <div
+                      ref={errorSummaryRef}
+                      tabIndex={-1}
+                      role="alert"
+                      className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-3.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-destructive/20"
+                    >
+                      <p className="font-semibold text-destructive">
+                        {apiError ?? "Review the highlighted fields."}
+                      </p>
+                      {!apiError && visibleErrors.length > 1 && (
+                        <p className="mt-1 text-muted-foreground">
+                          {visibleErrors.length} fields need your attention.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {step === 0 && (
+                    <RestaurantProfileStep
+                      {...stepProps}
+                      slugEdited={slugEdited}
+                      onSlugEdited={() => setSlugEdited(true)}
+                    />
+                  )}
+                  {step === 1 && <OwnerAccessStep {...stepProps} />}
+                  {step === 2 && (
+                    <OperatingControlsStep
+                      {...stepProps}
+                      hideSetupSecret={isPlatform}
+                    />
+                  )}
+                  {step === 3 && (
+                    <OnboardingReviewStep
+                      values={formik.values}
+                      onEdit={setStep}
+                    />
+                  )}
+
+                  <div className="mt-8 flex items-center justify-between gap-3 border-t pt-5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={previousStep}
+                      disabled={step === 0 || loading}
+                      className={step === 0 ? "invisible" : undefined}
+                    >
+                      <ArrowLeftIcon
+                        aria-hidden="true"
+                        data-icon="inline-start"
+                      />
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="min-w-32"
+                    >
+                      {loading ? (
+                        <>
+                          <SpinnerGapIcon
+                            aria-hidden="true"
+                            className="animate-spin motion-reduce:animate-none"
+                            data-icon="inline-start"
+                          />
+                          Creating…
+                        </>
+                      ) : step === 3 ? (
+                        isPlatform ? (
+                          "Create restaurant"
+                        ) : (
+                          "Create and continue"
+                        )
+                      ) : (
+                        <>
+                          Continue
+                          <ArrowRightIcon
+                            aria-hidden="true"
+                            data-icon="inline-end"
+                          />
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </>
-              ) : step === onboardingSteps.length - 1 ? (
-                "Create restaurant"
-              ) : (
-                <>
-                  Continue
-                  <ArrowRightIcon aria-hidden="true" data-icon="inline-end" />
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+              )
+            }}
+          </Form>
+        )}
       </section>
     </OnboardingShell>
   )

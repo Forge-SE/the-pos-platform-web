@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { roleLabels } from "@/features/staff/model"
 import type { StaffMember } from "@/features/staff/model"
+import { StaffAvatar } from "@/features/staff/staff-avatar"
 
 import { StaffDialog } from "./staff-dialog"
 
@@ -36,6 +37,19 @@ export function ViewStaffDialog({
     >
       {member && (
         <dl className="space-y-4 text-sm">
+          <div className="flex items-center gap-3">
+            <StaffAvatar
+              name={member.name}
+              url={member.avatarUrl}
+              className="size-14 text-sm"
+            />
+            <div>
+              <p className="font-semibold">{member.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {member.pinSet ? "PIN is set" : "PIN not chosen yet"}
+              </p>
+            </div>
+          </div>
           <div className="flex items-center justify-between gap-4">
             <dt className="text-muted-foreground">Role</dt>
             <dd>

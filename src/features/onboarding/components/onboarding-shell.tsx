@@ -1,13 +1,15 @@
 import {
   CheckCircleIcon,
+  DeviceMobileIcon,
   ForkKnifeIcon,
   SlidersHorizontalIcon,
   StorefrontIcon,
   UserIcon,
+  UsersThreeIcon,
 } from "@phosphor-icons/react"
 import type { Icon } from "@phosphor-icons/react"
 
-interface OnboardingStep {
+export interface OnboardingStep {
   label: string
   description: string
   icon: Icon
@@ -36,11 +38,32 @@ export const onboardingSteps: OnboardingStep[] = [
   },
 ]
 
+export const ownerOnboardingSteps: OnboardingStep[] = [
+  ...onboardingSteps,
+  {
+    label: "Menu",
+    description: "Opening dishes and prices",
+    icon: ForkKnifeIcon,
+  },
+  {
+    label: "Staff",
+    description: "People who use the till",
+    icon: UsersThreeIcon,
+  },
+  {
+    label: "Payouts",
+    description: "Where MoMo payments land",
+    icon: DeviceMobileIcon,
+  },
+]
+
 export function OnboardingShell({
   currentStep,
+  steps = onboardingSteps,
   children,
 }: {
   currentStep: number
+  steps?: OnboardingStep[]
   children: React.ReactNode
 }) {
   return (
@@ -68,7 +91,7 @@ export function OnboardingShell({
               Restaurant setup
             </p>
             <ol className="mt-5 space-y-1">
-              {onboardingSteps.map((item, index) => {
+              {steps.map((item, index) => {
                 const IconComponent = item.icon
                 const active = currentStep === index
                 const complete = currentStep > index
@@ -93,7 +116,7 @@ export function OnboardingShell({
                         <IconComponent aria-hidden="true" className="size-4" />
                       )}
                     </span>
-                    {index < onboardingSteps.length - 1 && (
+                    {index < steps.length - 1 && (
                       <span
                         aria-hidden="true"
                         className="absolute top-11 bottom-[-1rem] left-[1.72rem] w-px bg-border"

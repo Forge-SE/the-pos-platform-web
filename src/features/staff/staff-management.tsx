@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@apollo/client/react"
+import { Navigate } from "@tanstack/react-router"
 import {
   CaretLeftIcon,
   CaretRightIcon,
@@ -7,7 +8,6 @@ import {
   MagnifyingGlassIcon,
   PencilSimpleIcon,
   PlusIcon,
-  ShieldCheckIcon,
 } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +29,9 @@ import { EditStaffDialog } from "@/features/staff/modals/edit"
 import { ViewStaffDialog } from "@/features/staff/modals/view"
 import { STAFF_QUERY, roleLabels } from "@/features/staff/model"
 import type { StaffData, StaffRole } from "@/features/staff/model"
+import { StaffAvatar } from "@/features/staff/staff-avatar"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
 
 const PAGE_SIZE = 8
@@ -39,7 +41,7 @@ type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE"
 
 export function StaffManagement() {
   const profile = getAccessTokenProfile()
-  const canManage = profile?.role === "MANAGER" || profile?.role === "OWNER"
+  const canManage = hasPermission(profile, "STAFF_MANAGE")
   const { data, loading, error, refetch } = useQuery<StaffData>(STAFF_QUERY, {
     skip: !canManage,
   })
@@ -84,27 +86,7 @@ export function StaffManagement() {
     setPage(1)
   }
 
-  if (!canManage) {
-    return (
-      <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <header>
-          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            Staff
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Manage staff access and operating roles.
-          </p>
-        </header>
-        <div className="mt-8 rounded-xl border border-border/70 bg-muted/20 p-8 text-center">
-          <ShieldCheckIcon className="mx-auto size-7 text-muted-foreground" />
-          <p className="mt-3 font-semibold">Manager access required</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Only managers and owners can view or create staff accounts.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  if (!canManage) return <Navigate to="/overview" replace />
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
@@ -114,8 +96,8 @@ export function StaffManagement() {
             Staff
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Create secure staff access for the counter, kitchen, and management
-            team.
+            Add the people who use this till. Each person chooses a PIN the
+            first time they sign in.
           </p>
         </header>
         <Button onClick={() => setNewStaffParam("1")}>
@@ -241,7 +223,21 @@ export function StaffManagement() {
                           className="transition-colors hover:bg-muted/30"
                         >
                           <td className="px-4 py-3.5 font-medium">
-                            {member.name}
+                            <div className="flex items-center gap-3">
+                              <StaffAvatar
+                                name={member.name}
+                                url={member.avatarUrl}
+                                className="size-9 text-xs"
+                              />
+                              <span>
+                                {member.name}
+                                {member.pinSet === false && (
+                                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                                    PIN not chosen yet
+                                  </span>
+                                )}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-4 py-3.5">
                             <Badge variant="outline">
@@ -391,6 +387,9 @@ export function StaffManagement() {
         open={editMember !== null}
         onOpenChange={(open) => {
           if (!open) setEditStaffParam(null)
+        }}
+        onUpdated={() => {
+          void refetch()
         }}
       />
     </div>
