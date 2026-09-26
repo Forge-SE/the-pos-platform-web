@@ -2,7 +2,8 @@ import { Fragment } from "react"
 import { EyedropperSampleIcon } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
-import { formatMoney,
+import {
+  formatMoney,
   SAMPLE_BEST_SELLERS,
   SAMPLE_CATEGORIES,
   SAMPLE_HEATMAP,
@@ -10,7 +11,8 @@ import { formatMoney,
   SAMPLE_HEATMAP_HOURS,
   SAMPLE_RANGE_LABEL,
   SAMPLE_STAFF_STATS,
-  SAMPLE_TREND_WEEK } from "@/features/performance/model"
+  SAMPLE_TREND_WEEK,
+} from "@/features/performance/model"
 import type { TrendPoint } from "@/features/performance/model"
 
 /**

@@ -1,5 +1,5 @@
-import { useState  } from "react"
-import type {ReactNode} from "react";
+import { useState } from "react"
+import type { ReactNode } from "react"
 import { useMutation, useQuery } from "@apollo/client/react"
 import {
   PauseIcon,

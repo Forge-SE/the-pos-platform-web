@@ -205,10 +205,7 @@ export function CreateStaffDialog({
                 <Select
                   value={formik.values.role}
                   onValueChange={(value) =>
-                    void formik.setFieldValue(
-                      "role",
-                      (value) ?? "CASHIER"
-                    )
+                    void formik.setFieldValue("role", value ?? "CASHIER")
                   }
                 >
                   <SelectTrigger className="w-full">

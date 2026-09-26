@@ -126,7 +126,7 @@ export function StaffManagement() {
             <Select
               value={roleFilter}
               onValueChange={(value) => {
-                setRoleFilter((value) ?? "ALL")
+                setRoleFilter(value ?? "ALL")
                 setPage(1)
               }}
             >
@@ -148,7 +148,7 @@ export function StaffManagement() {
             <Select
               value={statusFilter}
               onValueChange={(value) => {
-                setStatusFilter((value) ?? "ALL")
+                setStatusFilter(value ?? "ALL")
                 setPage(1)
               }}
             >

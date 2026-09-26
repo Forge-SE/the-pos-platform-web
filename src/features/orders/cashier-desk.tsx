@@ -14,8 +14,8 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { diningLabel  } from "@/features/orders/labels"
-import type {DiningType} from "@/features/orders/labels";
+import { diningLabel } from "@/features/orders/labels"
+import type { DiningType } from "@/features/orders/labels"
 import {
   cedisToPesewas,
   formatMoney,

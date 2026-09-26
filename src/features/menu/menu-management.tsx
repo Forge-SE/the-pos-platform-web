@@ -42,7 +42,11 @@ import {
   mutationMessage,
   uploadMenuImage,
 } from "@/features/menu/model"
-import type { MenuItem, UploadState, MenuManagementData  } from "@/features/menu/model"
+import type {
+  MenuItem,
+  UploadState,
+  MenuManagementData,
+} from "@/features/menu/model"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"

@@ -5,12 +5,8 @@ import { Dialog } from "@base-ui/react/dialog"
 import { XIcon } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
-import {
-  diningLabel,
-  statusLabels
-  
-} from "@/features/orders/labels"
-import type {DiningType} from "@/features/orders/labels";
+import { diningLabel, statusLabels } from "@/features/orders/labels"
+import type { DiningType } from "@/features/orders/labels"
 import { formatMoney } from "@/features/menu/model"
 
 interface OwnerOrder {
