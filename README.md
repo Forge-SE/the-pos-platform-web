@@ -31,5 +31,9 @@ npm ci
 npm run validate
 ```
 
+Production builds include a web app manifest and an auto-updating service
+worker. PWA caching is disabled during local development; use `npm run build`
+followed by `npm run preview` to test installation and offline app-shell loading.
+
 See [docs/infrastructure.md](docs/infrastructure.md) for CI, environment,
 container, and repository setup.
