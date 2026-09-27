@@ -1,0 +1,14 @@
+# Railway PROD config for the web frontend (Dockerfile-based).
+# Create a Railway project "pos-prod", add this repo as the "web" service
+# pinned to the main branch, and set the variables below in Railway dashboard.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "npm run start"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
