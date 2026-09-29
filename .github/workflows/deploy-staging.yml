@@ -46,16 +46,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
       - name: Deploy via Vercel CLI
         id: deploy
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
-          scope: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-args: >-
-            --prod=false
-            --env VITE_GRAPHQL_URL=${{ secrets.STAGING_GRAPHQL_URL }}
-            --env VITE_GRAPHQL_WS_URL=${{ secrets.STAGING_GRAPHQL_WS_URL }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          URL=$(vercel deploy --no-wait --yes \
+            --env VITE_GRAPHQL_URL=${{ secrets.STAGING_GRAPHQL_URL }} \
+            --env VITE_GRAPHQL_WS_URL=${{ secrets.STAGING_GRAPHQL_WS_URL }} \
+            --token "$VERCEL_TOKEN")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
