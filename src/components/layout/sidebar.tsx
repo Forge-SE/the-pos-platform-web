@@ -173,10 +173,10 @@ export function Sidebar({
 
   return (
     <aside
-      className={`hidden min-h-0 flex-col overflow-y-auto py-4 lg:flex lg:h-full ${collapsed ? "px-2" : "px-3"}`}
+      className={`hidden min-h-0 flex-col overflow-hidden py-4 lg:flex lg:h-full ${collapsed ? "px-2" : "px-3"}`}
     >
       <div
-        className={`flex min-h-12 items-center ${collapsed ? "justify-center" : "gap-2"}`}
+        className={`flex min-h-12 shrink-0 items-center ${collapsed ? "justify-center" : "gap-2"}`}
       >
         {!collapsed && (
           <Link
@@ -210,24 +210,26 @@ export function Sidebar({
         </Button>
       </div>
 
-      <NavigationSection
-        label="General"
-        items={primaryNavigationFor(profile.role)}
-        collapsed={collapsed}
-      />
-      {managementNavigation.some((item) =>
-        seesManagementItem(profile, item)
-      ) && (
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <NavigationSection
-          label="Manage"
-          items={managementNavigation.filter((item) =>
-            seesManagementItem(profile, item)
-          )}
+          label="General"
+          items={primaryNavigationFor(profile.role)}
           collapsed={collapsed}
         />
-      )}
+        {managementNavigation.some((item) =>
+          seesManagementItem(profile, item)
+        ) && (
+          <NavigationSection
+            label="Manage"
+            items={managementNavigation.filter((item) =>
+              seesManagementItem(profile, item)
+            )}
+            collapsed={collapsed}
+          />
+        )}
+      </div>
 
-      <div className="mt-auto border-t border-sidebar-border pt-4">
+      <div className="shrink-0 border-t border-sidebar-border pt-4">
         <div
           className={`flex items-center ${collapsed ? "justify-center" : "gap-3 px-2"}`}
         >

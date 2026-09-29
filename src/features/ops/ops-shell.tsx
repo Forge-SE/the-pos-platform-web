@@ -82,16 +82,19 @@ export function OpsShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-svh flex-col bg-background lg:grid lg:h-dvh lg:grid-cols-[240px_minmax(0,1fr)] lg:overflow-hidden">
-      <aside className="hidden min-h-0 overflow-y-auto border-r border-border/70 bg-sidebar lg:flex lg:flex-col">
-        <div className="flex items-center gap-2 px-4 py-5">
+      <aside className="hidden min-h-0 overflow-hidden border-r border-border/70 bg-sidebar lg:flex lg:flex-col">
+        <div className="flex shrink-0 items-center gap-2 px-4 py-5">
           <OvaalMark />
         </div>
-        <nav className="flex flex-1 flex-col gap-6 px-3" aria-label="Platform">
+        <nav
+          className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>div]:shrink-0"
+          aria-label="Platform"
+        >
           <NavGroup label="Directory" pathname={pathname} section="directory" />
           <NavGroup label="Insights" pathname={pathname} section="insights" />
           <NavGroup label="Records" pathname={pathname} section="records" />
         </nav>
-        <div className="border-t border-border/70 p-3">
+        <div className="shrink-0 border-t border-border/70 p-3">
           <p className="px-3 text-xs font-medium text-muted-foreground">
             Platform admin
           </p>
