@@ -173,7 +173,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`sticky top-2 hidden h-[calc(100svh-1rem)] flex-col py-4 lg:flex lg:h-full ${collapsed ? "px-2" : "px-3"}`}
+      className={`hidden min-h-0 flex-col overflow-y-auto py-4 lg:flex lg:h-full ${collapsed ? "px-2" : "px-3"}`}
     >
       <div
         className={`flex min-h-12 items-center ${collapsed ? "justify-center" : "gap-2"}`}

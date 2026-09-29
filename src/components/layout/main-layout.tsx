@@ -56,7 +56,7 @@ export function MainLayout() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-sidebar">
+    <div className="flex min-h-svh flex-col bg-sidebar lg:h-dvh lg:overflow-hidden">
       <ShiftBanner />
       <main
         className={`flex min-h-0 flex-1 flex-col p-2 lg:grid lg:gap-2 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.2,0,0,1)] ${sidebarCollapsed ? "lg:grid-cols-[72px_minmax(0,1fr)]" : "lg:grid-cols-[220px_minmax(0,1fr)]"}`}
@@ -68,7 +68,7 @@ export function MainLayout() {
           onSignOut={signOut}
         />
 
-        <section className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full">
+        <section className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto">
           <MobileHeader profile={profile} onSignOut={signOut} />
           <Outlet />
         </section>
