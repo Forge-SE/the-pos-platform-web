@@ -1,6 +1,6 @@
 import { useQuery } from "@apollo/client/react"
 
-import { isSameDay } from "date-fns"
+import { format, isSameDay } from "date-fns"
 
 import { DateRangePicker, defaultPresets } from "@/components/date-range-picker"
 import type { DateRange } from "@/components/date-range-picker"
@@ -34,6 +34,7 @@ import {
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
+import { resolveCustomRange, salesRangeVariables } from "./date-range"
 
 type PerfTab = "all" | "revenue" | "orders" | "staff"
 
@@ -77,12 +78,9 @@ export function Performance() {
   const [fromParam, setFromParam] = useUrlState("from")
   const [toParam, setToParam] = useUrlState("to")
   const presets = defaultPresets()
-  const range: DateRange | undefined =
+  const range: DateRange =
     rangeParam === "custom" && fromParam
-      ? {
-          from: new Date(fromParam),
-          to: toParam ? new Date(toParam) : undefined,
-        }
+      ? resolveCustomRange(fromParam, toParam, presets[2].dateRange)
       : (presets.find((preset) => preset.id === (rangeParam ?? "30d"))
           ?.dateRange ?? presets[2].dateRange)
   function handleRangeChange(next: DateRange | undefined) {
@@ -111,13 +109,17 @@ export function Performance() {
       setToParam(null)
     } else {
       setRangeParam("custom")
-      setFromParam(next.from.toISOString())
-      setToParam(next.to ? next.to.toISOString() : null)
+      setFromParam(format(next.from, "yyyy-MM-dd"))
+      setToParam(format(next.to ?? next.from, "yyyy-MM-dd"))
     }
   }
   const { data, loading, error, refetch } = useQuery<PerformanceData>(
     PERFORMANCE_QUERY,
-    { pollInterval: 60_000 }
+    {
+      variables: { ...salesRangeVariables(range), includeSales: canSeeSales },
+      pollInterval: 60_000,
+      notifyOnNetworkStatusChange: true,
+    }
   )
   const { data: staffData, loading: staffLoading } = useQuery<StaffRosterData>(
     STAFF_ROSTER_QUERY,
@@ -125,8 +127,11 @@ export function Performance() {
   )
 
   const salesProps = {
-    sales: data?.salesToday,
+    sales: data?.salesSummary,
     salesLoading: loading || !data,
+    periodLabel: range.from
+      ? `${format(range.from, "MMM d, yyyy")} – ${format(range.to ?? range.from, "MMM d, yyyy")}`
+      : "Selected period",
   }
 
   return (
@@ -164,6 +169,10 @@ export function Performance() {
         </div>
         <DateRangePicker value={range} onChange={handleRangeChange} />
       </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Sales totals follow the selected dates in your restaurant’s timezone.
+        Shift, active orders, and staff show the current state. Preview charts use sample data.
+      </p>
 
       {error ? (
         <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center">

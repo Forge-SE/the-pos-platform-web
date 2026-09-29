@@ -32,12 +32,12 @@ export function defaultPresets(): RangePreset[] {
     {
       id: "7d",
       label: "Last 7 days",
-      dateRange: { from: subDays(now, 7), to: now },
+      dateRange: { from: subDays(now, 6), to: now },
     },
     {
       id: "30d",
       label: "Last 30 days",
-      dateRange: { from: subDays(now, 30), to: now },
+      dateRange: { from: subDays(now, 29), to: now },
     },
     {
       id: "mtd",

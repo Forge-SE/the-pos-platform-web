@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client"
 
 export const PERFORMANCE_QUERY = gql`
-  query PerformanceOverview {
-    salesToday {
+  query PerformanceOverview($from: String!, $to: String!, $includeSales: Boolean!) {
+    salesSummary(from: $from, to: $to) @include(if: $includeSales) {
       totalSales
       orderCount
       paymentBreakdown {
@@ -52,7 +52,7 @@ export interface CurrentShift {
 }
 
 export interface PerformanceData {
-  salesToday: SalesToday
+  salesSummary?: SalesToday
   currentShift: CurrentShift | null
   activeOrders: Array<{ id: string; status: OrderStatus }>
 }

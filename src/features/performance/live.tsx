@@ -57,9 +57,11 @@ function LoadingBars() {
 export function HeroStats({
   sales,
   salesLoading,
+  periodLabel,
 }: {
-  sales?: PerformanceData["salesToday"]
+  sales?: PerformanceData["salesSummary"]
   salesLoading: boolean
+  periodLabel: string
 }) {
   const total = sales?.totalSales ?? 0
   const count = sales?.orderCount ?? 0
@@ -68,24 +70,24 @@ export function HeroStats({
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <WalletIcon aria-hidden="true" className="size-4" />
-          Today&apos;s revenue
+          Revenue
         </div>
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading ? "—" : formatMoney(total)}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Settled sales today
+          {periodLabel}
         </p>
       </article>
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <ReceiptIcon aria-hidden="true" className="size-4" />
-          Orders today
+          Completed orders
         </div>
         <p className="mt-3 text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading ? "—" : count}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">Completed orders</p>
+        <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
       </article>
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -96,7 +98,7 @@ export function HeroStats({
           {salesLoading || !sales ? "—" : formatMoney(averageOrderValue(sales))}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Revenue ÷ orders, calculated live
+          {periodLabel}
         </p>
       </article>
     </div>
@@ -106,14 +108,16 @@ export function HeroStats({
 export function PaymentSplitCard({
   sales,
   salesLoading,
+  periodLabel,
 }: {
-  sales?: PerformanceData["salesToday"]
+  sales?: PerformanceData["salesSummary"]
   salesLoading: boolean
+  periodLabel: string
 }) {
   return (
     <Card
       title="Payment method split"
-      description="How today's settled sales were collected."
+      description={`How settled sales were collected · ${periodLabel}`}
     >
       {salesLoading ? (
         <PaymentDonutSkeleton />
