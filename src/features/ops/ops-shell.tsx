@@ -87,7 +87,7 @@ export function OpsShell({ children }: { children: ReactNode }) {
           <OvaalMark />
         </div>
         <nav
-          className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>div]:shrink-0"
+          className="flex min-h-0 flex-1 [scrollbar-width:none] flex-col gap-6 overflow-y-auto px-3 pb-3 [&::-webkit-scrollbar]:hidden [&>div]:shrink-0"
           aria-label="Platform"
         >
           <NavGroup label="Directory" pathname={pathname} section="directory" />

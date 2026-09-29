@@ -75,9 +75,7 @@ export function HeroStats({
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading ? "—" : formatMoney(total)}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {periodLabel}
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
       </article>
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -97,9 +95,7 @@ export function HeroStats({
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading || !sales ? "—" : formatMoney(averageOrderValue(sales))}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {periodLabel}
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
       </article>
     </div>
   )

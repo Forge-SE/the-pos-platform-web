@@ -171,7 +171,8 @@ export function Performance() {
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
         Sales totals follow the selected dates in your restaurant’s timezone.
-        Shift, active orders, and staff show the current state. Preview charts use sample data.
+        Shift, active orders, and staff show the current state. Preview charts
+        use sample data.
       </p>
 
       {error ? (

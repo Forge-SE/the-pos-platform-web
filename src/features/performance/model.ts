@@ -1,7 +1,11 @@
 import { gql } from "@apollo/client"
 
 export const PERFORMANCE_QUERY = gql`
-  query PerformanceOverview($from: String!, $to: String!, $includeSales: Boolean!) {
+  query PerformanceOverview(
+    $from: String!
+    $to: String!
+    $includeSales: Boolean!
+  ) {
     salesSummary(from: $from, to: $to) @include(if: $includeSales) {
       totalSales
       orderCount

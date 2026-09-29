@@ -210,7 +210,7 @@ export function Sidebar({
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="min-h-0 flex-1 [scrollbar-width:none] overflow-y-auto pb-4 [&::-webkit-scrollbar]:hidden">
         <NavigationSection
           label="General"
           items={primaryNavigationFor(profile.role)}
