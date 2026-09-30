@@ -9,6 +9,7 @@ import {
   ImageIcon,
   MagnifyingGlassIcon,
   PencilSimpleIcon,
+  PaletteIcon,
   PlusIcon,
   SlidersHorizontalIcon,
   SpinnerGapIcon,
@@ -32,6 +33,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { AddItemModal } from "@/features/menu/modals/add-item-modal"
 import { CategoryModal } from "@/features/menu/modals/category-modal"
+import { CategoryColors } from "@/features/menu/category-colors"
 import { ConfigureOptionsModal } from "@/features/menu/modals/configure-options-modal"
 import { EditItemModal } from "@/features/menu/modals/edit-item-modal"
 import {
@@ -75,6 +77,7 @@ export function MenuManagement() {
   const optionsOpen = optionsParam !== null
   const [categoryParam, setCategoryParam] = useUrlState("category")
   const categoryOpen = categoryParam === "new"
+  const [colorsParam, setColorsParam] = useUrlState("categoryColors")
   const [editItemParam, setEditItemParam] = useUrlState("editItem")
   const [configMenuOpen, setConfigMenuOpen] = useState(false)
 
@@ -233,6 +236,13 @@ export function MenuManagement() {
                     />
                     Configure menu options
                   </Menu.Item>
+                  <Menu.Item
+                    className="flex min-h-9 cursor-default items-center gap-2 rounded-md px-2.5 text-xs font-medium outline-none select-none data-highlighted:bg-muted data-highlighted:text-foreground"
+                    onClick={() => setColorsParam("1")}
+                  >
+                    <PaletteIcon aria-hidden="true" className="size-4" />
+                    Category colors
+                  </Menu.Item>
                 </Menu.Popup>
               </Menu.Positioner>
             </Menu.Portal>
@@ -243,6 +253,12 @@ export function MenuManagement() {
           </Button>
         </div>
       </div>
+
+      <CategoryColors
+        categories={categories}
+        open={colorsParam === "1"}
+        onOpenChange={(open) => setColorsParam(open ? "1" : null)}
+      />
 
       {formError && (
         <div

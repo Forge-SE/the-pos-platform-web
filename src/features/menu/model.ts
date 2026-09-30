@@ -8,6 +8,7 @@ export const MENU_MANAGEMENT_QUERY = gql`
       id
       name
       sortOrder
+      color
     }
     menuItems(includeInactive: true) {
       id
@@ -160,6 +161,7 @@ export interface MenuCategory {
   id: string
   name: string
   sortOrder: number
+  color?: string | null
 }
 
 export interface ModifierOption {

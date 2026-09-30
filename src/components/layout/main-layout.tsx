@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
-import { Navigate, Outlet, useNavigate } from "@tanstack/react-router"
+import {
+  Navigate,
+  Outlet,
+  useNavigate,
+  useLocation,
+} from "@tanstack/react-router"
+import { useUrlState } from "@/lib/url-state"
 
 import { MobileHeader } from "@/components/layout/mobile-header"
 import { ShiftBanner } from "@/components/layout/shift-banner"
@@ -19,6 +25,14 @@ export function MainLayout() {
   const navigate = useNavigate()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const profile = getAccessTokenProfile()
+  const [fullscreenParam] = useUrlState("fullscreen")
+  const pathname = useLocation({ select: (location) => location.pathname })
+  const fullscreen =
+    (profile?.role === "CASHIER" ||
+      profile?.role === "KITCHEN" ||
+      profile?.role === "MANAGER") &&
+    pathname === "/orders" &&
+    fullscreenParam === "1"
 
   useEffect(() => {
     function onSuspended() {
@@ -57,19 +71,35 @@ export function MainLayout() {
 
   return (
     <div className="flex min-h-svh flex-col bg-sidebar lg:h-dvh lg:overflow-hidden">
-      <ShiftBanner />
+      <div className={fullscreen ? "hidden" : "contents"}>
+        <ShiftBanner />
+      </div>
       <main
-        className={`flex min-h-0 flex-1 flex-col p-2 lg:grid lg:gap-2 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.2,0,0,1)] ${sidebarCollapsed ? "lg:grid-cols-[72px_minmax(0,1fr)]" : "lg:grid-cols-[220px_minmax(0,1fr)]"}`}
+        className={
+          fullscreen
+            ? "flex h-dvh min-h-0 flex-1 flex-col overflow-hidden"
+            : `flex min-h-0 flex-1 flex-col p-2 lg:grid lg:gap-2 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.2,0,0,1)] ${sidebarCollapsed ? "lg:grid-cols-[72px_minmax(0,1fr)]" : "lg:grid-cols-[220px_minmax(0,1fr)]"}`
+        }
       >
-        <Sidebar
-          profile={profile}
-          collapsed={sidebarCollapsed}
-          onCollapsedChange={() => setSidebarCollapsed((value) => !value)}
-          onSignOut={signOut}
-        />
+        <div className={fullscreen ? "hidden" : "contents"}>
+          <Sidebar
+            profile={profile}
+            collapsed={sidebarCollapsed}
+            onCollapsedChange={() => setSidebarCollapsed((value) => !value)}
+            onSignOut={signOut}
+          />
+        </div>
 
-        <section className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto">
-          <MobileHeader profile={profile} onSignOut={signOut} />
+        <section
+          className={
+            fullscreen
+              ? "min-h-0 flex-1 overflow-hidden bg-card text-card-foreground"
+              : "min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto"
+          }
+        >
+          <div className={fullscreen ? "hidden" : "contents"}>
+            <MobileHeader profile={profile} onSignOut={signOut} />
+          </div>
           <Outlet />
         </section>
       </main>

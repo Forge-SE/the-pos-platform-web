@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
-import { useMutation, useQuery } from "@apollo/client/react"
+import { useMutation, useQuery, useSubscription } from "@apollo/client/react"
 import { Link } from "@tanstack/react-router"
 import type { Icon } from "@phosphor-icons/react"
 import {
@@ -179,15 +179,23 @@ export function Overview() {
   const canSeeSales = hasPermission(profile, "REPORTS_VIEW")
   const opensShift = profile.role === "CASHIER" || profile.role === "KITCHEN"
   const { data, loading, error, refetch, subscribeToMore } =
-    useQuery<OperationsData>(OPERATIONS_QUERY, { pollInterval: 30_000 })
+    useQuery<OperationsData>(OPERATIONS_QUERY, {
+      // Fully websocket-driven via subscribeToMore below; no polling.
+      fetchPolicy: "cache-and-network",
+    })
   const [openShift, { loading: openingShift }] = useMutation<
     OpenShiftData,
     OpenShiftVariables
   >(OPEN_SHIFT)
-  const { data: salesData, loading: salesLoading } = useQuery<SalesData>(
-    SALES_QUERY,
-    { skip: !canSeeSales, pollInterval: 60_000 }
-  )
+  const {
+    data: salesData,
+    loading: salesLoading,
+    refetch: refetchSales,
+  } = useQuery<SalesData>(SALES_QUERY, {
+    skip: !canSeeSales,
+    fetchPolicy: "cache-and-network",
+    // No polling: refreshed when order subscriptions fire below.
+  })
 
   useEffect(() => {
     const unsubscribeCreated = subscribeToMore<OrderCreatedData>({
@@ -254,7 +262,26 @@ export function Overview() {
       unsubscribeCreated()
       unsubscribeStatusChanged()
     }
+    // Sales totals have no subscription: refresh them whenever an order
+    // event arrives via the cache merge above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscribeToMore])
+
+  useSubscription<OrderCreatedData>(ORDER_CREATED_SUBSCRIPTION, {
+    skip: !canSeeSales,
+    onData: () => {
+      void refetchSales?.().catch(() => undefined)
+    },
+  })
+  useSubscription<OrderStatusChangedData>(
+    ORDER_STATUS_CHANGED_SUBSCRIPTION,
+    {
+      skip: !canSeeSales,
+      onData: () => {
+        void refetchSales?.().catch(() => undefined)
+      },
+    },
+  )
 
   const orders = data?.activeOrders ?? []
   const visibleOrders = useMemo(() => {

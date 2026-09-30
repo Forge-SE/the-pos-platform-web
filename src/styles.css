@@ -196,3 +196,48 @@
 @utility animate-tagline-reveal {
   animation: tagline-reveal 0.8s cubic-bezier(0.2, 0, 0, 1) both;
 }
+
+/* Kitchen board: touched ticket slides in from the top. */
+@keyframes ticket-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ticket-enter {
+  animation: ticket-enter 0.35s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticket-enter {
+    animation: none;
+  }
+}
+
+/* Receipt printing: only the receipt text hits the paper. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}
+
+/* Smooth FLIP-style movement when cards change position/column. */
+::view-transition-group(*) {
+  animation-duration: 0.35s;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}

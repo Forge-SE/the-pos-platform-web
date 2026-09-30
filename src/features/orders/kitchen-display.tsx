@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
-import { useMutation, useQuery } from "@apollo/client/react"
+import { useApolloClient, useMutation, useQuery } from "@apollo/client/react"
 import {
   ArrowClockwiseIcon,
   ArrowRightIcon,
+  ArrowsInIcon,
+  ArrowsOutIcon,
   BellRingingIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -21,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import { diningLabel } from "@/features/orders/labels"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
+import { useUrlState } from "@/lib/url-state"
 
 type ActiveStatus = "NEW" | "PREPARING" | "READY"
 type OrderStatus = ActiveStatus | "COMPLETED" | "CANCELLED"
@@ -47,6 +50,7 @@ interface KitchenOrder {
   notes: string | null
   version: number
   createdAt: string
+  updatedAt: string
   items: OrderItem[]
 }
 
@@ -79,6 +83,7 @@ const ORDER_FIELDS = gql`
     notes
     version
     createdAt
+    updatedAt
     items {
       id
       name
@@ -222,6 +227,46 @@ function mergeActiveOrder(orders: KitchenOrder[], changed: KitchenOrder) {
     : [...orders, changed]
 }
 
+// Wrap a cache/state update in the View Transitions API when available so
+// the touched ticket glides to its new position instead of jumping.
+function transitionUpdate(update: () => void) {
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => void
+  }
+  if (typeof doc.startViewTransition === "function") {
+    doc.startViewTransition(update)
+  } else {
+    update()
+  }
+}
+
+function MealImage({ name, imageUrl, size }: { name: string; imageUrl?: string | null; size: "md" | "sm" }) {
+  const cls =
+    size === "md"
+      ? "size-14 rounded-lg"
+      : "size-8 rounded-md"
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt=""
+        loading="lazy"
+        className={`${cls} shrink-0 object-cover outline outline-black/10`}
+      />
+    )
+  }
+  // Always render a visual: deterministic fallback from the dish name.
+  const initial = (name.trim().charAt(0) || "?").toUpperCase()
+  return (
+    <span
+      aria-hidden="true"
+      className={`${cls} flex shrink-0 items-center justify-center bg-primary/20 text-sm font-bold text-secondary outline outline-black/5`}
+    >
+      {initial}
+    </span>
+  )
+}
+
 export function KitchenDisplay({
   readOnly = false,
   switcher,
@@ -231,28 +276,89 @@ export function KitchenDisplay({
 } = {}) {
   const [view, setView] = useState<ViewMode>("board")
   const [search, setSearch] = useState("")
+  const [fullscreenParam, setFullscreenParam] = useUrlState("fullscreen")
+  const fullscreen = fullscreenParam === "1"
+  const ownsFullscreen = useRef(false)
   const [now, setNow] = useState(() => Date.now())
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // Most recently touched ticket: slides to the top with a flash highlight.
+  const [highlightId, setHighlightId] = useState<string | null>(null)
+  const highlightTimer = useRef<number | null>(null)
+
+  function touchOrder(id: string) {
+    transitionUpdate(() => setHighlightId(id))
+    if (highlightTimer.current) window.clearTimeout(highlightTimer.current)
+    highlightTimer.current = window.setTimeout(() => setHighlightId(null), 2400)
+  }
   const profile = getAccessTokenProfile()
   const canAdvance =
     !readOnly &&
     (profile?.role === "KITCHEN" || profile?.role === "MANAGER") &&
     hasPermission(profile, "ORDERS_ADVANCE")
 
+  const client = useApolloClient()
   const { data, loading, error, refetch, subscribeToMore } =
     useQuery<ActiveOrdersData>(ACTIVE_ORDERS_QUERY, {
-      pollInterval: 30_000,
+      // Fully websocket-driven via subscribeToMore below; no polling.
+      fetchPolicy: "cache-and-network",
       notifyOnNetworkStatusChange: true,
     })
   const [updateStatus] = useMutation<UpdateStatusData, UpdateStatusVariables>(
     UPDATE_ORDER_STATUS
   )
 
+  // Local clock for "Xm ago" labels only — not server polling.
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000)
     return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    const syncFullscreen = () => {
+      if (!document.fullscreenElement && ownsFullscreen.current) {
+        ownsFullscreen.current = false
+        setFullscreenParam(null)
+      }
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.fullscreenElement)
+        setFullscreenParam(null)
+    }
+    document.addEventListener("fullscreenchange", syncFullscreen)
+    document.addEventListener("keydown", escape)
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen)
+      document.removeEventListener("keydown", escape)
+    }
+  }, [setFullscreenParam])
+
+  useEffect(
+    () => () => {
+      if (ownsFullscreen.current && document.fullscreenElement)
+        void document.exitFullscreen().catch(() => undefined)
+    },
+    [],
+  )
+
+  async function toggleFullscreen() {
+    if (fullscreen) {
+      setFullscreenParam(null)
+      if (document.fullscreenElement && ownsFullscreen.current)
+        await document.exitFullscreen().catch(() => undefined)
+      ownsFullscreen.current = false
+    } else {
+      setFullscreenParam("1")
+      if (document.fullscreenEnabled && !document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen()
+          ownsFullscreen.current = true
+        } catch {
+          // Keep the expanded workspace when browser fullscreen is unavailable.
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     const unsubscribeCreated = subscribeToMore<OrderCreatedData>({
@@ -262,12 +368,11 @@ export function KitchenDisplay({
         { complete, previousData, subscriptionData }
       ) => {
         if (!complete) return
+        const created = subscriptionData.data.orderCreated
+        touchOrder(created.id)
         return {
           ...previousData,
-          activeOrders: mergeActiveOrder(
-            previousData.activeOrders,
-            subscriptionData.data.orderCreated
-          ),
+          activeOrders: mergeActiveOrder(previousData.activeOrders, created),
         }
       },
     })
@@ -278,12 +383,11 @@ export function KitchenDisplay({
         { complete, previousData, subscriptionData }
       ) => {
         if (!complete) return
+        const changed = subscriptionData.data.orderStatusChanged
+        touchOrder(changed.id)
         return {
           ...previousData,
-          activeOrders: mergeActiveOrder(
-            previousData.activeOrders,
-            subscriptionData.data.orderStatusChanged
-          ),
+          activeOrders: mergeActiveOrder(previousData.activeOrders, changed),
         }
       },
     })
@@ -291,6 +395,7 @@ export function KitchenDisplay({
       unsubscribeCreated()
       unsubscribeChanged()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscribeToMore])
 
   const orders = useMemo(() => {
@@ -304,10 +409,13 @@ export function KitchenDisplay({
           order.items.some((item) => item.name.toLowerCase().includes(query)) ||
           order.notes?.toLowerCase().includes(query)
       )
+      // Most recently updated slides to the top; oldest first as tiebreak.
       .sort(
         (first, second) =>
+          new Date(second.updatedAt).getTime() -
+            new Date(first.updatedAt).getTime() ||
           new Date(first.createdAt).getTime() -
-          new Date(second.createdAt).getTime()
+            new Date(second.createdAt).getTime()
       )
   }, [data?.activeOrders, search])
 
@@ -324,14 +432,52 @@ export function KitchenDisplay({
 
   async function advance(order: KitchenOrder) {
     if (!isActive(order.status) || !canAdvance) return
+    const next = nextStatus[order.status]
+    const previous = order
     try {
       setNotice(null)
       setPendingOrderId(order.id)
-      await updateStatus({
-        variables: { orderId: order.id, status: nextStatus[order.status] },
+      touchOrder(order.id)
+      // Optimistic UI: move the ticket immediately; the subscription or
+      // refetch reconciles afterwards. No success refetch needed.
+      transitionUpdate(() => {
+        client.cache.updateQuery<ActiveOrdersData>(
+          { query: ACTIVE_ORDERS_QUERY },
+          (prev) => {
+            if (!prev) return prev
+            return {
+              activeOrders: mergeActiveOrder(prev.activeOrders, {
+                ...order,
+                status: next,
+                version: order.version + 1,
+                updatedAt: new Date().toISOString(),
+              }),
+            }
+          }
+        )
       })
-      await refetch()
+      await updateStatus({
+        variables: { orderId: order.id, status: next },
+        optimisticResponse: {
+          updateOrderStatus: {
+            ...order,
+            status: next,
+            version: order.version + 1,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      })
     } catch (mutationError) {
+      // Roll back to the server truth on failure.
+      client.cache.updateQuery<ActiveOrdersData>(
+        { query: ACTIVE_ORDERS_QUERY },
+        (prev) => {
+          if (!prev) return prev
+          return {
+            activeOrders: mergeActiveOrder(prev.activeOrders, previous),
+          }
+        }
+      )
       await refetch()
       setNotice(
         errorCode(mutationError) === "CONFLICT"
@@ -365,7 +511,23 @@ export function KitchenDisplay({
               : "Track incoming orders in real time and move every ticket through a clear, one-way cooking flow."}
           </p>
         </div>
-        {switcher}
+        <div className="flex flex-wrap items-center gap-3">
+          {switcher}
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            title={fullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
+            aria-pressed={fullscreen}
+            onClick={() => void toggleFullscreen()}
+          >
+            {fullscreen ? (
+              <ArrowsInIcon aria-hidden="true" />
+            ) : (
+              <ArrowsOutIcon aria-hidden="true" />
+            )}
+          </Button>
+        </div>
       </header>
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -460,6 +622,7 @@ export function KitchenDisplay({
           canAdvance={canAdvance}
           readOnly={readOnly}
           pendingOrderId={pendingOrderId}
+          highlightId={highlightId}
           onAdvance={advance}
         />
       ) : (
@@ -470,6 +633,7 @@ export function KitchenDisplay({
           canAdvance={canAdvance}
           readOnly={readOnly}
           pendingOrderId={pendingOrderId}
+          highlightId={highlightId}
           onAdvance={advance}
         />
       )}
@@ -516,6 +680,7 @@ function BoardView({
   canAdvance,
   readOnly,
   pendingOrderId,
+  highlightId,
   onAdvance,
 }: {
   orders: Array<KitchenOrder & { status: ActiveStatus }>
@@ -526,6 +691,7 @@ function BoardView({
   canAdvance: boolean
   readOnly: boolean
   pendingOrderId: string | null
+  highlightId: string | null
   onAdvance: (order: KitchenOrder) => void
 }) {
   return (
@@ -594,6 +760,7 @@ function BoardView({
                     canAdvance={canAdvance}
                     readOnly={readOnly}
                     pending={pendingOrderId === order.id}
+                    highlighted={highlightId === order.id}
                     onAdvance={onAdvance}
                   />
                 ))
@@ -612,6 +779,7 @@ function OrderCard({
   canAdvance,
   readOnly,
   pending,
+  highlighted = false,
   onAdvance,
 }: {
   order: KitchenOrder & { status: ActiveStatus }
@@ -619,6 +787,7 @@ function OrderCard({
   canAdvance: boolean
   readOnly: boolean
   pending: boolean
+  highlighted?: boolean
   onAdvance: (order: KitchenOrder) => void
 }) {
   const minutes = elapsedMinutes(order.createdAt, now)
@@ -626,7 +795,14 @@ function OrderCard({
   const ActionIcon = actionIcon[order.status]
 
   return (
-    <article className="overflow-hidden rounded-xl border border-border/75 bg-card shadow-[0_1px_2px_oklch(0.25_0.03_155/0.06)]">
+    <article
+      style={{ viewTransitionName: `ticket-${order.id}` }}
+      className={`ticket-enter overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_oklch(0.25_0.03_155/0.06)] transition-[border-color,box-shadow] duration-500 motion-reduce:animate-none ${
+        highlighted
+          ? "border-secondary shadow-[0_0_0_2px_var(--secondary)]"
+          : "border-border/75"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3 px-4 pt-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -655,13 +831,7 @@ function OrderCard({
       <ul className="space-y-4 px-4 py-4">
         {order.items.map((item) => (
           <li key={item.id} className="flex gap-3 text-sm">
-            {item.imageUrl ? (
-              <img
-                src={item.imageUrl}
-                alt=""
-                className="size-14 shrink-0 rounded-lg object-cover outline outline-black/10"
-              />
-            ) : null}
+            <MealImage name={item.name} imageUrl={item.imageUrl} size="md" />
             <div className="min-w-0">
               <p className="leading-5 font-semibold">
                 <span className="mr-1 tabular-nums">{item.quantity}×</span>
@@ -730,6 +900,7 @@ function TableView({
   canAdvance,
   readOnly,
   pendingOrderId,
+  highlightId,
   onAdvance,
 }: {
   orders: Array<KitchenOrder & { status: ActiveStatus }>
@@ -738,6 +909,7 @@ function TableView({
   canAdvance: boolean
   readOnly: boolean
   pendingOrderId: string | null
+  highlightId: string | null
   onAdvance: (order: KitchenOrder) => void
 }) {
   if (loading) {
@@ -773,8 +945,15 @@ function TableView({
           {orders.map((order) => {
             const ActionIcon = actionIcon[order.status]
             const pending = pendingOrderId === order.id
+            const highlighted = highlightId === order.id
             return (
-              <tr key={order.id} className="align-middle hover:bg-muted/20">
+              <tr
+                key={order.id}
+                style={{ viewTransitionName: `ticket-row-${order.id}` }}
+                className={`ticket-enter align-middle hover:bg-muted/20 ${
+                  highlighted ? "bg-secondary/15" : ""
+                }`}
+              >
                 <td className="px-4 py-4">
                   <p className="font-semibold tabular-nums">
                     {ticketNumber(order.id)}
@@ -790,13 +969,7 @@ function TableView({
                         key={item.id}
                         className="flex items-center gap-2 font-medium"
                       >
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt=""
-                            className="size-8 shrink-0 rounded-md object-cover outline outline-black/10"
-                          />
-                        ) : null}
+                        <MealImage name={item.name} imageUrl={item.imageUrl} size="sm" />
                         <span>
                           <span className="tabular-nums">{item.quantity}×</span>{" "}
                           {item.name}

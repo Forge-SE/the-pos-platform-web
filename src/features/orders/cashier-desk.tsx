@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Dialog } from "@base-ui/react/dialog"
 import {
   ClockIcon,
+  ArrowsOutIcon,
+  ArrowsInIcon,
   MinusIcon,
   PlusIcon,
   ShoppingBagIcon,
@@ -14,6 +16,8 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { toast } from "@/components/ui/toaster"
+import { CategoryCard } from "@/features/menu/category-card"
 import { diningLabel } from "@/features/orders/labels"
 import type { DiningType } from "@/features/orders/labels"
 import {
@@ -22,6 +26,9 @@ import {
   mutationMessage,
 } from "@/features/menu/model"
 import { normalizeGhanaPhone } from "@/features/payouts/phone"
+import { useUrlState } from "@/lib/url-state"
+import { CashierLiveOrders } from "./cashier-live-orders"
+import { ReceiptDialog } from "./receipt-dialog"
 
 interface ModifierOption {
   id: string
@@ -50,7 +57,12 @@ interface CounterItem {
 }
 
 interface CounterMenu {
-  menuCategories: Array<{ id: string; name: string; sortOrder: number }>
+  menuCategories: Array<{
+    id: string
+    name: string
+    sortOrder: number
+    color?: string | null
+  }>
   menuItems: CounterItem[]
 }
 
@@ -70,6 +82,7 @@ const MENU_QUERY = gql`
       id
       name
       sortOrder
+      color
     }
     menuItems {
       id
@@ -170,6 +183,9 @@ function groupMode(group: ModifierGroup): "radio" | "cards" | "chips" {
 }
 
 export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
+  const [fullscreenParam, setFullscreenParam] = useUrlState("fullscreen")
+  const fullscreen = fullscreenParam === "1"
+  const ownsFullscreen = useRef(false)
   const { data, loading, error } = useQuery<CounterMenu>(MENU_QUERY)
   const { data: shiftData } = useQuery<{
     currentShift: { id: string } | null
@@ -191,8 +207,60 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
   const [payMethod, setPayMethod] = useState<"CASH" | "MOMO">("MOMO")
   const [network, setNetwork] = useState<(typeof networks)[number]["id"]>("MTN")
   const [walletPhone, setWalletPhone] = useState("")
-  const [notice, setNotice] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null)
+  const [receiptOpen, setReceiptOpen] = useState(false)
+
+  useEffect(() => {
+    const syncFullscreen = () => {
+      if (!document.fullscreenElement && ownsFullscreen.current) {
+        ownsFullscreen.current = false
+        setFullscreenParam(null)
+      }
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        !document.fullscreenElement &&
+        !bagOpen &&
+        !customizing
+      )
+        setFullscreenParam(null)
+    }
+    document.addEventListener("fullscreenchange", syncFullscreen)
+    document.addEventListener("keydown", escape)
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen)
+      document.removeEventListener("keydown", escape)
+    }
+  }, [bagOpen, customizing, setFullscreenParam])
+
+  useEffect(
+    () => () => {
+      if (ownsFullscreen.current && document.fullscreenElement)
+        void document.exitFullscreen().catch(() => undefined)
+    },
+    []
+  )
+
+  async function toggleFullscreen() {
+    if (fullscreen) {
+      setFullscreenParam(null)
+      if (document.fullscreenElement && ownsFullscreen.current)
+        await document.exitFullscreen().catch(() => undefined)
+      ownsFullscreen.current = false
+    } else {
+      setFullscreenParam("1")
+      if (document.fullscreenEnabled && !document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen()
+          ownsFullscreen.current = true
+        } catch {
+          // Keep the expanded workspace when browser fullscreen is unavailable.
+        }
+      }
+    }
+  }
 
   const categories = data?.menuCategories ?? []
   const items = useMemo(() => {
@@ -260,7 +328,6 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
 
   async function placeOrder() {
     setFormError(null)
-    setNotice(null)
     if (!shiftId) {
       setFormError("Open a shift before taking orders.")
       return
@@ -327,9 +394,13 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             },
           },
         })
-        setNotice(
-          `Cash order ${order.id.slice(-6).toUpperCase()} is in. Total ${formatMoney(order.total)}.`
-        )
+        toast({
+          title: `Cash order ${order.id.slice(-6).toUpperCase()} is in`,
+          description: `Total ${formatMoney(order.total)}. Receipt ready to print.`,
+          status: "success",
+        })
+        setReceiptOrderId(order.id)
+        setReceiptOpen(true)
       } else {
         const charged = await initiateMomo({
           variables: {
@@ -353,11 +424,14 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             | null
             | undefined
         )?.initiateMomoPayment
-        setNotice(
-          attempt?.displayText ||
+        toast({
+          title: `Order ${order.id.slice(-6).toUpperCase()} placed`,
+          description:
+            attempt?.displayText ||
             attempt?.failureReason ||
-            `Prompt sent for order ${order.id.slice(-6).toUpperCase()}.`
-        )
+            "MoMo prompt sent.",
+          status: "success",
+        })
       }
       setLines([])
       setCustomerName("")
@@ -372,231 +446,224 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
   }
 
   return (
-    <div className="flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]">
-      <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
-        <div className="min-w-0">
-          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            Counter
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Build the bag, then take cash or send a MoMo prompt.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {switcher}
-          <Button onClick={() => setBagOpen(true)} className="shrink-0">
-            <ShoppingBagIcon aria-hidden="true" data-icon="inline-start" />
-            Bag
-            <span className="tabular-nums">
-              {lines.reduce((sum, line) => sum + line.quantity, 0)}
-            </span>
-          </Button>
-        </div>
-      </header>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        {notice && (
-          <p
-            className="mb-4 rounded-xl border border-border/70 bg-primary/25 px-4 py-3 text-sm"
-            role="status"
-          >
-            {notice}
-          </p>
-        )}
-        <Input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search the menu"
-          aria-label="Search the menu"
-          className="max-w-sm"
-        />
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          <CategoryChip
-            active={categoryId === "all"}
-            onClick={() => setCategoryId("all")}
-          >
-            All
-          </CategoryChip>
-          {categories.map((category) => (
-            <CategoryChip
-              key={category.id}
-              active={categoryId === category.id}
-              onClick={() => setCategoryId(category.id)}
+    <div
+      className={
+        fullscreen
+          ? "grid h-dvh min-h-0 grid-cols-[minmax(160px,30%)_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)]"
+          : ""
+      }
+    >
+      {fullscreen && <CashierLiveOrders />}
+      <div
+        className={
+          fullscreen
+            ? "flex min-h-0 min-w-0 flex-col"
+            : "flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]"
+        }
+      >
+        <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
+              Counter
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Build the bag, then take cash or send a MoMo prompt.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {!fullscreen && switcher}
+            <Button onClick={() => setBagOpen(true)} className="shrink-0">
+              <ShoppingBagIcon aria-hidden="true" data-icon="inline-start" />
+              Bag
+              <span className="tabular-nums">
+                {lines.reduce((sum, line) => sum + line.quantity, 0)}
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={fullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
+              aria-pressed={fullscreen}
+              onClick={() => void toggleFullscreen()}
             >
-              {category.name}
-            </CategoryChip>
-          ))}
-        </div>
+              {fullscreen ? (
+                <ArrowsInIcon aria-hidden="true" />
+              ) : (
+                <ArrowsOutIcon aria-hidden="true" />
+              )}
+            </Button>
+          </div>
+        </header>
 
-        {error ? (
-          <p
-            className="py-16 text-center text-sm text-destructive"
-            role="alert"
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+          <Input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search the menu"
+            aria-label="Search the menu"
+            className="max-w-sm"
+          />
+          <div
+            aria-label="Menu categories"
+            className="mt-4 flex gap-3 overflow-x-auto p-1 pb-3"
           >
-            The menu could not be loaded.
-          </p>
-        ) : loading ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {[0, 1, 2].map((item) => (
-              <div
-                key={item}
-                className="h-72 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none"
+            <CategoryCard
+              name="All"
+              color="#005B36"
+              count={data?.menuItems.length ?? 0}
+              active={categoryId === "all"}
+              onClick={() => setCategoryId("all")}
+            />
+            {categories.map((category) => (
+              <CategoryCard
+                key={category.id}
+                name={category.name}
+                color={category.color}
+                count={
+                  data?.menuItems.filter(
+                    (item) => item.categoryId === category.id
+                  ).length ?? 0
+                }
+                active={categoryId === category.id}
+                onClick={() => setCategoryId(category.id)}
               />
             ))}
           </div>
-        ) : items.length === 0 ? (
-          <p className="py-16 text-center text-sm text-muted-foreground">
-            No dishes match this counter.
-          </p>
-        ) : (
-          <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => {
-              const category = categories.find(
-                (entry) => entry.id === item.categoryId
-              )
-              return (
-                <li
-                  key={item.id}
-                  className="overflow-hidden rounded-2xl border border-border/70 bg-card"
-                >
-                  <div className="relative aspect-video bg-muted">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt=""
-                        className="size-full object-cover outline outline-black/10"
-                      />
-                    ) : (
-                      <div className="flex size-full items-center justify-center text-3xl font-semibold text-secondary/40">
-                        {item.name.slice(0, 1)}
-                      </div>
-                    )}
-                    {category && (
-                      <span className="absolute top-3 left-3 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold">
-                        {category.name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-2 p-4">
-                    <h2 className="text-base font-semibold tracking-[-0.02em]">
-                      {item.name}
-                    </h2>
-                    {item.description && (
-                      <p className="line-clamp-2 text-sm text-muted-foreground">
-                        {item.description}
-                      </p>
-                    )}
-                    {item.modifierGroups.some((group) =>
-                      group.options.some((option) => option.active)
-                    ) && (
-                      <ul className="flex flex-wrap gap-1.5">
-                        {item.modifierGroups.flatMap((group) =>
-                          group.options
-                            .filter((option) => option.active)
-                            .map((option) => (
-                              <li
-                                key={option.id}
-                                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/70 px-2 py-1 text-xs"
-                              >
-                                {option.imageUrl ? (
-                                  <img
-                                    src={option.imageUrl}
-                                    alt=""
-                                    className="size-5 shrink-0 rounded-full object-cover"
-                                  />
-                                ) : null}
-                                <span className="truncate">{option.name}</span>
-                              </li>
-                            ))
-                        )}
-                      </ul>
-                    )}
-                    <div className="flex items-end justify-between gap-3 pt-1">
-                      <p>
-                        <span className="block text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-                          Base price
+
+          {error ? (
+            <p
+              className="py-16 text-center text-sm text-destructive"
+              role="alert"
+            >
+              The menu could not be loaded.
+            </p>
+          ) : loading ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="h-72 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none"
+                />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <p className="py-16 text-center text-sm text-muted-foreground">
+              No dishes match this counter.
+            </p>
+          ) : (
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {items.map((item) => {
+                const category = categories.find(
+                  (entry) => entry.id === item.categoryId
+                )
+                return (
+                  <li
+                    key={item.id}
+                    className="overflow-hidden rounded-2xl border border-border/70 bg-card"
+                  >
+                    <div className="relative aspect-video bg-muted">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt=""
+                          className="size-full object-cover outline outline-black/10"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center text-3xl font-semibold text-secondary/40">
+                          {item.name.slice(0, 1)}
+                        </div>
+                      )}
+                      {category && (
+                        <span className="absolute top-3 left-3 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold">
+                          {category.name}
                         </span>
-                        <span className="text-sm font-semibold tabular-nums">
-                          {formatMoney(item.price)}
-                        </span>
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCustomizing(item)}
-                      >
-                        <PlusIcon aria-hidden="true" data-icon="inline-start" />
-                        Customize
-                      </Button>
+                      )}
                     </div>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+                    <div className="space-y-2 p-4">
+                      <h2 className="text-base font-semibold tracking-[-0.02em]">
+                        {item.name}
+                      </h2>
+                      {item.description && (
+                        <p className="line-clamp-2 text-sm text-muted-foreground">
+                          {item.description}
+                        </p>
+                      )}
+                      <div className="flex items-end justify-between gap-3 pt-1">
+                        <p>
+                          <span className="block text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+                            Base price
+                          </span>
+                          <span className="text-sm font-semibold tabular-nums">
+                            {formatMoney(item.price)}
+                          </span>
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCustomizing(item)}
+                        >
+                          <PlusIcon
+                            aria-hidden="true"
+                            data-icon="inline-start"
+                          />
+                          Add to order
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+
+        {customizing && (
+          <CustomizeDialog
+            item={customizing}
+            onClose={() => setCustomizing(null)}
+            onAdd={(optionIds, notes) => addLine(customizing, optionIds, notes)}
+          />
         )}
-      </div>
 
-      {customizing && (
-        <CustomizeDialog
-          item={customizing}
-          onClose={() => setCustomizing(null)}
-          onAdd={(optionIds, notes) => addLine(customizing, optionIds, notes)}
+        <BagDrawer
+          open={bagOpen}
+          onOpenChange={setBagOpen}
+          lines={lines}
+          diningType={diningType}
+          onDiningType={setDiningType}
+          tipChoice={tipChoice}
+          onTipChoice={setTipChoice}
+          customTip={customTip}
+          onCustomTip={setCustomTip}
+          tip={Math.max(tip, 0)}
+          subtotal={subtotal}
+          due={due}
+          customerName={customerName}
+          onCustomerName={setCustomerName}
+          contactPhone={contactPhone}
+          onContactPhone={setContactPhone}
+          payMethod={payMethod}
+          onPayMethod={setPayMethod}
+          network={network}
+          onNetwork={setNetwork}
+          walletPhone={walletPhone}
+          onWalletPhone={setWalletPhone}
+          onQuantity={setQuantity}
+          onClear={() => setLines([])}
+          onPlace={placeOrder}
+          busy={busy}
+          error={formError}
         />
-      )}
 
-      <BagDrawer
-        open={bagOpen}
-        onOpenChange={setBagOpen}
-        lines={lines}
-        diningType={diningType}
-        onDiningType={setDiningType}
-        tipChoice={tipChoice}
-        onTipChoice={setTipChoice}
-        customTip={customTip}
-        onCustomTip={setCustomTip}
-        tip={Math.max(tip, 0)}
-        subtotal={subtotal}
-        due={due}
-        customerName={customerName}
-        onCustomerName={setCustomerName}
-        contactPhone={contactPhone}
-        onContactPhone={setContactPhone}
-        payMethod={payMethod}
-        onPayMethod={setPayMethod}
-        network={network}
-        onNetwork={setNetwork}
-        walletPhone={walletPhone}
-        onWalletPhone={setWalletPhone}
-        onQuantity={setQuantity}
-        onClear={() => setLines([])}
-        onPlace={placeOrder}
-        busy={busy}
-        error={formError}
-      />
+        <ReceiptDialog
+          orderId={receiptOrderId}
+          open={receiptOpen}
+          onOpenChange={setReceiptOpen}
+        />
+      </div>
     </div>
-  )
-}
-
-function CategoryChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`h-9 shrink-0 rounded-full px-3.5 text-sm font-medium transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] motion-reduce:active:scale-100 ${active ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
-    >
-      {children}
-    </button>
   )
 }
 
@@ -723,7 +790,7 @@ function CustomizeDialog({
               disabled={Boolean(missing)}
               onClick={() => onAdd(optionIds, kitchenNotes)}
             >
-              Add to bag
+              Add to order
               <span className="tabular-nums">{formatMoney(unit)}</span>
             </Button>
           </div>
@@ -918,7 +985,7 @@ function BagDrawer(props: {
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
             {props.lines.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                Customize a dish to start the order.
+                Add a dish to start the order.
               </p>
             ) : (
               <ul className="space-y-3">
