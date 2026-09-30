@@ -273,15 +273,12 @@ export function Overview() {
       void refetchSales?.().catch(() => undefined)
     },
   })
-  useSubscription<OrderStatusChangedData>(
-    ORDER_STATUS_CHANGED_SUBSCRIPTION,
-    {
-      skip: !canSeeSales,
-      onData: () => {
-        void refetchSales?.().catch(() => undefined)
-      },
+  useSubscription<OrderStatusChangedData>(ORDER_STATUS_CHANGED_SUBSCRIPTION, {
+    skip: !canSeeSales,
+    onData: () => {
+      void refetchSales?.().catch(() => undefined)
     },
-  )
+  })
 
   const orders = data?.activeOrders ?? []
   const visibleOrders = useMemo(() => {

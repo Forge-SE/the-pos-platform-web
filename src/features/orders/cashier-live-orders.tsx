@@ -99,7 +99,7 @@ export function CashierLiveOrders() {
       fetchPolicy: "cache-and-network",
       // Fully websocket-driven: no pollInterval. Subscriptions below merge
       // into the cache; refetch is only a reconnect/error recovery path.
-    },
+    }
   )
   const refresh = () => {
     void refetch().catch(() => undefined)
@@ -118,7 +118,7 @@ export function CashierLiveOrders() {
               ? prev.activeOrders.map((o) => (o.id === order.id ? order : o))
               : [...prev.activeOrders, order],
           }
-        },
+        }
       )
     },
     onError: refresh,
@@ -136,7 +136,7 @@ export function CashierLiveOrders() {
             if (!isActiveStatus(order.status)) {
               return {
                 activeOrders: prev.activeOrders.filter(
-                  (o) => o.id !== order.id,
+                  (o) => o.id !== order.id
                 ),
               }
             }
@@ -146,11 +146,11 @@ export function CashierLiveOrders() {
                 ? prev.activeOrders.map((o) => (o.id === order.id ? order : o))
                 : [...prev.activeOrders, order],
             }
-          },
+          }
         )
       },
       onError: refresh,
-    },
+    }
   )
   // Reconcile anything missed while the socket was down.
   useEffect(() => {
@@ -167,7 +167,7 @@ export function CashierLiveOrders() {
       (a, b) =>
         Date.parse(b.updatedAt ?? b.createdAt) -
           Date.parse(a.updatedAt ?? a.createdAt) ||
-        Date.parse(a.createdAt) - Date.parse(b.createdAt),
+        Date.parse(a.createdAt) - Date.parse(b.createdAt)
     )
 
   return (
@@ -272,24 +272,24 @@ export function CashierLiveOrders() {
                     </span>
                   )}
                   <div className="min-w-0">
-                  <p>
-                    <span className="font-semibold tabular-nums">
-                      {item.quantity} ×{" "}
-                    </span>
-                    {item.name}
-                  </p>
-                  {item.modifiers.length > 0 && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {item.modifiers
-                        .map((modifier) => modifier.name)
-                        .join(", ")}
+                    <p>
+                      <span className="font-semibold tabular-nums">
+                        {item.quantity} ×{" "}
+                      </span>
+                      {item.name}
                     </p>
-                  )}
-                  {item.notes && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {item.notes}
-                    </p>
-                  )}
+                    {item.modifiers.length > 0 && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {item.modifiers
+                          .map((modifier) => modifier.name)
+                          .join(", ")}
+                      </p>
+                    )}
+                    {item.notes && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {item.notes}
+                      </p>
+                    )}
                   </div>
                 </li>
               ))}

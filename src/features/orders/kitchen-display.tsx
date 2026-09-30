@@ -240,11 +240,16 @@ function transitionUpdate(update: () => void) {
   }
 }
 
-function MealImage({ name, imageUrl, size }: { name: string; imageUrl?: string | null; size: "md" | "sm" }) {
-  const cls =
-    size === "md"
-      ? "size-14 rounded-lg"
-      : "size-8 rounded-md"
+function MealImage({
+  name,
+  imageUrl,
+  size,
+}: {
+  name: string
+  imageUrl?: string | null
+  size: "md" | "sm"
+}) {
+  const cls = size === "md" ? "size-14 rounded-lg" : "size-8 rounded-md"
   if (imageUrl) {
     return (
       <img
@@ -338,7 +343,7 @@ export function KitchenDisplay({
       if (ownsFullscreen.current && document.fullscreenElement)
         void document.exitFullscreen().catch(() => undefined)
     },
-    [],
+    []
   )
 
   async function toggleFullscreen() {
@@ -400,23 +405,27 @@ export function KitchenDisplay({
 
   const orders = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return (data?.activeOrders ?? [])
-      .filter(isActiveOrder)
-      .filter(
-        (order) =>
-          !query ||
-          ticketNumber(order.id).toLowerCase().includes(query) ||
-          order.items.some((item) => item.name.toLowerCase().includes(query)) ||
-          order.notes?.toLowerCase().includes(query)
-      )
-      // Most recently updated slides to the top; oldest first as tiebreak.
-      .sort(
-        (first, second) =>
-          new Date(second.updatedAt).getTime() -
-            new Date(first.updatedAt).getTime() ||
-          new Date(first.createdAt).getTime() -
-            new Date(second.createdAt).getTime()
-      )
+    return (
+      (data?.activeOrders ?? [])
+        .filter(isActiveOrder)
+        .filter(
+          (order) =>
+            !query ||
+            ticketNumber(order.id).toLowerCase().includes(query) ||
+            order.items.some((item) =>
+              item.name.toLowerCase().includes(query)
+            ) ||
+            order.notes?.toLowerCase().includes(query)
+        )
+        // Most recently updated slides to the top; oldest first as tiebreak.
+        .sort(
+          (first, second) =>
+            new Date(second.updatedAt).getTime() -
+              new Date(first.updatedAt).getTime() ||
+            new Date(first.createdAt).getTime() -
+              new Date(second.createdAt).getTime()
+        )
+    )
   }, [data?.activeOrders, search])
 
   const counts = useMemo(
@@ -969,7 +978,11 @@ function TableView({
                         key={item.id}
                         className="flex items-center gap-2 font-medium"
                       >
-                        <MealImage name={item.name} imageUrl={item.imageUrl} size="sm" />
+                        <MealImage
+                          name={item.name}
+                          imageUrl={item.imageUrl}
+                          size="sm"
+                        />
                         <span>
                           <span className="tabular-nums">{item.quantity}×</span>{" "}
                           {item.name}

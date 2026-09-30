@@ -39,7 +39,7 @@ export function ReceiptDialog({
       skip: !open || !orderId,
       variables: { orderId: orderId ?? "" },
       fetchPolicy: "network-only",
-    },
+    }
   )
   const receipt = data?.receipt ?? null
 
