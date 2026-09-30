@@ -264,19 +264,18 @@ export function Overview() {
     }
     // Sales totals have no subscription: refresh them whenever an order
     // event arrives via the cache merge above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscribeToMore])
 
   useSubscription<OrderCreatedData>(ORDER_CREATED_SUBSCRIPTION, {
     skip: !canSeeSales,
     onData: () => {
-      void refetchSales?.().catch(() => undefined)
+      void refetchSales().catch(() => undefined)
     },
   })
   useSubscription<OrderStatusChangedData>(ORDER_STATUS_CHANGED_SUBSCRIPTION, {
     skip: !canSeeSales,
     onData: () => {
-      void refetchSales?.().catch(() => undefined)
+      void refetchSales().catch(() => undefined)
     },
   })
 

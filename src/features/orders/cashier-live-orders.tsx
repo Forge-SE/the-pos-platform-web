@@ -158,15 +158,13 @@ export function CashierLiveOrders() {
     const onOnline = () => refresh()
     window.addEventListener("online", onOnline)
     return () => window.removeEventListener("online", onOnline)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   // Most recently updated slides to the top with a view transition.
   const orders = (data?.activeOrders ?? [])
     .filter((order) => ["NEW", "PREPARING", "READY"].includes(order.status))
     .sort(
       (a, b) =>
-        Date.parse(b.updatedAt ?? b.createdAt) -
-          Date.parse(a.updatedAt ?? a.createdAt) ||
+        Date.parse(b.updatedAt) - Date.parse(a.updatedAt) ||
         Date.parse(a.createdAt) - Date.parse(b.createdAt)
     )
 

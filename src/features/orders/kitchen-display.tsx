@@ -400,7 +400,6 @@ export function KitchenDisplay({
       unsubscribeCreated()
       unsubscribeChanged()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscribeToMore])
 
   const orders = useMemo(() => {
