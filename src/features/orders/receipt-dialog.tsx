@@ -3,6 +3,8 @@ import { useQuery } from "@apollo/client/react"
 import { Dialog } from "@base-ui/react/dialog"
 import { PrinterIcon, XIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
+import { DigitalReceipt } from "./digital-receipt"
+import type { ReceiptDetails } from "./digital-receipt"
 
 const RECEIPT_QUERY = gql`
   query OrderReceipt($orderId: ID!) {
@@ -11,6 +13,29 @@ const RECEIPT_QUERY = gql`
       receiptNumber
       status
       text
+      details {
+        restaurantName
+        restaurantAddress
+        restaurantLogoUrl
+        currency
+        orderId
+        diningType
+        createdAt
+        lines {
+          name
+          quantity
+          unitPrice
+          lineTotal
+          notes
+          modifiers
+        }
+        subtotal
+        discount
+        tip
+        total
+        paymentMethod
+        amountPaid
+      }
     }
   }
 `
@@ -21,6 +46,7 @@ interface ReceiptData {
     receiptNumber: string
     status: string
     text: string
+    details: ReceiptDetails
   } | null
 }
 
@@ -41,7 +67,8 @@ export function ReceiptDialog({
       fetchPolicy: "network-only",
     }
   )
-  const receipt = data?.receipt ?? null
+  const receipt =
+    data?.receipt?.details.orderId === orderId ? data.receipt : null
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -54,17 +81,17 @@ export function ReceiptDialog({
                 Receipt {receipt ? `#${receipt.receiptNumber}` : ""}
               </Dialog.Title>
               <Dialog.Description className="text-xs text-muted-foreground">
-                80mm thermal format · send to the receipt printer
+                Your digital copy, ready to view or print.
               </Dialog.Description>
             </div>
             <Dialog.Close
               aria-label="Close receipt"
-              className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <XIcon aria-hidden="true" className="size-4" />
             </Dialog.Close>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto bg-white p-4 print:overflow-visible print:p-0">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 p-4 print:overflow-visible print:p-0">
             {loading && !receipt ? (
               <p role="status" className="text-sm text-muted-foreground">
                 Preparing receipt…
@@ -82,15 +109,44 @@ export function ReceiptDialog({
                 </Button>
               </div>
             ) : receipt ? (
-              <pre className="receipt-print mx-auto w-fit font-mono text-[11px] leading-[1.5] whitespace-pre text-black">
-                {receipt.text}
-              </pre>
-            ) : null}
+              <>
+                <div className="print:hidden">
+                  <DigitalReceipt
+                    receiptNumber={receipt.receiptNumber}
+                    details={receipt.details}
+                  />
+                </div>
+                <div className="hidden print:block">
+                  {receipt.details.restaurantLogoUrl && (
+                    <img
+                      src={receipt.details.restaurantLogoUrl}
+                      alt={`${receipt.details.restaurantName} logo`}
+                      className="mx-auto mb-2 size-16 object-contain"
+                    />
+                  )}
+                  <pre className="receipt-print mx-auto hidden w-fit font-mono text-[11px] leading-[1.5] whitespace-pre text-black print:block">
+                    {receipt.text}
+                  </pre>
+                </div>
+              </>
+            ) : (
+              <div role="status" className="text-sm text-muted-foreground">
+                <p>No receipt is available for this order yet.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => void refetch()}
+                >
+                  Check again
+                </Button>
+              </div>
+            )}
           </div>
           <div className="flex gap-2 border-t border-border/60 p-3 print:hidden">
             <Button
               className="flex-1"
-              disabled={!receipt}
+              disabled={!receipt || loading || Boolean(error)}
               onClick={() => window.print()}
             >
               <PrinterIcon aria-hidden="true" data-icon="inline-start" />

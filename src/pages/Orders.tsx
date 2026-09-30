@@ -11,7 +11,8 @@ export function Orders() {
   const role = getAccessTokenProfile()?.role
   if (role === "CASHIER") return <CashierOrders />
   if (role === "OWNER") return <OwnerOrders />
-  if (role === "KITCHEN" || role === "MANAGER") return <KitchenDisplay />
+  if (role === "MANAGER") return <ManagerOrders />
+  if (role === "KITCHEN") return <KitchenDisplay />
   return <OwnerOrders />
 }
 
@@ -20,12 +21,12 @@ function CashierOrders() {
   const status = desk === "status"
   const switcher = (
     <div
-      className="grid shrink-0 grid-cols-2 rounded-xl bg-secondary p-1"
+      className="grid shrink-0 grid-cols-3 rounded-xl bg-secondary p-1"
       role="group"
       aria-label="Order page"
     >
       <DeskButton
-        active={!status}
+        active={!status && desk !== "history"}
         onClick={() => setDesk(null)}
         icon={<ReceiptIcon aria-hidden="true" />}
       >
@@ -38,10 +39,50 @@ function CashierOrders() {
       >
         Order status
       </DeskButton>
+      <DeskButton
+        active={desk === "history"}
+        onClick={() => setDesk("history")}
+        icon={<ReceiptIcon aria-hidden="true" />}
+      >
+        History
+      </DeskButton>
     </div>
   )
+  if (desk === "history") return <OwnerOrders switcher={switcher} />
   if (status) return <KitchenDisplay readOnly switcher={switcher} />
   return <CashierDesk switcher={switcher} />
+}
+
+function ManagerOrders() {
+  const [desk, setDesk] = useUrlState("desk")
+  const history = desk === "history"
+  const switcher = (
+    <div
+      className="grid grid-cols-2 rounded-xl bg-secondary p-1"
+      role="group"
+      aria-label="Order page"
+    >
+      <DeskButton
+        active={!history}
+        onClick={() => setDesk(null)}
+        icon={<CookingPotIcon aria-hidden="true" />}
+      >
+        Kitchen
+      </DeskButton>
+      <DeskButton
+        active={history}
+        onClick={() => setDesk("history")}
+        icon={<ReceiptIcon aria-hidden="true" />}
+      >
+        History
+      </DeskButton>
+    </div>
+  )
+  return history ? (
+    <OwnerOrders switcher={switcher} />
+  ) : (
+    <KitchenDisplay switcher={switcher} />
+  )
 }
 
 function DeskButton({

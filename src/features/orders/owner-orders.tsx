@@ -1,10 +1,14 @@
 import { useState } from "react"
+import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { Dialog } from "@base-ui/react/dialog"
 import { XIcon } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { useUrlState } from "@/lib/url-state"
+import { ReceiptDialog } from "./receipt-dialog"
 import { diningLabel, statusLabels } from "@/features/orders/labels"
 import type { DiningType } from "@/features/orders/labels"
 import { formatMoney } from "@/features/menu/model"
@@ -31,8 +35,8 @@ interface OwnerOrder {
 }
 
 const RECENT_ORDERS = gql`
-  query RecentOrders($limit: Int) {
-    recentOrders(limit: $limit) {
+  query RecentOrders($limit: Int, $offset: Int) {
+    recentOrders(limit: $limit, offset: $offset) {
       id
       status
       diningType
@@ -68,24 +72,30 @@ const paymentLabels: Record<string, string> = {
   TRANSFER: "Transfer",
 }
 
-export function OwnerOrders() {
-  const { data, loading, error } = useQuery<{ recentOrders: OwnerOrder[] }>(
-    RECENT_ORDERS,
-    {
-      variables: { limit: 80 },
-      pollInterval: 30_000,
-    }
+export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
+  const [receiptOrderId, setReceiptOrderId] = useUrlState("receipt")
+  const [pageParam, setPageParam] = useUrlState("page")
+  const page = Math.max(
+    0,
+    Math.min(1_000_000, Number.parseInt(pageParam ?? "0", 10) || 0)
   )
+  const { data, loading, error, refetch } = useQuery<{
+    recentOrders: OwnerOrder[]
+  }>(RECENT_ORDERS, {
+    variables: { limit: 50, offset: page * 50 },
+    pollInterval: 30_000,
+  })
   const [selected, setSelected] = useState<OwnerOrder | null>(null)
   const orders = data?.recentOrders ?? []
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
       <header>
+        {switcher && <div className="mb-5">{switcher}</div>}
         <h1 className="text-3xl font-semibold tracking-[-0.04em]">Orders</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Every ticket from the counter. Open a row to see what was ordered and
-          how it was paid.
+          how it was paid, or view its digital receipt.
         </p>
       </header>
 
@@ -113,6 +123,13 @@ export function OwnerOrders() {
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-destructive">
                   Orders could not be loaded.
+                  <Button
+                    variant="outline"
+                    className="ml-3"
+                    onClick={() => void refetch()}
+                  >
+                    Try again
+                  </Button>
                 </td>
               </tr>
             ) : orders.length === 0 ? (
@@ -163,6 +180,26 @@ export function OwnerOrders() {
           </tbody>
         </table>
       </section>
+      <nav
+        aria-label="Order history pages"
+        className="mt-4 flex items-center justify-end gap-3"
+      >
+        <Button
+          variant="outline"
+          disabled={page === 0 || loading}
+          onClick={() => setPageParam(page > 1 ? String(page - 1) : null)}
+        >
+          Newer
+        </Button>
+        <span className="text-xs text-muted-foreground">Page {page + 1}</span>
+        <Button
+          variant="outline"
+          disabled={loading || Boolean(error) || orders.length < 50}
+          onClick={() => setPageParam(String(page + 1))}
+        >
+          Older
+        </Button>
+      </nav>
 
       <Dialog.Root
         open={Boolean(selected)}
@@ -252,11 +289,26 @@ export function OwnerOrders() {
                     }
                   />
                 </dl>
+                <Button
+                  className="mt-5 w-full"
+                  variant="outline"
+                  onClick={() => {
+                    setReceiptOrderId(selected.id)
+                    setSelected(null)
+                  }}
+                >
+                  View digital receipt
+                </Button>
               </>
             )}
           </Dialog.Popup>
         </Dialog.Portal>
       </Dialog.Root>
+      <ReceiptDialog
+        orderId={receiptOrderId}
+        open={Boolean(receiptOrderId)}
+        onOpenChange={(open) => !open && setReceiptOrderId(null)}
+      />
     </div>
   )
 }
