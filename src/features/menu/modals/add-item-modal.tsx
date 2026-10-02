@@ -272,12 +272,12 @@ export function AddItemModal({
                 <CaretLeftIcon data-icon="inline-start" />
                 Back
               </Button>
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => setStep(3)}>
-                  Skip for now
-                </Button>
-                <Button onClick={() => setStep(3)}>Continue</Button>
-              </div>
+              <Button
+                onClick={() => setStep(3)}
+                disabled={modalUpload.status !== "done"}
+              >
+                Continue
+              </Button>
             </div>
           )}
           {step === 3 && createdItem && (

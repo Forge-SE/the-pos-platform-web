@@ -17,8 +17,10 @@ interface OwnerOrder {
   id: string
   status: string
   diningType: DiningType
+  deliveryAddress: string | null
   subtotal: number
   discount: number
+  taxAmount: number
   tip: number
   total: number
   notes: string | null
@@ -40,8 +42,10 @@ const RECENT_ORDERS = gql`
       id
       status
       diningType
+      deliveryAddress
       subtotal
       discount
+      taxAmount
       tip
       total
       notes
@@ -258,6 +262,14 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                     {selected.notes}
                   </p>
                 )}
+                {selected.deliveryAddress && (
+                  <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Delivery address
+                    </p>
+                    <p className="mt-1">{selected.deliveryAddress}</p>
+                  </div>
+                )}
                 <dl className="mt-4 space-y-1 border-t border-border/70 pt-4 text-sm">
                   <Row
                     label="Subtotal"
@@ -273,6 +285,12 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                     <Row
                       label="Kitchen tip"
                       value={`+${formatMoney(selected.tip)}`}
+                    />
+                  )}
+                  {selected.taxAmount > 0 && (
+                    <Row
+                      label="Tax"
+                      value={`+${formatMoney(selected.taxAmount)}`}
                     />
                   )}
                   <Row

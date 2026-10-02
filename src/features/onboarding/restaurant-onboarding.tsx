@@ -10,7 +10,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import Form, { fieldError } from "@/components/ui/form"
-import { setAccessToken } from "@/lib/auth-token"
+import { setAuthSession } from "@/lib/auth-token"
 import { opsAuthContext } from "@/lib/ops-token"
 
 import { OnboardingComplete } from "./components/onboarding-complete"
@@ -45,7 +45,8 @@ import type {
 const SETUP_RESTAURANT = gql`
   mutation SetupRestaurant($input: SetupRestaurantInput!) {
     setupRestaurant(input: $input) {
-      token
+      accessToken
+      refreshToken
       restaurant {
         id
         name
@@ -66,7 +67,8 @@ const SETUP_RESTAURANT = gql`
 
 interface SetupRestaurantResult {
   setupRestaurant: {
-    token: string
+    accessToken: string
+    refreshToken: string
     restaurant: {
       id: string
       name: string
@@ -289,7 +291,8 @@ export function RestaurantOnboarding({
           return
         }
         setCompleted({
-          token: "",
+          accessToken: "",
+          refreshToken: "",
           restaurant: {
             ...payload.restaurant,
             defaultDiningType: "TAKEAWAY",
@@ -303,7 +306,7 @@ export function RestaurantOnboarding({
       })
       const payload = result.data?.setupRestaurant
       if (!payload) throw new Error("The setup service returned no restaurant.")
-      setAccessToken(payload.token)
+      setAuthSession(payload)
       setStep(4)
       setCompleted(payload)
       return

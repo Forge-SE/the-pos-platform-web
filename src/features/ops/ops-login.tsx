@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { setOpsToken } from "@/lib/ops-token"
+import { setOpsSession } from "@/lib/ops-token"
 
 const opsLoginValues = { email: "", password: "" }
 
@@ -25,7 +25,8 @@ const opsLoginSchema = Yup.object({
 const OPS_LOGIN = gql`
   mutation PlatformAdminLogin($email: String!, $password: String!) {
     platformAdminLogin(email: $email, password: $password) {
-      token
+      accessToken
+      refreshToken
       user {
         id
         name
@@ -39,7 +40,9 @@ export function OpsLogin() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [login, { loading }] = useMutation<
-    { platformAdminLogin: { token: string } },
+    {
+      platformAdminLogin: { accessToken: string; refreshToken: string }
+    },
     { email: string; password: string }
   >(OPS_LOGIN)
 
@@ -49,9 +52,9 @@ export function OpsLogin() {
       const result = await login({
         variables: { email: values.email.trim(), password: values.password },
       })
-      const token = result.data?.platformAdminLogin.token
-      if (!token) throw new Error("Missing login response")
-      setOpsToken(token)
+      const session = result.data?.platformAdminLogin
+      if (!session) throw new Error("Missing login response")
+      setOpsSession(session)
       navigate({ to: "/ops" })
     } catch {
       setError("Invalid admin credentials.")

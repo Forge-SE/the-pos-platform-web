@@ -7,6 +7,7 @@ export interface ReceiptDetails {
   currency: string
   orderId: string
   diningType: string
+  deliveryAddress: string | null
   createdAt: string
   lines: Array<{
     name: string
@@ -18,6 +19,13 @@ export interface ReceiptDetails {
   }>
   subtotal: number
   discount: number
+  taxAmount: number
+  taxes: Array<{
+    name: string
+    rateBps: number
+    amount: number
+    inclusive: boolean
+  }>
   tip: number
   total: number
   paymentMethod: string | null
@@ -81,6 +89,16 @@ export function DigitalReceipt({
         </span>
         <span>{diningLabel(details.diningType)}</span>
       </div>
+      {details.deliveryAddress && (
+        <div className="mb-4 rounded-lg bg-muted/50 px-3 py-2.5">
+          <p className="text-[10px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+            Delivery address
+          </p>
+          <p className="mt-1 text-sm text-foreground">
+            {details.deliveryAddress}
+          </p>
+        </div>
+      )}
       <ul className="space-y-4 pb-5">
         {details.lines.map((line, index) => (
           <li key={index}>
@@ -113,6 +131,13 @@ export function DigitalReceipt({
         {details.discount > 0 && (
           <ReceiptRow label="Discount" value={`−${money(details.discount)}`} />
         )}
+        {details.taxes.map((tax) => (
+          <ReceiptRow
+            key={`${tax.name}-${tax.rateBps}`}
+            label={`${tax.name}${tax.inclusive ? " (included)" : ""}`}
+            value={money(tax.amount)}
+          />
+        ))}
         {details.tip > 0 && (
           <ReceiptRow label="Kitchen tip" value={money(details.tip)} />
         )}

@@ -1,4 +1,5 @@
 const OPS_TOKEN_KEY = "pos.ops-token"
+const OPS_REFRESH_TOKEN_KEY = "pos.ops-refresh-token"
 
 export const OPS_TOKEN_CHANGED_EVENT = "ops:token-changed"
 
@@ -23,15 +24,25 @@ export function getOpsToken(): string | null {
   return window.sessionStorage.getItem(OPS_TOKEN_KEY)
 }
 
-export function setOpsToken(token: string): void {
+export function getOpsRefreshToken(): string | null {
+  if (typeof window === "undefined") return null
+  return window.sessionStorage.getItem(OPS_REFRESH_TOKEN_KEY)
+}
+
+export function setOpsSession(tokens: {
+  accessToken: string
+  refreshToken: string
+}): void {
   if (typeof window === "undefined") return
-  window.sessionStorage.setItem(OPS_TOKEN_KEY, token)
+  window.sessionStorage.setItem(OPS_TOKEN_KEY, tokens.accessToken)
+  window.sessionStorage.setItem(OPS_REFRESH_TOKEN_KEY, tokens.refreshToken)
   window.dispatchEvent(new Event(OPS_TOKEN_CHANGED_EVENT))
 }
 
 export function clearOpsToken(): void {
   if (typeof window === "undefined") return
   window.sessionStorage.removeItem(OPS_TOKEN_KEY)
+  window.sessionStorage.removeItem(OPS_REFRESH_TOKEN_KEY)
   window.dispatchEvent(new Event(OPS_TOKEN_CHANGED_EVENT))
 }
 
@@ -41,7 +52,9 @@ export function isOpsAuthenticated(): boolean {
   const payload = decodePayload(token)
   if (!payload || payload.role !== "PLATFORM_ADMIN") return false
   if (payload.restaurantId && payload.restaurantId !== "platform") return false
-  if (payload.exp && Date.now() / 1000 > payload.exp) return false
+  if (payload.exp && Date.now() / 1000 > payload.exp && !getOpsRefreshToken()) {
+    return false
+  }
   return true
 }
 
@@ -49,5 +62,6 @@ export function opsAuthContext() {
   const token = getOpsToken()
   return {
     headers: token ? { authorization: `Bearer ${token}` } : {},
+    authScope: "ops" as const,
   }
 }

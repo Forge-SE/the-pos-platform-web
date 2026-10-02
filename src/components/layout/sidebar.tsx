@@ -31,15 +31,22 @@ const roleLabels: Record<AccessTokenProfile["role"], string> = {
 
 export function primaryNavigationFor(role: AccessTokenProfile["role"]) {
   const kitchen = role === "KITCHEN" || role === "MANAGER"
-  return [
+  const links = [
     { label: "Overview", to: "/overview", icon: HouseIcon },
     {
       label: kitchen ? "Kitchen" : "Orders",
       to: "/orders",
       icon: kitchen ? CookingPotIcon : ReceiptIcon,
     },
-    { label: "Performance", to: "/performance", icon: ChartLineUpIcon },
-  ] as const
+  ]
+  if (role === "MANAGER" || role === "OWNER") {
+    links.push({
+      label: "Performance",
+      to: "/performance",
+      icon: ChartLineUpIcon,
+    })
+  }
+  return links
 }
 
 export const managementNavigation = [
@@ -78,6 +85,9 @@ export function seesManagementItem(
   profile: AccessTokenProfile,
   item: (typeof managementNavigation)[number]
 ) {
+  if (item.to === "/settings") {
+    return profile.role === "MANAGER" || profile.role === "OWNER"
+  }
   if (item.to === "/shift") return true
   return hasPermission(profile, item.permission)
 }

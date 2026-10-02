@@ -130,7 +130,7 @@ export const SAMPLE_HEATMAP_DAYS = [
   "Sat",
   "Sun",
 ]
-export const SAMPLE_HEATMAP_HOURS = ["9a", "12p", "3p", "6p", "9p"]
+export const SAMPLE_HEATMAP_HOURS = ["9 AM", "12 PM", "3 PM", "6 PM", "9 PM"]
 /** Synthetic intensity 0–4 per [day][hour]. */
 export const SAMPLE_HEATMAP: number[][] = [
   [1, 3, 2, 2, 0],

@@ -16,6 +16,7 @@ import { validateImageFile } from "@/features/menu/model"
 import { uploadImageToCloudinary } from "@/lib/cloudinary"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
+import { PricingSettings } from "@/features/pricing/pricing-settings"
 
 const RESTAURANT_QUERY = gql`
   query RestaurantBranding {
@@ -207,6 +208,7 @@ export function RestaurantBranding() {
           )}
         </section>
       </div>
+      <PricingSettings />
       <SubscriptionPanel canManage={canManage} />
       <MomoAccounts />
     </SectionPage>

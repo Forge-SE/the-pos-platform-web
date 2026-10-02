@@ -10,6 +10,7 @@ const details: ReceiptDetails = {
   currency: "GHS",
   orderId: "order-123456",
   diningType: "TAKEAWAY",
+  deliveryAddress: null,
   createdAt: "2026-09-30T12:00:00Z",
   lines: [
     {
@@ -23,6 +24,8 @@ const details: ReceiptDetails = {
   ],
   subtotal: 5000,
   discount: 500,
+  taxAmount: 0,
+  taxes: [],
   tip: 200,
   total: 4700,
   paymentMethod: "MOMO",

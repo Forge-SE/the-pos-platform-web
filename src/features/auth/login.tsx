@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input"
 import { PinInput } from "@/components/ui/pin-input"
 import { StaffRail } from "@/features/auth/staff-rail"
 import type { SignInProfile } from "@/features/auth/staff-rail"
-import { clearAccessToken, setAccessToken } from "@/lib/auth-token"
+import { clearAuthSession, setAuthSession } from "@/lib/auth-token"
 
 function readableAuthError(error: unknown) {
   if (error && typeof error === "object" && "errors" in error) {
@@ -57,7 +57,8 @@ const STAFF_DIRECTORY = gql`
 const LOGIN = gql`
   mutation Login($userId: ID!, $pin: String!) {
     login(userId: $userId, pin: $pin) {
-      token
+      accessToken
+      refreshToken
       user {
         id
         restaurantId
@@ -77,7 +78,8 @@ const ONBOARDING_QUERY = gql`
 const SET_STAFF_PIN = gql`
   mutation SetStaffPin($userId: ID!, $pin: String!) {
     setStaffPin(userId: $userId, pin: $pin) {
-      token
+      accessToken
+      refreshToken
       user {
         id
         restaurantId
@@ -99,7 +101,8 @@ interface AuthUser {
 }
 
 interface AuthPayload {
-  token: string
+  accessToken: string
+  refreshToken: string
   user: AuthUser
 }
 
@@ -206,7 +209,7 @@ export function Login() {
   }, [navigate, nextPath, signedInUser])
 
   async function finishSignIn(payload: AuthPayload) {
-    setAccessToken(payload.token)
+    setAuthSession(payload)
     let destination: "/overview" | "/onboarding" = "/overview"
     if (payload.user.role === "OWNER") {
       const result = await loadOnboarding()
@@ -308,7 +311,7 @@ export function Login() {
   }
 
   function resetLogin() {
-    clearAccessToken()
+    clearAuthSession()
     setSignedInUser(null)
     setSelected(null)
     setProfiles([])

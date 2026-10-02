@@ -411,7 +411,7 @@ export function MenuManagement() {
                                       Available
                                     </>
                                   ) : (
-                                    "86’d"
+                                    "Unavailable"
                                   )}
                                 </Badge>
                               </span>
@@ -511,7 +511,7 @@ export function MenuManagement() {
                                 </Button>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs text-muted-foreground">
-                                    {item.active ? "On sale" : "Hidden"}
+                                    {item.active ? "On sale" : "Not on sale"}
                                   </span>
                                   <Switch
                                     checked={item.active}

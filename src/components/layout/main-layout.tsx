@@ -12,8 +12,11 @@ import { useUrlState } from "@/lib/url-state"
 import { MobileHeader } from "@/components/layout/mobile-header"
 import { ShiftBanner } from "@/components/layout/shift-banner"
 import { Sidebar } from "@/components/layout/sidebar"
-import { clearAccessToken, getAccessTokenProfile } from "@/lib/auth-token"
-import { APOLLO_RESTAURANT_SUSPENDED_EVENT } from "@/lib/apollo-error-link"
+import { clearAuthSession, getAccessTokenProfile } from "@/lib/auth-token"
+import {
+  APOLLO_RESTAURANT_SUSPENDED_EVENT,
+  APOLLO_UNAUTHENTICATED_EVENT,
+} from "@/lib/apollo-error-link"
 
 const ONBOARDING_QUERY = gql`
   query OwnerOnboardingGate {
@@ -40,12 +43,22 @@ export function MainLayout() {
         "pos.suspended-notice",
         "This restaurant is suspended. Contact the platform team to restore access."
       )
-      clearAccessToken()
+      clearAuthSession()
+      navigate({ to: "/", replace: true })
+    }
+    function onUnauthenticated() {
+      clearAuthSession()
       navigate({ to: "/", replace: true })
     }
     window.addEventListener(APOLLO_RESTAURANT_SUSPENDED_EVENT, onSuspended)
-    return () =>
+    window.addEventListener(APOLLO_UNAUTHENTICATED_EVENT, onUnauthenticated)
+    return () => {
       window.removeEventListener(APOLLO_RESTAURANT_SUSPENDED_EVENT, onSuspended)
+      window.removeEventListener(
+        APOLLO_UNAUTHENTICATED_EVENT,
+        onUnauthenticated
+      )
+    }
   }, [navigate])
 
   const onboarding = useQuery<{ ownerOnboardingRequired: boolean }>(
@@ -57,6 +70,13 @@ export function MainLayout() {
   )
 
   if (!profile) return <Navigate to="/" replace />
+  if (
+    (pathname === "/settings" || pathname === "/performance") &&
+    profile.role !== "MANAGER" &&
+    profile.role !== "OWNER"
+  ) {
+    return <Navigate to="/overview" replace />
+  }
   if (profile.role === "OWNER" && onboarding.loading) {
     return <main className="min-h-svh bg-background" />
   }
@@ -65,7 +85,7 @@ export function MainLayout() {
   }
 
   function signOut() {
-    clearAccessToken()
+    clearAuthSession()
     navigate({ to: "/", replace: true })
   }
 

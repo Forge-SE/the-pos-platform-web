@@ -20,6 +20,7 @@ const RECEIPT_QUERY = gql`
         currency
         orderId
         diningType
+        deliveryAddress
         createdAt
         lines {
           name
@@ -31,6 +32,13 @@ const RECEIPT_QUERY = gql`
         }
         subtotal
         discount
+        taxAmount
+        taxes {
+          name
+          rateBps
+          amount
+          inclusive
+        }
         tip
         total
         paymentMethod

@@ -116,6 +116,17 @@ const SHIFT_QUERY = gql`
   }
 `
 
+const PRICING_ESTIMATE = gql`
+  query CounterPricingEstimate($subtotal: Int!, $discountCode: String) {
+    pricingEstimate(subtotal: $subtotal, discountCode: $discountCode) {
+      subtotal
+      discount
+      taxAmount
+      total
+    }
+  }
+`
+
 const CREATE_ORDER = gql`
   mutation CreateCounterOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
@@ -204,6 +215,9 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
   const [customTip, setCustomTip] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [contactPhone, setContactPhone] = useState("")
+  const [deliveryAddress, setDeliveryAddress] = useState("")
+  const [discountCode, setDiscountCode] = useState("")
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState("")
   const [payMethod, setPayMethod] = useState<"CASH" | "MOMO">("MOMO")
   const [network, setNetwork] = useState<(typeof networks)[number]["id"]>("MTN")
   const [walletPhone, setWalletPhone] = useState("")
@@ -285,7 +299,23 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       : tipChoice === "custom"
         ? (cedisToPesewas(customTip) ?? 0)
         : (tipPresets.find((preset) => preset.id === tipChoice)?.amount ?? 0)
-  const due = subtotal + Math.max(tip, 0)
+  const pricing = useQuery<{
+    pricingEstimate: {
+      subtotal: number
+      discount: number
+      taxAmount: number
+      total: number
+    }
+  }>(PRICING_ESTIMATE, {
+    variables: {
+      subtotal,
+      discountCode: appliedDiscountCode || null,
+    },
+    skip: lines.length === 0,
+    fetchPolicy: "network-only",
+  })
+  const estimate = pricing.data?.pricingEstimate
+  const due = (estimate?.total ?? subtotal) + Math.max(tip, 0)
   const shiftId = shiftData?.currentShift?.id ?? null
   const busy = creating || recording || charging
 
@@ -347,6 +377,16 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       setFormError("Enter a Ghana phone number, like 024 123 4567.")
       return
     }
+    if (diningType === "DELIVERY" && !deliveryAddress.trim()) {
+      setFormError("Enter the delivery address before placing this order.")
+      return
+    }
+    if (appliedDiscountCode && pricing.error) {
+      setFormError(
+        "Remove or correct the discount code before placing this order."
+      )
+      return
+    }
     const wallet =
       payMethod === "MOMO"
         ? normalizeGhanaPhone(walletPhone || contactPhone)
@@ -366,6 +406,9 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             idempotencyKey: crypto.randomUUID(),
             shiftId,
             diningType,
+            deliveryAddress:
+              diningType === "DELIVERY" ? deliveryAddress.trim() : null,
+            discountCode: appliedDiscountCode || null,
             tip,
             notes,
             items: lines.map((line) => ({
@@ -436,6 +479,9 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       setLines([])
       setCustomerName("")
       setContactPhone("")
+      setDeliveryAddress("")
+      setDiscountCode("")
+      setAppliedDiscountCode("")
       setWalletPhone("")
       setTipChoice("none")
       setCustomTip("")
@@ -640,10 +686,20 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           tip={Math.max(tip, 0)}
           subtotal={subtotal}
           due={due}
+          discount={estimate?.discount ?? 0}
+          taxAmount={estimate?.taxAmount ?? 0}
           customerName={customerName}
           onCustomerName={setCustomerName}
           contactPhone={contactPhone}
           onContactPhone={setContactPhone}
+          deliveryAddress={deliveryAddress}
+          onDeliveryAddress={setDeliveryAddress}
+          discountCode={discountCode}
+          onDiscountCode={setDiscountCode}
+          appliedDiscountCode={appliedDiscountCode}
+          onApplyDiscount={() =>
+            setAppliedDiscountCode(discountCode.trim().toUpperCase())
+          }
           payMethod={payMethod}
           onPayMethod={setPayMethod}
           network={network}
@@ -654,7 +710,15 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           onClear={() => setLines([])}
           onPlace={placeOrder}
           busy={busy}
-          error={formError}
+          error={
+            formError ??
+            (pricing.error
+              ? mutationMessage(
+                  pricing.error,
+                  "Could not apply that discount code."
+                )
+              : null)
+          }
         />
 
         <ReceiptDialog
@@ -932,10 +996,18 @@ function BagDrawer(props: {
   tip: number
   subtotal: number
   due: number
+  discount: number
+  taxAmount: number
   customerName: string
   onCustomerName: (value: string) => void
   contactPhone: string
   onContactPhone: (value: string) => void
+  deliveryAddress: string
+  onDeliveryAddress: (value: string) => void
+  discountCode: string
+  onDiscountCode: (value: string) => void
+  appliedDiscountCode: string
+  onApplyDiscount: () => void
   payMethod: "CASH" | "MOMO"
   onPayMethod: (value: "CASH" | "MOMO") => void
   network: (typeof networks)[number]["id"]
@@ -1126,6 +1198,41 @@ function BagDrawer(props: {
                 aria-label="Contact phone"
                 inputMode="tel"
               />
+              {props.diningType === "DELIVERY" && (
+                <Input
+                  value={props.deliveryAddress}
+                  onChange={(event) =>
+                    props.onDeliveryAddress(event.target.value)
+                  }
+                  placeholder="Delivery address"
+                  aria-label="Delivery address"
+                  autoComplete="street-address"
+                  maxLength={300}
+                  required
+                />
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={props.discountCode}
+                  onChange={(event) => props.onDiscountCode(event.target.value)}
+                  placeholder="Discount code"
+                  aria-label="Discount code"
+                  className="uppercase"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={props.onApplyDiscount}
+                  disabled={!props.discountCode.trim()}
+                >
+                  Apply
+                </Button>
+              </div>
+              {props.appliedDiscountCode && props.discount > 0 && (
+                <p className="text-xs text-secondary">
+                  {props.appliedDiscountCode} applied successfully.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1189,6 +1296,22 @@ function BagDrawer(props: {
                 <dt>Kitchen tip</dt>
                 <dd className="tabular-nums">+{formatMoney(props.tip)}</dd>
               </div>
+              {props.discount > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <dt>Discount</dt>
+                  <dd className="tabular-nums">
+                    −{formatMoney(props.discount)}
+                  </dd>
+                </div>
+              )}
+              {props.taxAmount > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <dt>Tax</dt>
+                  <dd className="tabular-nums">
+                    +{formatMoney(props.taxAmount)}
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between pt-1 text-base font-semibold">
                 <dt>Total due</dt>
                 <dd className="tabular-nums">{formatMoney(props.due)}</dd>
