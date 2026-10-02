@@ -7,8 +7,10 @@ import {
   ForkKnifeIcon,
   GearSixIcon,
   HouseIcon,
+  PercentIcon,
   ReceiptIcon,
   SidebarIcon,
+  TicketIcon,
   UsersThreeIcon,
   WalletIcon,
 } from "@phosphor-icons/react"
@@ -69,6 +71,18 @@ export const managementNavigation = [
     permission: "STAFF_MANAGE",
   },
   {
+    label: "Taxes",
+    to: "/taxes",
+    icon: PercentIcon,
+    permission: "SETTINGS_MANAGE",
+  },
+  {
+    label: "Discounts",
+    to: "/discounts",
+    icon: TicketIcon,
+    permission: "SETTINGS_MANAGE",
+  },
+  {
     label: "Settings",
     to: "/settings",
     icon: GearSixIcon,
@@ -85,7 +99,11 @@ export function seesManagementItem(
   profile: AccessTokenProfile,
   item: (typeof managementNavigation)[number]
 ) {
-  if (item.to === "/settings") {
+  if (
+    item.to === "/settings" ||
+    item.to === "/taxes" ||
+    item.to === "/discounts"
+  ) {
     return profile.role === "MANAGER" || profile.role === "OWNER"
   }
   if (item.to === "/shift") return true

@@ -19,6 +19,10 @@ describe("role navigation", () => {
       (item) => item.to === "/settings"
     )!
     expect(seesManagementItem(profile("CASHIER"), settings)).toBe(false)
+    for (const path of ["/taxes", "/discounts"]) {
+      const item = managementNavigation.find((entry) => entry.to === path)!
+      expect(seesManagementItem(profile("CASHIER"), item)).toBe(false)
+    }
   })
 
   it("shows performance and settings to managers and owners", () => {
@@ -30,6 +34,10 @@ describe("role navigation", () => {
         "/performance"
       )
       expect(seesManagementItem(profile(role), settings)).toBe(true)
+      for (const path of ["/taxes", "/discounts"]) {
+        const item = managementNavigation.find((entry) => entry.to === path)!
+        expect(seesManagementItem(profile(role), item)).toBe(true)
+      }
     }
   })
 })

@@ -71,7 +71,10 @@ export function MainLayout() {
 
   if (!profile) return <Navigate to="/" replace />
   if (
-    (pathname === "/settings" || pathname === "/performance") &&
+    (pathname === "/settings" ||
+      pathname === "/performance" ||
+      pathname === "/taxes" ||
+      pathname === "/discounts") &&
     profile.role !== "MANAGER" &&
     profile.role !== "OWNER"
   ) {

@@ -99,6 +99,20 @@ const menuRoute = createRoute({
   head: () => ({ meta: [{ title: "Menu | Ovaal" }] }),
 })
 
+const taxesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/taxes",
+  component: lazyRouteComponent(() => import("@/pages/Taxes"), "Taxes"),
+  head: () => ({ meta: [{ title: "Taxes | Ovaal" }] }),
+})
+
+const discountsRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/discounts",
+  component: lazyRouteComponent(() => import("@/pages/Discounts"), "Discounts"),
+  head: () => ({ meta: [{ title: "Discounts | Ovaal" }] }),
+})
+
 const settingsRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/settings",
@@ -215,6 +229,8 @@ export const routeTree = rootRoute.addChildren([
     teamRoute,
     menuRoute,
     shiftRoute,
+    taxesRoute,
+    discountsRoute,
     settingsRoute,
   ]),
   legacyDashboardRoute,
