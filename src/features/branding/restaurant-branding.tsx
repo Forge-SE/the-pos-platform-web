@@ -12,6 +12,8 @@ import { SectionPage } from "@/components/layout/section-page"
 import { MomoAccounts } from "@/features/payouts/momo-accounts"
 import { SubscriptionPanel } from "@/features/subscriptions/subscription-panel"
 import { Button } from "@/components/ui/button"
+import { ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { validateImageFile } from "@/features/menu/model"
 import { uploadImageToCloudinary } from "@/lib/cloudinary"
 import { getAccessTokenProfile } from "@/lib/auth-token"
@@ -104,7 +106,7 @@ export function RestaurantBranding() {
       description="Manage branding, the subscription, and the mobile money numbers that receive payments."
     >
       <div className="mt-8 grid gap-6 xl:grid-cols-2">
-        <section className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+        <section className="content-region rounded-xl border border-border/70 bg-card p-5 sm:p-6">
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
             Restaurant branding
           </h2>
@@ -112,16 +114,11 @@ export function RestaurantBranding() {
             The logo appears on receipts, the sign-in screen, and the sidebar.
           </p>
           {error ? (
-            <div className="mt-6 rounded-lg bg-destructive/5 p-5 text-sm text-destructive">
-              Could not load restaurant details.
-              <Button
-                className="mt-3"
-                variant="outline"
-                onClick={() => refetch()}
-              >
-                Try again
-              </Button>
-            </div>
+            <ErrorState
+              className="mt-6"
+              title="Could not load restaurant details."
+              onRetry={refetch}
+            />
           ) : (
             <div className="mt-6 flex items-center gap-4">
               <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted text-muted-foreground">
@@ -136,9 +133,16 @@ export function RestaurantBranding() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">
-                  {loading ? "Loading…" : (restaurant?.name ?? "Restaurant")}
-                </p>
+                {loading ? (
+                  <LoadingState
+                    className="min-h-20 flex-row gap-2 py-2"
+                    label="restaurant"
+                  />
+                ) : (
+                  <p className="truncate text-sm font-semibold">
+                    {restaurant?.name ?? "Restaurant"}
+                  </p>
+                )}
                 {restaurant && (
                   <p className="text-xs text-muted-foreground">
                     {restaurant.slug} · {restaurant.code} ·{" "}
