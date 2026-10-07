@@ -12,7 +12,6 @@ import { SectionPage } from "@/components/layout/section-page"
 import { MomoAccounts } from "@/features/payouts/momo-accounts"
 import { SubscriptionPanel } from "@/features/subscriptions/subscription-panel"
 import { Button } from "@/components/ui/button"
-import { ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { validateImageFile } from "@/features/menu/model"
 import { uploadImageToCloudinary } from "@/lib/cloudinary"
@@ -114,11 +113,18 @@ export function RestaurantBranding() {
             The logo appears on receipts, the sign-in screen, and the sidebar.
           </p>
           {error ? (
-            <ErrorState
-              className="mt-6"
-              title="Could not load restaurant details."
-              onRetry={refetch}
-            />
+            <div className="mt-6 rounded-lg bg-destructive/5 p-5 text-sm text-destructive">
+              Could not load restaurant details.
+              <div className="mt-3">
+                <Button
+                  className="mt-3"
+                  variant="outline"
+                  onClick={() => refetch()}
+                >
+                  Try again
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="mt-6 flex items-center gap-4">
               <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted text-muted-foreground">
