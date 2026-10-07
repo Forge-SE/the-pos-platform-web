@@ -3,6 +3,7 @@ import { useQuery, useSubscription } from "@apollo/client/react"
 import { ArrowClockwiseIcon } from "@phosphor-icons/react"
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import { diningLabel, statusLabels } from "./labels"
 import type { DiningType } from "./labels"
 
@@ -181,11 +182,6 @@ export function CashierLiveOrders() {
               {orders.length}
             </span>
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {created.error || changed.error
-              ? "Connection lost · showing last known tickets"
-              : "Active tickets · Live via websocket"}
-          </p>
         </div>
         <Button
           variant="ghost"
@@ -198,34 +194,32 @@ export function CashierLiveOrders() {
           <ArrowClockwiseIcon aria-hidden="true" />
         </Button>
       </header>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+      <div className="content-region min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
         {error && (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/20 p-3 text-sm"
-          >
-            <p>
-              Orders couldn’t refresh.{" "}
-              {data ? "Showing the last available tickets." : "Try again."}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={refresh}
-            >
-              Retry
-            </Button>
-          </div>
+          <ErrorState
+            title="Orders couldn’t refresh."
+            description={
+              data
+                ? "Showing the last available tickets. Try again to reconcile live orders."
+                : "Try again to load active tickets."
+            }
+            onRetry={refetch}
+          />
         )}
         {loading && !data ? (
           <p role="status" className="p-3 text-sm text-muted-foreground">
             Loading orders…
           </p>
         ) : !error && orders.length === 0 ? (
-          <p className="p-3 text-sm text-muted-foreground">
-            No active orders. New tickets will appear here.
-          </p>
+          <EmptyState
+            title="No active orders."
+            description="New tickets will appear here."
+            action={
+              <Button variant="outline" size="lg" onClick={refresh}>
+                Refresh orders
+              </Button>
+            }
+          />
         ) : null}
         {orders.map((order) => (
           <article
