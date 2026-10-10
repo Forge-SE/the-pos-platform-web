@@ -220,7 +220,7 @@ export function PaymentSplitCard({
   return (
     <Card
       title="Payment method split"
-      description={`How settled sales were collected · ${periodLabel}`}
+      description={`Payments received · ${periodLabel}`}
       action={
         <InfoTooltip label="About payment method split">
           Payment totals include tax and tips and follow collection dates.
@@ -230,7 +230,21 @@ export function PaymentSplitCard({
       {salesLoading ? (
         <PaymentDonutSkeleton />
       ) : (
-        <PaymentDonut breakdown={sales?.paymentBreakdown ?? []} />
+        <div className="space-y-4">
+          <PaymentDonut breakdown={sales?.paymentBreakdown ?? []} />
+          <dl className="space-y-2 text-sm">
+            <BreakdownRow
+              label="Refunds paid out"
+              amount={sales?.refundsTotal}
+              loading={false}
+            />
+            <BreakdownRow
+              label="Net total collected"
+              amount={sales?.totalCollected}
+              loading={false}
+            />
+          </dl>
+        </div>
       )}
     </Card>
   )

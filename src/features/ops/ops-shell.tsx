@@ -165,9 +165,14 @@ function NavLink({
   pathname: string
   compact?: boolean
 }) {
-  const active = link.exact
-    ? pathname === link.to
-    : pathname.startsWith(link.to)
+  const active =
+    link.to === "/ops"
+      ? pathname === "/ops" ||
+        pathname.startsWith("/ops/restaurants/") ||
+        pathname === "/ops/new"
+      : link.exact
+        ? pathname === link.to
+        : pathname.startsWith(link.to)
   const Icon = link.icon
   return (
     <Link

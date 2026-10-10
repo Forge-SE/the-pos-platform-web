@@ -188,6 +188,26 @@ const opsProvisionRoute = createRoute({
   }),
 })
 
+const opsRestaurantDetailRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/restaurants/$restaurantId",
+  validateSearch: (
+    search: Record<string, unknown>
+  ): { tab: "general" | "payments" | "compliance" | "audit" } => ({
+    tab:
+      search.tab === "payments" ||
+      search.tab === "compliance" ||
+      search.tab === "audit"
+        ? search.tab
+        : "general",
+  }),
+  component: lazyRouteComponent(
+    () => import("@/pages/OpsRestaurant"),
+    "OpsRestaurant"
+  ),
+  head: () => ({ meta: [{ title: "Restaurant | Platform" }, ...noIndexMeta] }),
+})
+
 const opsMetricsRoute = createRoute({
   getParentRoute: () => opsLayoutRoute,
   path: "/ops/metrics",
@@ -239,6 +259,7 @@ export const routeTree = rootRoute.addChildren([
   opsLoginRoute,
   opsLayoutRoute.addChildren([
     opsRestaurantsRoute,
+    opsRestaurantDetailRoute,
     opsProvisionRoute,
     opsMetricsRoute,
     opsSubscriptionsRoute,

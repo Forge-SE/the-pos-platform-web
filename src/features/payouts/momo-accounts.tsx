@@ -208,7 +208,7 @@ export function MomoAccounts({
           <li>
             <EmptyState
               title="No payout numbers yet."
-              description="Add the mobile money number that should receive payments using the form above."
+              description="Add a mobile money contact using the form above. Payment settlement is managed separately in Paystack settlement."
               action={
                 <Button
                   variant="outline"
@@ -263,11 +263,11 @@ export function MomoAccounts({
         </span>
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
-            Mobile money payouts
+            Mobile money contacts
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Numbers where this restaurant receives MoMo payments. Add as many as
-            you need across MTN, AirtelTigo, and Telecel.
+            Saved mobile money contacts across MTN, AirtelTigo and Telecel.
+            Configure the payment destination in Paystack settlement.
           </p>
         </div>
       </div>

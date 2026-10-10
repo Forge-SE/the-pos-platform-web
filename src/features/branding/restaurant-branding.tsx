@@ -10,6 +10,7 @@ import {
 
 import { SectionPage } from "@/components/layout/section-page"
 import { MomoAccounts } from "@/features/payouts/momo-accounts"
+import { PaystackSettings } from "@/features/payouts/paystack-settings"
 import { SubscriptionPanel } from "@/features/subscriptions/subscription-panel"
 import { Button } from "@/components/ui/button"
 import { LoadingState } from "@/components/loading-state"
@@ -102,7 +103,7 @@ export function RestaurantBranding() {
   return (
     <SectionPage
       title="Settings"
-      description="Manage branding, the subscription, and the mobile money numbers that receive payments."
+      description="Manage branding, subscriptions and payment settlement."
     >
       <div className="mt-8 grid gap-6 xl:grid-cols-2">
         <section className="content-region rounded-xl border border-border/70 bg-card p-5 sm:p-6">
@@ -218,6 +219,7 @@ export function RestaurantBranding() {
         </section>
       </div>
       <SubscriptionPanel canManage={canManage} />
+      {profile?.role === "OWNER" && <PaystackSettings />}
       <MomoAccounts />
     </SectionPage>
   )

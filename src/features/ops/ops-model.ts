@@ -113,14 +113,6 @@ export const RESTAURANT_DETAIL_QUERY = gql`
       staffCount
       activeStaffCount
     }
-    platformAuditLogs(restaurantId: $id, limit: 8) {
-      items {
-        id
-        action
-        entityType
-        createdAt
-      }
-    }
   }
 `
 

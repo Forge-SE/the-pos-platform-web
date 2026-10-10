@@ -5,7 +5,7 @@ import { format, isSameDay } from "date-fns"
 import { DateRangePicker, defaultPresets } from "@/components/date-range-picker"
 import type { DateRange } from "@/components/date-range-picker"
 import { SectionPage } from "@/components/layout/section-page"
-import { Button } from "@/components/ui/button"
+import { ErrorState } from "@/components/content-state"
 import {
   HeroStats,
   PaymentSplitCard,
@@ -20,32 +20,13 @@ import type {
   PerformanceData,
   StaffRosterData,
 } from "@/features/performance/model"
-import {
-  BestSellersCard,
-  CategoryCard,
-  DiscountVoidCard,
-  HeatmapCard,
-  RepeatRateCard,
-  SalesTrendCard,
-  StaffLeaderboardCard,
-  TaxCard,
-  VarianceCard,
-} from "@/features/performance/preview"
+import { AnalyticsCards } from "@/features/performance/analytics"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
 import { resolveCustomRange, salesRangeVariables } from "./date-range"
 
 type PerfTab = "all" | "revenue" | "orders" | "staff"
-
-function ComingSoonNote() {
-  return (
-    <p className="mt-4 text-xs text-muted-foreground">
-      Placeholder visuals on synthetic sample data — needs backend work before
-      going live.
-    </p>
-  )
-}
 
 const TABS: Array<{ id: PerfTab; label: string }> = [
   { id: "all", label: "All" },
@@ -137,7 +118,7 @@ export function Performance() {
   return (
     <SectionPage
       title="Performance"
-      description="Live sales and operations, plus a preview of deeper analytics."
+      description="Sales and operations for the selected dates, updated every minute."
     >
       <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div
@@ -170,14 +151,7 @@ export function Performance() {
         <DateRangePicker value={range} onChange={handleRangeChange} />
       </div>
       {error ? (
-        <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center">
-          <p className="font-semibold text-destructive">
-            Could not load performance data
-          </p>
-          <Button className="mt-4" variant="outline" onClick={() => refetch()}>
-            Try again
-          </Button>
-        </div>
+        <ErrorState title="Could not load performance data" onRetry={refetch} />
       ) : (
         <div className="mt-8">
           {canSeeSales &&
@@ -208,7 +182,6 @@ export function Performance() {
           {tab === "revenue" && (
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
               <PaymentSplitCard {...salesProps} />
-              <SalesTrendCard />
             </div>
           )}
 
@@ -227,52 +200,16 @@ export function Performance() {
                 staff={staffData?.staff}
                 staffLoading={staffLoading}
               />
-              <StaffLeaderboardCard />
             </div>
           )}
 
-          {tab === "all" && (
-            <div className="mt-10">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold tracking-[-0.025em]">
-                  Coming soon
-                </h2>
-              </div>
-              <ComingSoonNote />
-              <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                <SalesTrendCard />
-                <BestSellersCard />
-                <HeatmapCard />
-                <CategoryCard />
-                <DiscountVoidCard />
-                <VarianceCard />
-                <StaffLeaderboardCard />
-                <RepeatRateCard />
-                <TaxCard />
-              </div>
-            </div>
-          )}
-
-          {tab === "revenue" && (
-            <div className="mt-10">
-              <ComingSoonNote />
-              <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                <CategoryCard />
-                <DiscountVoidCard />
-                <TaxCard />
-                <VarianceCard />
-              </div>
-            </div>
-          )}
-
-          {tab === "orders" && (
-            <div className="mt-10">
-              <ComingSoonNote />
-              <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                <HeatmapCard />
-                <RepeatRateCard />
-              </div>
-            </div>
+          {canSeeSales && (
+            <AnalyticsCards
+              operations={data?.operationsSummary}
+              sales={data?.salesSummary}
+              loading={loading}
+              tab={tab}
+            />
           )}
         </div>
       )}

@@ -24,7 +24,10 @@ interface AuditEntry {
   createdAt: string
 }
 
-export function OpsAudit() {
+export function OpsAudit({
+  restaurantId: fixedRestaurantId,
+  embedded = false,
+}: { restaurantId?: string; embedded?: boolean } = {}) {
   const [restaurantId, setRestaurantId] = useState("")
   const [action, setAction] = useState("")
   const [offset, setOffset] = useState(0)
@@ -39,7 +42,7 @@ export function OpsAudit() {
     }
   >(AUDIT_LOGS_QUERY, {
     variables: {
-      restaurantId: restaurantId.trim() || null,
+      restaurantId: fixedRestaurantId ?? (restaurantId.trim() || null),
       action: action.trim() || null,
       limit: PAGE_SIZE,
       offset,
@@ -53,21 +56,27 @@ export function OpsAudit() {
 
   return (
     <>
-      <OpsHeader
-        title="Audit log"
-        description="Provisioning, staff changes, and other platform activity. This record is append-only."
-      />
-      <section className="content-region mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
+      {!embedded && (
+        <OpsHeader
+          title="Audit log"
+          description="Provisioning, staff changes, and other platform activity. This record is append-only."
+        />
+      )}
+      <section
+        className={`content-region overflow-hidden rounded-xl border border-border/70 bg-card ${embedded ? "" : "mx-4 mb-8 lg:mx-8"}`}
+      >
         <div className="grid gap-3 border-b border-border/70 px-4 py-3 sm:grid-cols-2">
-          <Input
-            value={restaurantId}
-            onChange={(event) => {
-              setRestaurantId(event.target.value)
-              setOffset(0)
-            }}
-            placeholder="Filter by restaurant ID"
-            aria-label="Filter by restaurant ID"
-          />
+          {!fixedRestaurantId && (
+            <Input
+              value={restaurantId}
+              onChange={(event) => {
+                setRestaurantId(event.target.value)
+                setOffset(0)
+              }}
+              placeholder="Filter by restaurant ID"
+              aria-label="Filter by restaurant ID"
+            />
+          )}
           <Input
             value={action}
             onChange={(event) => {

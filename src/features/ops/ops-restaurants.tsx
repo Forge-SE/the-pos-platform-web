@@ -9,7 +9,7 @@ import {
   UserCheckIcon,
   UserMinusIcon,
 } from "@phosphor-icons/react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
@@ -17,7 +17,8 @@ import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { RestaurantEditModal } from "@/features/ops/ops-restaurant-edit"
-import { OpsDrawer, OpsModal } from "@/features/ops/ops-overlays"
+import { PaystackSettings } from "@/features/payouts/paystack-settings"
+import { OpsModal } from "@/features/ops/ops-overlays"
 import { OpsHeader } from "@/features/ops/ops-shell"
 import {
   PAGE_SIZE,
@@ -35,6 +36,7 @@ import type {
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
 import { mutationMessage } from "@/features/menu/model"
 import { opsAuthContext } from "@/lib/ops-token"
+import { OpsAudit } from "./ops-audit"
 
 const dayLabels: Record<string, string> = {
   monday: "Monday",
@@ -50,7 +52,7 @@ export function OpsRestaurants() {
   const [search, setSearch] = useState("")
   const [debounced, setDebounced] = useState<string | null>(null)
   const [offset, setOffset] = useState(0)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const navigate = useNavigate()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [suspendTarget, setSuspendTarget] = useState<PlatformRestaurant | null>(
     null
@@ -234,12 +236,24 @@ export function OpsRestaurants() {
                   <tr
                     key={restaurant.id}
                     className="cursor-pointer border-t border-border/70 hover:bg-muted/40"
-                    onClick={() => setSelectedId(restaurant.id)}
+                    onClick={() =>
+                      void navigate({
+                        to: "/ops/restaurants/$restaurantId",
+                        params: { restaurantId: restaurant.id },
+                        search: { tab: "general" },
+                      })
+                    }
                   >
                     <td className="px-4 py-3">
-                      <span className="block font-medium">
+                      <Link
+                        to="/ops/restaurants/$restaurantId"
+                        params={{ restaurantId: restaurant.id }}
+                        search={{ tab: "general" }}
+                        className="block font-medium hover:underline"
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         {restaurant.name}
-                      </span>
+                      </Link>
                       <span className="text-xs text-muted-foreground">
                         {restaurant.slug}
                       </span>
@@ -349,14 +363,6 @@ export function OpsRestaurants() {
         </div>
       </section>
 
-      <RestaurantDrawer
-        restaurantId={selectedId}
-        onOpenChange={(open) => {
-          if (!open) setSelectedId(null)
-        }}
-        onChanged={() => void refetch()}
-      />
-
       <OpsModal
         open={Boolean(suspendTarget)}
         onOpenChange={(open) => {
@@ -451,15 +457,16 @@ export function OpsRestaurants() {
   )
 }
 
-function RestaurantDrawer({
+export type RestaurantTab = "general" | "payments" | "compliance" | "audit"
+export function RestaurantDetail({
   restaurantId,
-  onOpenChange,
-  onChanged,
+  tab,
 }: {
-  restaurantId: string | null
-  onOpenChange: (open: boolean) => void
-  onChanged: () => void
+  restaurantId: string
+  tab: RestaurantTab
 }) {
+  const [editing, setEditing] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const { data, loading, error, refetch } = useQuery<
     {
       platformRestaurant: {
@@ -468,19 +475,10 @@ function RestaurantDrawer({
         staffCount: number
         activeStaffCount: number
       }
-      platformAuditLogs: {
-        items: Array<{
-          id: string
-          action: string
-          entityType: string
-          createdAt: string
-        }>
-      }
     },
     { id: string }
   >(RESTAURANT_DETAIL_QUERY, {
-    variables: { id: restaurantId ?? "" },
-    skip: !restaurantId,
+    variables: { id: restaurantId },
     context: opsAuthContext(),
   })
   useOpsAuthError(error)
@@ -494,34 +492,79 @@ function RestaurantDrawer({
 
   const detail = data?.platformRestaurant
   const restaurant = detail?.restaurant
-  const auditEntries = data?.platformAuditLogs.items ?? []
 
   async function confirmToggle() {
     if (!pending || !restaurantId) return
-    await setStaffActive({
-      variables: {
-        restaurantId,
-        userId: pending.id,
-        active: !pending.active,
-      },
-    })
-    setPending(null)
-    await refetch()
-    onChanged()
+    try {
+      setActionError(null)
+      await setStaffActive({
+        variables: {
+          restaurantId,
+          userId: pending.id,
+          active: !pending.active,
+        },
+      })
+      setPending(null)
+      await refetch()
+    } catch (mutationError) {
+      setActionError(
+        mutationMessage(mutationError, "Could not update this staff member.")
+      )
+    }
   }
 
   return (
     <>
-      <OpsDrawer
-        open={Boolean(restaurantId)}
-        onOpenChange={onOpenChange}
+      <div className="px-4 pt-5 lg:px-8">
+        <Button variant="ghost" size="sm" render={<Link to="/ops" />}>
+          ← Restaurants
+        </Button>
+      </div>
+      <OpsHeader
         title={restaurant?.name ?? "Restaurant"}
         description={
           restaurant
             ? `${restaurant.slug} · ${restaurant.currency} · ${restaurant.timezone}`
-            : undefined
+            : "Restaurant administration"
         }
       >
+        {restaurant && (
+          <>
+            <Badge variant={restaurant.suspended ? "destructive" : "secondary"}>
+              {restaurant.suspended ? "Suspended" : "Active"}
+            </Badge>
+            <Button variant="outline" onClick={() => setEditing(true)}>
+              <PencilSimpleIcon data-icon="inline-start" />
+              Edit details
+            </Button>
+          </>
+        )}
+      </OpsHeader>
+      <div className="mx-4 mb-8 flex flex-1 flex-col lg:mx-8">
+        <nav
+          aria-label="Restaurant sections"
+          className="mb-6 flex shrink-0 gap-6 overflow-x-auto border-b border-border/70"
+        >
+          {(
+            [
+              { value: "general", label: "General" },
+              { value: "payments", label: "Payments" },
+              { value: "compliance", label: "Compliance" },
+              { value: "audit", label: "Audit logs" },
+            ] as const
+          ).map((item) => (
+            <Link
+              key={item.value}
+              to="/ops/restaurants/$restaurantId"
+              params={{ restaurantId }}
+              search={{ tab: item.value }}
+              aria-current={tab === item.value ? "page" : undefined}
+              className={`shrink-0 border-b-2 px-1 py-3 text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring ${tab === item.value ? "border-secondary text-foreground" : "border-transparent text-muted-foreground"}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
         {loading && <LoadingState label="restaurant" />}
         {error && (
           <ErrorState
@@ -530,103 +573,116 @@ function RestaurantDrawer({
           />
         )}
         {!error && restaurant && (
-          <div className="space-y-6">
-            <Badge variant={restaurant.suspended ? "destructive" : "secondary"}>
-              {restaurant.suspended ? "Suspended" : "Active"}
-            </Badge>
-            <LoginCode code={restaurant.code} />
-            <Section title="Location">
-              <p className="text-sm leading-6">
-                {[restaurant.address, restaurant.city, restaurant.region]
-                  .filter(Boolean)
-                  .join(", ") || "Location hasn’t been recorded."}
-              </p>
-              {restaurant.description && (
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {restaurant.description}
-                </p>
-              )}
-            </Section>
-            <Section title="Opening times">
-              {restaurant.openingHours?.length ? (
-                <ul className="space-y-1.5 text-sm">
-                  {restaurant.openingHours.map((hours) => (
-                    <li key={hours.day} className="flex justify-between gap-3">
-                      <span>{dayLabels[hours.day] ?? hours.day}</span>
-                      <span className="text-muted-foreground">
-                        {hours.closed
-                          ? "Closed"
-                          : `${hours.opens} – ${hours.closes}`}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyState
-                  title="Hours haven’t been added."
-                  description="Add opening times in the restaurant details."
-                />
-              )}
-            </Section>
-            <Section title="Compliance">
-              <ComplianceList compliance={restaurant.compliance} />
-            </Section>
-            <Section
-              title={`Staff · ${detail.activeStaffCount}/${detail.staffCount} active`}
-            >
-              <ul className="divide-y divide-border/70">
-                {detail.staff.map((member) => (
-                  <li
-                    key={member.id}
-                    className="flex items-center justify-between gap-3 py-2.5"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium">
-                        {member.name}
-                      </span>
-                      <span className="mt-1 flex items-center gap-1.5">
-                        <Badge variant="secondary">{member.role}</Badge>
-                        {!member.active && (
-                          <Badge variant="outline">Inactive</Badge>
-                        )}
-                      </span>
-                    </span>
-                    {member.role !== "OWNER" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPending(member)}
+          <div className="content-region">
+            {tab === "general" && (
+              <div className="grid gap-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+                <LoginCode code={restaurant.code} />
+                <Section title="Location">
+                  <p className="text-sm leading-6">
+                    {[restaurant.address, restaurant.city, restaurant.region]
+                      .filter(Boolean)
+                      .join(", ") || "Location hasn’t been recorded."}
+                  </p>
+                  {restaurant.description && (
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {restaurant.description}
+                    </p>
+                  )}
+                </Section>
+                <Section title="Opening times">
+                  {restaurant.openingHours?.length ? (
+                    <ul className="space-y-1.5 text-sm">
+                      {restaurant.openingHours.map((hours) => (
+                        <li
+                          key={hours.day}
+                          className="flex justify-between gap-3"
+                        >
+                          <span>{dayLabels[hours.day] ?? hours.day}</span>
+                          <span className="text-muted-foreground">
+                            {hours.closed
+                              ? "Closed"
+                              : `${hours.opens} – ${hours.closes}`}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <EmptyState
+                      title="Hours haven’t been added."
+                      description="Add opening times in the restaurant details."
+                    />
+                  )}
+                </Section>
+                <Section
+                  title={`Staff · ${detail.activeStaffCount}/${detail.staffCount} active`}
+                >
+                  <ul className="divide-y divide-border/70">
+                    {detail.staff.map((member) => (
+                      <li
+                        key={member.id}
+                        className="flex items-center justify-between gap-3 py-2.5"
                       >
-                        {member.active ? "Deactivate" : "Reactivate"}
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </Section>
-            <Section title="Recent activity">
-              {auditEntries.length === 0 ? (
-                <EmptyState
-                  title="No audit entries."
-                  description="Restaurant activity will appear here."
-                />
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {auditEntries.map((entry) => (
-                    <li key={entry.id}>
-                      <span className="font-medium">{entry.action}</span>
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {entry.entityType} · {formatWhen(entry.createdAt)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Section>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {member.name}
+                          </span>
+                          <span className="mt-1 flex items-center gap-1.5">
+                            <Badge variant="secondary">{member.role}</Badge>
+                            {!member.active && (
+                              <Badge variant="outline">Inactive</Badge>
+                            )}
+                          </span>
+                        </span>
+                        {member.role !== "OWNER" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPending(member)}
+                          >
+                            {member.active ? "Deactivate" : "Reactivate"}
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              </div>
+            )}
+            {tab === "payments" && (
+              <PaystackSettings
+                key={restaurant.id}
+                restaurantId={restaurant.id}
+              />
+            )}
+            {tab === "compliance" && (
+              <div className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+                <Section title="Compliance">
+                  <ComplianceList compliance={restaurant.compliance} />
+                </Section>
+              </div>
+            )}
+            {tab === "audit" && (
+              <OpsAudit restaurantId={restaurant.id} embedded />
+            )}
           </div>
         )}
-      </OpsDrawer>
+        {!loading && !error && !restaurant && (
+          <EmptyState
+            title="Restaurant not found"
+            description="This restaurant is unavailable. Return to the restaurant directory."
+          />
+        )}
+      </div>
+      {editing && (
+        <RestaurantEditModal
+          restaurantId={restaurantId}
+          onClose={() => setEditing(false)}
+          onSaved={async () => {
+            setEditing(false)
+            await refetch()
+          }}
+        />
+      )}
 
       <OpsModal
         open={Boolean(pending)}
@@ -653,7 +709,13 @@ function RestaurantDrawer({
             </Button>
           </>
         }
-      />
+      >
+        {actionError && (
+          <p className="mt-3 text-sm text-destructive" role="alert">
+            {actionError}
+          </p>
+        )}
+      </OpsModal>
     </>
   )
 }
