@@ -38,6 +38,15 @@ import { resolveCustomRange, salesRangeVariables } from "./date-range"
 
 type PerfTab = "all" | "revenue" | "orders" | "staff"
 
+function ComingSoonNote() {
+  return (
+    <p className="mt-4 text-xs text-muted-foreground">
+      Placeholder visuals on synthetic sample data — needs backend work before
+      going live.
+    </p>
+  )
+}
+
 const TABS: Array<{ id: PerfTab; label: string }> = [
   { id: "all", label: "All" },
   { id: "revenue", label: "Revenue" },
@@ -51,15 +60,6 @@ function isTab(value: string | null): value is PerfTab {
     value === "revenue" ||
     value === "orders" ||
     value === "staff"
-  )
-}
-
-function ComingSoonNote() {
-  return (
-    <p className="mt-4 text-xs text-muted-foreground">
-      Placeholder visuals on synthetic sample data — needs backend work before
-      going live.
-    </p>
   )
 }
 
@@ -169,12 +169,6 @@ export function Performance() {
         </div>
         <DateRangePicker value={range} onChange={handleRangeChange} />
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">
-        Sales totals follow the selected dates in your restaurant’s timezone.
-        Shift, active orders, and staff show the current state. Preview charts
-        use sample data.
-      </p>
-
       {error ? (
         <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center">
           <p className="font-semibold text-destructive">
@@ -224,7 +218,6 @@ export function Performance() {
                 shift={data?.currentShift ?? null}
                 orders={data?.activeOrders ?? []}
               />
-              <BestSellersCard />
             </div>
           )}
 

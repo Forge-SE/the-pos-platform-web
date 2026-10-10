@@ -5,6 +5,8 @@ import * as Yup from "yup"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -152,15 +154,13 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
         Ovaal is billed through Paystack. This is the plan on the restaurant,
         the last payment, and the next due date.
       </p>
-      {loading && (
-        <p className="mt-5 text-sm text-muted-foreground">
-          Loading subscription…
-        </p>
-      )}
+      {loading && <LoadingState className="mt-5" label="subscription" />}
       {error && (
-        <p className="mt-5 text-sm text-destructive" role="alert">
-          Couldn’t load the subscription.
-        </p>
+        <ErrorState
+          className="mt-5"
+          title="Couldn’t load the subscription."
+          onRetry={refetch}
+        />
       )}
       {notice && (
         <p className="mt-4 text-sm text-secondary" role="status">
@@ -211,7 +211,7 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
           </div>
         </dl>
       )}
-      {canManage && plans.length > 0 && (
+      {canManage && !error && plans.length > 0 && (
         <Form
           className="mt-6 grid gap-4 border-t border-border/70 pt-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
           initialValues={{
@@ -285,10 +285,21 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
           )}
         </Form>
       )}
-      {canManage && !loading && plans.length === 0 && (
-        <p className="mt-5 text-sm text-muted-foreground">
-          No subscription tiers are available yet.
-        </p>
+      {canManage && !loading && !error && plans.length === 0 && (
+        <EmptyState
+          className="mt-5"
+          title="No subscription tiers are available yet."
+          description="Contact your platform administrator to configure a subscription tier."
+          action={
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => void refetch().catch(() => {})}
+            >
+              Check again
+            </Button>
+          }
+        />
       )}
     </section>
   )

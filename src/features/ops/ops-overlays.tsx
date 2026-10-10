@@ -45,7 +45,7 @@ export function OpsDrawer({
               }
             />
           </div>
-          <div className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto px-5 py-5">
+          <div className="content-region min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto px-5 py-5">
             {children}
           </div>
         </Dialog.Popup>

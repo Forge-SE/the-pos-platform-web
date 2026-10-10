@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toaster"
 import { CategoryCard } from "@/features/menu/category-card"
@@ -25,6 +26,7 @@ import {
   formatMoney,
   mutationMessage,
 } from "@/features/menu/model"
+import { CURRENT_SHIFT_QUERY } from "@/features/shifts/current-shift"
 import { normalizeGhanaPhone } from "@/features/payouts/phone"
 import { useUrlState } from "@/lib/url-state"
 import { CashierLiveOrders } from "./cashier-live-orders"
@@ -108,20 +110,17 @@ const MENU_QUERY = gql`
   }
 `
 
-const SHIFT_QUERY = gql`
-  query CounterShift {
-    currentShift {
-      id
-    }
-  }
-`
-
 const PRICING_ESTIMATE = gql`
   query CounterPricingEstimate($subtotal: Int!, $discountCode: String) {
     pricingEstimate(subtotal: $subtotal, discountCode: $discountCode) {
       subtotal
       discount
       taxAmount
+      taxLines {
+        name
+        amount
+        inclusive
+      }
       total
     }
   }
@@ -140,6 +139,7 @@ const RECORD_PAYMENT = gql`
   mutation RecordCounterPayment($input: RecordPaymentInput!) {
     recordPayment(input: $input) {
       id
+      receiptDeliveryStatus
     }
   }
 `
@@ -150,6 +150,7 @@ const INITIATE_MOMO = gql`
       status
       displayText
       failureReason
+      receiptDeliveryStatus
     }
   }
 `
@@ -197,10 +198,13 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
   const [fullscreenParam, setFullscreenParam] = useUrlState("fullscreen")
   const fullscreen = fullscreenParam === "1"
   const ownsFullscreen = useRef(false)
-  const { data, loading, error } = useQuery<CounterMenu>(MENU_QUERY)
+  const { data, loading, error, refetch } = useQuery<CounterMenu>(MENU_QUERY)
   const { data: shiftData } = useQuery<{
     currentShift: { id: string } | null
-  }>(SHIFT_QUERY)
+  }>(CURRENT_SHIFT_QUERY, {
+    pollInterval: 30_000,
+    notifyOnNetworkStatusChange: false,
+  })
   const [createOrder, { loading: creating }] = useMutation(CREATE_ORDER)
   const [recordPayment, { loading: recording }] = useMutation(RECORD_PAYMENT)
   const [initiateMomo, { loading: charging }] = useMutation(INITIATE_MOMO)
@@ -304,6 +308,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       subtotal: number
       discount: number
       taxAmount: number
+      taxLines: Array<{ name: string; amount: number; inclusive: boolean }>
       total: number
     }
   }>(PRICING_ESTIMATE, {
@@ -381,9 +386,9 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       setFormError("Enter the delivery address before placing this order.")
       return
     }
-    if (appliedDiscountCode && pricing.error) {
+    if (pricing.loading || pricing.error || !estimate) {
       setFormError(
-        "Remove or correct the discount code before placing this order."
+        "Wait for pricing to load, or retry the tax and discount calculation."
       )
       return
     }
@@ -391,7 +396,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       payMethod === "MOMO"
         ? normalizeGhanaPhone(walletPhone || contactPhone)
         : null
-    if (payMethod === "MOMO" && !wallet) {
+    if (payMethod === "MOMO" && due > 0 && !wallet) {
       setFormError(
         "Enter the MoMo wallet number that should receive the prompt."
       )
@@ -425,8 +430,16 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           { createOrder?: { id: string; total: number } } | undefined
       )?.createOrder
       if (!order) throw new Error("The order was not created.")
-      if (payMethod === "CASH") {
-        await recordPayment({
+      if (order.total === 0) {
+        toast({
+          title: "No payment due",
+          description: "Order placed. No payment is required.",
+          status: "success",
+        })
+        setReceiptOrderId(order.id)
+        setReceiptOpen(true)
+      } else if (payMethod === "CASH") {
+        const recorded = await recordPayment({
           variables: {
             input: {
               idempotencyKey: crypto.randomUUID(),
@@ -439,7 +452,14 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         })
         toast({
           title: `Cash order ${order.id.slice(-6).toUpperCase()} is in`,
-          description: `Total ${formatMoney(order.total)}. Receipt ready to print.`,
+          description:
+            (
+              recorded.data as
+                | { recordPayment?: { receiptDeliveryStatus: string } }
+                | undefined
+            )?.recordPayment?.receiptDeliveryStatus === "FAILED"
+              ? `Payment saved: ${formatMoney(order.total)}. Receipt delivery needs a retry; open the digital receipt to print.`
+              : `Total ${formatMoney(order.total)}. Receipt ready to print.`,
           status: "success",
         })
         setReceiptOrderId(order.id)
@@ -462,6 +482,8 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
                 initiateMomoPayment?: {
                   displayText?: string | null
                   failureReason?: string | null
+                  receiptDeliveryStatus?: string
+                  status?: string
                 }
               }
             | null
@@ -470,6 +492,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         toast({
           title: `Order ${order.id.slice(-6).toUpperCase()} placed`,
           description:
+            (attempt?.status === "SUCCESS" &&
+            attempt.receiptDeliveryStatus === "FAILED"
+              ? "Payment saved. Receipt delivery needs a retry; view the digital receipt from order history."
+              : null) ||
             attempt?.displayText ||
             attempt?.failureReason ||
             "MoMo prompt sent.",
@@ -496,7 +522,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       className={
         fullscreen
           ? "grid h-dvh min-h-0 grid-cols-[minmax(160px,30%)_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)]"
-          : ""
+          : "content-page"
       }
     >
       {fullscreen && <CashierLiveOrders />}
@@ -504,7 +530,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         className={
           fullscreen
             ? "flex min-h-0 min-w-0 flex-col"
-            : "flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]"
+            : "content-region flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]"
         }
       >
         <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
@@ -542,7 +568,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+        <div className="content-region min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
           <Input
             type="search"
             value={search}
@@ -579,12 +605,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           </div>
 
           {error ? (
-            <p
-              className="py-16 text-center text-sm text-destructive"
-              role="alert"
-            >
-              The menu could not be loaded.
-            </p>
+            <ErrorState
+              title="The menu could not be loaded."
+              onRetry={refetch}
+            />
           ) : loading ? (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {[0, 1, 2].map((item) => (
@@ -595,9 +619,22 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              No dishes match this counter.
-            </p>
+            <EmptyState
+              title="No dishes match this counter."
+              description="Try a different search or category. If the menu is empty, ask a manager to add dishes."
+              action={
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    setSearch("")
+                    setCategoryId("all")
+                  }}
+                >
+                  Clear filters
+                </Button>
+              }
+            />
           ) : (
             <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => {
@@ -688,6 +725,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           due={due}
           discount={estimate?.discount ?? 0}
           taxAmount={estimate?.taxAmount ?? 0}
+          taxLines={estimate?.taxLines ?? []}
           customerName={customerName}
           onCustomerName={setCustomerName}
           contactPhone={contactPhone}
@@ -998,6 +1036,7 @@ function BagDrawer(props: {
   due: number
   discount: number
   taxAmount: number
+  taxLines: Array<{ name: string; amount: number; inclusive: boolean }>
   customerName: string
   onCustomerName: (value: string) => void
   contactPhone: string
@@ -1054,11 +1093,21 @@ function BagDrawer(props: {
               </Dialog.Close>
             </div>
           </div>
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+          <div className="content-region min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
             {props.lines.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                Add a dish to start the order.
-              </p>
+              <EmptyState
+                title="Your bag is empty."
+                description="Add a dish to start the order."
+                action={
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => props.onOpenChange(false)}
+                  >
+                    Browse menu
+                  </Button>
+                }
+              />
             ) : (
               <ul className="space-y-3">
                 {props.lines.map((line) => (
@@ -1304,14 +1353,21 @@ function BagDrawer(props: {
                   </dd>
                 </div>
               )}
-              {props.taxAmount > 0 && (
-                <div className="flex justify-between text-muted-foreground">
-                  <dt>Tax</dt>
+              {props.taxLines.map((tax) => (
+                <div
+                  key={tax.name}
+                  className="flex justify-between text-muted-foreground"
+                >
+                  <dt>
+                    {tax.name}
+                    {tax.inclusive ? " (included)" : ""}
+                  </dt>
                   <dd className="tabular-nums">
-                    +{formatMoney(props.taxAmount)}
+                    {tax.inclusive ? "" : "+"}
+                    {formatMoney(tax.amount)}
                   </dd>
                 </div>
-              )}
+              ))}
               <div className="flex justify-between pt-1 text-base font-semibold">
                 <dt>Total due</dt>
                 <dd className="tabular-nums">{formatMoney(props.due)}</dd>

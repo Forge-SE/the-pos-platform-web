@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
 import {
   InputGroup,
@@ -89,7 +90,7 @@ export function StaffManagement() {
   if (!canManage) return <Navigate to="/overview" replace />
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
@@ -106,7 +107,7 @@ export function StaffManagement() {
         </Button>
       </div>
 
-      <section className="mt-8">
+      <section className="content-region mt-8">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <InputGroup className="w-full lg:max-w-xs">
             <InputGroupAddon align="inline-start">
@@ -168,14 +169,38 @@ export function StaffManagement() {
         </div>
 
         {error ? (
-          <div className="mt-6 rounded-lg bg-destructive/5 p-5 text-sm text-destructive">
-            Could not load staff. Try refreshing this page.
-            <div className="mt-3">
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                Try again
+          <ErrorState
+            className="mt-6"
+            title="Could not load staff."
+            onRetry={refetch}
+          />
+        ) : !loading && filtered.length === 0 ? (
+          <EmptyState
+            className="mt-6"
+            title={
+              staffList.length === 0
+                ? "No staff accounts yet."
+                : "No staff match these filters."
+            }
+            description={
+              staffList.length === 0
+                ? "Add the first account to give your team access to the till."
+                : "Try a different search or clear the filters."
+            }
+            action={
+              <Button
+                size="lg"
+                variant={staffList.length === 0 ? "default" : "outline"}
+                onClick={
+                  staffList.length === 0
+                    ? () => setNewStaffParam("1")
+                    : resetFilters
+                }
+              >
+                {staffList.length === 0 ? "Add new staff" : "Clear filters"}
               </Button>
-            </div>
-          </div>
+            }
+          />
         ) : (
           <>
             <div className="mt-6 overflow-x-auto rounded-xl border border-border/70 bg-card">
@@ -286,30 +311,6 @@ export function StaffManagement() {
                       ))}
                 </tbody>
               </table>
-              {!loading && filtered.length === 0 && (
-                <div className="px-4 py-12 text-center">
-                  <p className="text-sm font-medium">
-                    {(data?.staff.length ?? 0) === 0
-                      ? "No staff accounts yet."
-                      : "No staff match these filters."}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {(data?.staff.length ?? 0) === 0
-                      ? "Use “Add new staff” to create the first account."
-                      : "Try a different search or clear the filters."}
-                  </p>
-                  {(data?.staff.length ?? 0) > 0 && (
-                    <Button
-                      className="mt-4"
-                      variant="outline"
-                      size="sm"
-                      onClick={resetFilters}
-                    >
-                      Clear filters
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">

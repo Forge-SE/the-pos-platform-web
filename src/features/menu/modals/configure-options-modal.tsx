@@ -9,6 +9,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/content-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -398,10 +399,21 @@ export function ConfigureOptionsModal({
               </div>
             ))}
             {groups.length === 0 && (
-              <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
-                No groups yet. Create one above, then add its choices under
-                Options.
-              </p>
+              <EmptyState
+                title="No groups yet."
+                description="Create one above, then add its choices under Options."
+                action={
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() =>
+                      document.getElementById("options-group-name")?.focus()
+                    }
+                  >
+                    Create group
+                  </Button>
+                }
+              />
             )}
           </div>
         </div>
@@ -513,14 +525,27 @@ export function ConfigureOptionsModal({
             {optionGroupId &&
               (groups.find((group) => group.id === optionGroupId)?.options
                 .length ?? 0) === 0 && (
-                <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
-                  No choices in this group yet — add the first one above.
-                </p>
+                <EmptyState
+                  title="No choices in this group yet."
+                  description="Add the first choice using the form above."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() =>
+                        document.getElementById("options-option-name")?.focus()
+                      }
+                    >
+                      Add choice
+                    </Button>
+                  }
+                />
               )}
             {!optionGroupId && groups.length > 0 && (
-              <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
-                Choose a group to see its choices.
-              </p>
+              <EmptyState
+                title="Choose a group to see its choices."
+                description="Select a group using the form above."
+              />
             )}
           </div>
         </div>

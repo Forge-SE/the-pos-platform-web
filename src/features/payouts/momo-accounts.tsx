@@ -4,6 +4,8 @@ import { DeviceMobileIcon, TrashIcon } from "@phosphor-icons/react"
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -114,14 +116,11 @@ export function MomoAccounts({
       Only managers and owners can edit payout numbers.
     </p>
   ) : error ? (
-    <div className="mt-4 rounded-lg bg-destructive/5 p-4 text-sm text-destructive">
-      Could not load payout numbers.
-      <div className="mt-3">
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          Try again
-        </Button>
-      </div>
-    </div>
+    <ErrorState
+      className="mt-4"
+      title="Could not load payout numbers."
+      onRetry={refetch}
+    />
   ) : (
     <div className="mt-5 space-y-5">
       <Form
@@ -202,12 +201,26 @@ export function MomoAccounts({
 
       <ul className="divide-y divide-border rounded-lg border">
         {loading && accounts.length === 0 ? (
-          <li className="px-4 py-3 text-sm text-muted-foreground">
-            Loading payout numbers…
+          <li>
+            <LoadingState label="payout numbers" />
           </li>
         ) : accounts.length === 0 ? (
-          <li className="px-4 py-3 text-sm text-muted-foreground">
-            No payout numbers yet.
+          <li>
+            <EmptyState
+              title="No payout numbers yet."
+              description="Add the mobile money number that should receive payments using the form above."
+              action={
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() =>
+                    document.getElementById("momo-account-name")?.focus()
+                  }
+                >
+                  Add number
+                </Button>
+              }
+            />
           </li>
         ) : (
           accounts.map((account) => (
@@ -243,7 +256,7 @@ export function MomoAccounts({
   if (embedded) return body
 
   return (
-    <section className="mt-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+    <section className="content-region mt-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <DeviceMobileIcon aria-hidden="true" className="size-5" />

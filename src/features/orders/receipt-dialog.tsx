@@ -1,10 +1,23 @@
 import { gql } from "@apollo/client"
-import { useQuery } from "@apollo/client/react"
+import { useMutation, useQuery } from "@apollo/client/react"
 import { Dialog } from "@base-ui/react/dialog"
 import { PrinterIcon, XIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { DigitalReceipt } from "./digital-receipt"
 import type { ReceiptDetails } from "./digital-receipt"
+import { toast } from "@/components/ui/toaster"
+import { mutationMessage } from "@/features/menu/model"
+
+const RETRY_RECEIPT = gql`
+  mutation RetryOrderReceipt($orderId: ID!) {
+    reprintReceipt(orderId: $orderId) {
+      id
+      status
+    }
+  }
+`
 
 const RECEIPT_QUERY = gql`
   query OrderReceipt($orderId: ID!) {
@@ -32,6 +45,7 @@ const RECEIPT_QUERY = gql`
         }
         subtotal
         discount
+        isComp
         taxAmount
         taxes {
           name
@@ -77,6 +91,28 @@ export function ReceiptDialog({
   )
   const receipt =
     data?.receipt?.details.orderId === orderId ? data.receipt : null
+  const [retryReceipt, { loading: retrying }] = useMutation(RETRY_RECEIPT)
+  async function retryDelivery() {
+    if (!orderId || retrying) return
+    try {
+      await retryReceipt({ variables: { orderId } })
+      toast({
+        title: "Receipt retry queued",
+        description: "Payment status is unchanged.",
+        status: "success",
+      })
+      await refetch()
+    } catch (caught) {
+      toast({
+        title: "Couldn’t retry receipt delivery",
+        description: mutationMessage(
+          caught,
+          "Payment status is unchanged. You can still print the digital receipt."
+        ),
+        status: "error",
+      })
+    }
+  }
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -99,23 +135,14 @@ export function ReceiptDialog({
               <XIcon aria-hidden="true" className="size-4" />
             </Dialog.Close>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 p-4 print:overflow-visible print:p-0">
+          <div className="content-region min-h-0 flex-1 overflow-y-auto bg-muted/30 p-4 print:overflow-visible print:p-0">
             {loading && !receipt ? (
-              <p role="status" className="text-sm text-muted-foreground">
-                Preparing receipt…
-              </p>
+              <LoadingState label="receipt" />
             ) : error ? (
-              <div role="alert" className="text-sm">
-                <p>Couldn’t load the receipt.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 print:hidden"
-                  onClick={() => void refetch()}
-                >
-                  Retry
-                </Button>
-              </div>
+              <ErrorState
+                title="Couldn’t load the receipt."
+                onRetry={refetch}
+              />
             ) : receipt ? (
               <>
                 <div className="print:hidden">
@@ -138,20 +165,21 @@ export function ReceiptDialog({
                 </div>
               </>
             ) : (
-              <div role="status" className="text-sm text-muted-foreground">
-                <p>No receipt is available for this order yet.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => void refetch()}
-                >
-                  Check again
-                </Button>
-              </div>
+              <EmptyState
+                title="No receipt is available for this order yet."
+                action={
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => void refetch().catch(() => {})}
+                  >
+                    Check again
+                  </Button>
+                }
+              />
             )}
           </div>
-          <div className="flex gap-2 border-t border-border/60 p-3 print:hidden">
+          <div className="flex flex-wrap gap-2 border-t border-border/60 p-3 print:hidden">
             <Button
               className="flex-1"
               disabled={!receipt || loading || Boolean(error)}
@@ -159,6 +187,13 @@ export function ReceiptDialog({
             >
               <PrinterIcon aria-hidden="true" data-icon="inline-start" />
               Print receipt
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!receipt || loading || retrying || Boolean(error)}
+              onClick={() => void retryDelivery()}
+            >
+              {retrying ? "Queueing…" : "Retry delivery"}
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close

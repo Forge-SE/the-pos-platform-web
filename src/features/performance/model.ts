@@ -8,6 +8,15 @@ export const PERFORMANCE_QUERY = gql`
   ) {
     salesSummary(from: $from, to: $to) @include(if: $includeSales) {
       totalSales
+      grossSales
+      netRevenue
+      totalCollected
+      discounts
+      comps
+      tips
+      taxCollected
+      refundsTotal
+      refundedSales
       orderCount
       paymentBreakdown {
         method
@@ -44,6 +53,15 @@ export type OrderStatus =
 
 export interface SalesToday {
   totalSales: number
+  grossSales: number
+  netRevenue: number
+  totalCollected: number
+  discounts: number
+  comps: number
+  tips: number
+  taxCollected: number
+  refundsTotal: number
+  refundedSales: number
   orderCount: number
   paymentBreakdown: Array<{ method: PaymentMethod; amount: number }>
 }

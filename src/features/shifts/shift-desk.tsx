@@ -6,26 +6,21 @@ import * as Yup from "yup"
 import { SectionPage } from "@/components/layout/section-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { hasPermission } from "@/lib/permissions"
+import { SHIFT_CLOSURE_CHECK, ShiftPayments } from "./shift-payments"
+import type { ClosureCheck } from "./shift-payments"
 import {
   cedisToPesewas,
   formatMoney,
   mutationMessage,
 } from "@/features/menu/model"
-
-const SHIFT_QUERY = gql`
-  query CurrentShift {
-    currentShift {
-      id
-      status
-      openingFloat
-      openedAt
-    }
-  }
-`
+import { CURRENT_SHIFT_QUERY } from "@/features/shifts/current-shift"
 
 const OPEN_SHIFT = gql`
   mutation OpenShift($input: OpenShiftInput!) {
@@ -93,7 +88,10 @@ export function ShiftDesk() {
   const canManage = profile?.role === "CASHIER" || profile?.role === "KITCHEN"
   const { data, loading, error, refetch } = useQuery<{
     currentShift: OpenShift | null
-  }>(SHIFT_QUERY)
+  }>(CURRENT_SHIFT_QUERY, {
+    pollInterval: 30_000,
+    notifyOnNetworkStatusChange: false,
+  })
   const [openShift, { loading: opening }] = useMutation<
     { openShift: OpenShift },
     { input: { idempotencyKey: string; openingFloat: number } }
@@ -106,6 +104,25 @@ export function ShiftDesk() {
   const [closed, setClosed] = useState<ClosedShift | null>(null)
 
   const shift = data?.currentShift ?? null
+  const closure = useQuery<{ shiftClosureCheck: ClosureCheck }>(
+    SHIFT_CLOSURE_CHECK,
+    {
+      variables: { shiftId: shift?.id ?? "" },
+      skip: !shift,
+      fetchPolicy: "cache-and-network",
+      pollInterval: 15000,
+    }
+  )
+  const check =
+    closure.data?.shiftClosureCheck.shiftId === shift?.id
+      ? closure.data?.shiftClosureCheck
+      : undefined
+  const closeBlocked =
+    closure.loading ||
+    Boolean(closure.error) ||
+    !check ||
+    check.activeOrderCount > 0 ||
+    check.unpaidOrders.length > 0
 
   async function submitOpen(amount: string) {
     const openingFloat = cedisToPesewas(amount)
@@ -146,6 +163,7 @@ export function ShiftDesk() {
       setActionError(
         mutationMessage(mutationError, "The shift could not be closed.")
       )
+      void closure.refetch().catch(() => undefined)
     }
   }
 
@@ -154,16 +172,34 @@ export function ShiftDesk() {
       title="Shift & cash"
       description="Open the register, watch the current shift, and reconcile the cash drawer when you close."
     >
-      <div className="mt-7 grid gap-4 lg:grid-cols-2">
-        {loading && (
-          <p className="text-sm text-muted-foreground">
-            Loading the current shift…
-          </p>
-        )}
+      <div
+        className={
+          error || (!loading && !shift && !canManage)
+            ? "content-region mt-7"
+            : "mt-7 grid gap-4 lg:grid-cols-2"
+        }
+      >
+        {loading && <LoadingState className="mt-7" label="current shift" />}
         {error && (
-          <p className="text-sm text-destructive" role="alert">
-            {mutationMessage(error, "Couldn’t load the current shift.")}
-          </p>
+          <ErrorState
+            title="Couldn’t load the current shift."
+            onRetry={refetch}
+          />
+        )}
+        {!loading && !error && !shift && !canManage && (
+          <EmptyState
+            title="No open shift"
+            description="A cashier or kitchen staff member can open the register."
+            action={
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => void refetch()}
+              >
+                Check again
+              </Button>
+            }
+          />
         )}
         {!loading && !error && shift && (
           <section className="rounded-xl border border-border/70 bg-card p-5">
@@ -216,9 +252,16 @@ export function ShiftDesk() {
                         Count the notes and coins in the drawer. Finish or void
                         open orders, and record every payment, before closing.
                       </p>
-                      <Button type="submit" disabled={closing}>
+                      <Button type="submit" disabled={closing || closeBlocked}>
                         {closing ? "Closing shift…" : "Close shift"}
                       </Button>
+                      {closeBlocked && (
+                        <p className="text-sm text-muted-foreground">
+                          Resolve the orders in “Payments needing attention”
+                          before closing. Refresh payments if the status has
+                          changed.
+                        </p>
+                      )}
                     </>
                   )
                 }}
@@ -229,6 +272,15 @@ export function ShiftDesk() {
               </p>
             )}
           </section>
+        )}
+        {!loading && !error && shift && (
+          <ShiftPayments
+            check={check}
+            loading={closure.loading}
+            error={Boolean(closure.error)}
+            canRecord={hasPermission(profile, "PAYMENTS_RECORD")}
+            onRefresh={closure.refetch}
+          />
         )}
         {!loading && !error && !shift && canManage && (
           <section className="rounded-xl border border-border/70 bg-card p-5">

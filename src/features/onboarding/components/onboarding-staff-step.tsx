@@ -4,6 +4,7 @@ import { ArrowLeftIcon, ArrowRightIcon, ImageIcon } from "@phosphor-icons/react"
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -45,7 +46,12 @@ export function OnboardingStaffStep({
   onBack?: () => void
   onContinue: () => void
 }) {
-  const { data, refetch } = useQuery<StaffData>(STAFF_QUERY)
+  const {
+    data,
+    refetch,
+    loading,
+    error: loadError,
+  } = useQuery<StaffData>(STAFF_QUERY)
   const [createStaff, createState] = useMutation<
     { createStaff: { id: string } },
     { input: { name: string; role: StaffRole } }
@@ -198,10 +204,27 @@ export function OnboardingStaffStep({
         their profile on the till.
       </p>
       <ul className="mt-4 divide-y divide-border rounded-lg border">
-        {staff.length === 0 ? (
-          <li className="px-4 py-3 text-sm text-muted-foreground">
-            No extra staff yet. You can continue and add them later, or add the
-            counter and kitchen team now.
+        {loadError ? (
+          <li>
+            <ErrorState title="Could not load staff." onRetry={refetch} />
+          </li>
+        ) : loading ? null : staff.length === 0 ? (
+          <li>
+            <EmptyState
+              title="No extra staff yet."
+              description="You can continue and add them later, or add the counter and kitchen team now."
+              action={
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() =>
+                    document.getElementById("onboarding-staff-name")?.focus()
+                  }
+                >
+                  Add staff
+                </Button>
+              }
+            />
           </li>
         ) : (
           staff.map((member) => (

@@ -197,6 +197,54 @@
   animation: tagline-reveal 0.8s cubic-bezier(0.2, 0, 0, 1) both;
 }
 
+/* Content feedback fills its page/region, without stretching populated views. */
+.content-page:has([data-content-state]) {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.content-region:has([data-content-state]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.content-region:has([data-content-state]) > div:has(table) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.content-region table:has([data-content-state]) {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.content-region table:has([data-content-state]) > tbody,
+.content-region tr:has([data-content-state]),
+.content-region td:has(> [data-content-state]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.content-region table:has([data-content-state]) > thead {
+  display: none;
+}
+
+.content-region td:has(> [data-content-state]) {
+  padding: 0;
+}
+
+.content-region td > [data-content-state] {
+  height: 100%;
+}
+
 /* Kitchen board: touched ticket slides in from the top. */
 @keyframes ticket-enter {
   from {

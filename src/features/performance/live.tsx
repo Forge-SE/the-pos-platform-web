@@ -1,14 +1,21 @@
 import {
+  CaretRightIcon,
   ChartLineUpIcon,
   ClockIcon,
   CoinsIcon,
   ReceiptIcon,
+  XIcon,
   UsersThreeIcon,
   WalletIcon,
 } from "@phosphor-icons/react"
+import { Dialog } from "@base-ui/react/dialog"
+import { useState } from "react"
 
 import { PaymentDonut, PaymentDonutSkeleton } from "@/components/payment-donut"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { InfoTooltip } from "@/components/info-tooltip"
+import { LoadingState } from "@/components/loading-state"
 import { formatMoney, averageOrderValue } from "@/features/performance/model"
 import type {
   CurrentShift,
@@ -42,16 +49,7 @@ function Card({
 }
 
 function LoadingBars() {
-  return (
-    <div className="space-y-3" aria-label="Loading">
-      {[0, 1, 2].map((item) => (
-        <div
-          key={item}
-          className="h-12 animate-pulse rounded-lg bg-muted/70 motion-reduce:animate-none"
-        />
-      ))}
-    </div>
-  )
+  return <LoadingState label="performance data" />
 }
 
 export function HeroStats({
@@ -63,24 +61,46 @@ export function HeroStats({
   salesLoading: boolean
   periodLabel: string
 }) {
+  const [breakdownOpen, setBreakdownOpen] = useState(false)
   const total = sales?.totalSales ?? 0
   const count = sales?.orderCount ?? 0
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <WalletIcon aria-hidden="true" className="size-4" />
-          Revenue
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <WalletIcon aria-hidden="true" className="size-4" />
+            Net revenue
+          </div>
+          <InfoTooltip label="About net revenue">
+            Sales after discounts, comps, and refunded sales. Tax and tips are
+            excluded.
+          </InfoTooltip>
         </div>
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading ? "—" : formatMoney(total)}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mt-3 h-auto justify-between border-0 px-0 text-xs font-medium text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground"
+          onClick={() => setBreakdownOpen(true)}
+        >
+          Revenue breakdown
+          <CaretRightIcon aria-hidden="true" className="size-4" />
+        </Button>
       </article>
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <ReceiptIcon aria-hidden="true" className="size-4" />
-          Completed orders
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <ReceiptIcon aria-hidden="true" className="size-4" />
+            Completed orders
+          </div>
+          <InfoTooltip label="About completed orders">
+            Number of completed orders in the selected date range.
+          </InfoTooltip>
         </div>
         <p className="mt-3 text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading ? "—" : count}
@@ -88,15 +108,102 @@ export function HeroStats({
         <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
       </article>
       <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <ChartLineUpIcon aria-hidden="true" className="size-4" />
-          Average order value
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <ChartLineUpIcon aria-hidden="true" className="size-4" />
+            Average net order value
+          </div>
+          <InfoTooltip label="About average net order value">
+            Net revenue divided by completed orders in the selected period.
+          </InfoTooltip>
         </div>
         <p className="mt-3 truncate text-3xl font-semibold tracking-[-0.03em] tabular-nums">
           {salesLoading || !sales ? "—" : formatMoney(averageOrderValue(sales))}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
       </article>
+      <Dialog.Root open={breakdownOpen} onOpenChange={setBreakdownOpen}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
+          <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-[min(24rem,90vw)] flex-col border-l border-border/70 bg-card p-5 text-card-foreground shadow-xl outline-none data-ending-style:translate-x-full data-starting-style:translate-x-full sm:p-6">
+            <div className="flex items-start justify-between gap-4 border-b border-border/70 pb-4">
+              <div>
+                <Dialog.Title className="text-lg font-semibold tracking-[-0.025em]">
+                  Revenue breakdown
+                </Dialog.Title>
+                <Dialog.Description className="mt-1 text-sm text-muted-foreground">
+                  {periodLabel}
+                </Dialog.Description>
+              </div>
+              <Dialog.Close
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Close revenue breakdown"
+                    title="Close"
+                  >
+                    <XIcon aria-hidden="true" />
+                  </Button>
+                }
+              />
+            </div>
+            <dl className="content-region mt-5 flex-1 space-y-3 overflow-y-auto text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="flex items-center gap-1.5 text-muted-foreground">
+                  Gross sales
+                  <InfoTooltip label="About gross sales">
+                    Historical gross sales are reconstructed estimates.
+                  </InfoTooltip>
+                </dt>
+                <dd className="font-semibold tabular-nums">
+                  {salesLoading ? "—" : formatMoney(sales?.grossSales ?? 0)}
+                </dd>
+              </div>
+              <BreakdownRow
+                label="Discounts"
+                amount={sales?.discounts}
+                loading={salesLoading}
+              />
+              <BreakdownRow
+                label="Comps"
+                amount={sales?.comps}
+                loading={salesLoading}
+              />
+              <BreakdownRow
+                label="Refunded sales"
+                amount={sales?.refundedSales}
+                loading={salesLoading}
+              />
+              <BreakdownRow
+                label="Net revenue"
+                amount={sales?.netRevenue}
+                loading={salesLoading}
+              />
+              <BreakdownRow
+                label="Tax collected"
+                amount={sales?.taxCollected}
+                loading={salesLoading}
+              />
+              <BreakdownRow
+                label="Tips"
+                amount={sales?.tips}
+                loading={salesLoading}
+              />
+              <BreakdownRow
+                label="Total collected"
+                amount={sales?.totalCollected}
+                loading={salesLoading}
+              />
+              <BreakdownRow
+                label="Refunds paid out"
+                amount={sales?.refundsTotal}
+                loading={salesLoading}
+              />
+            </dl>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }
@@ -114,6 +221,11 @@ export function PaymentSplitCard({
     <Card
       title="Payment method split"
       description={`How settled sales were collected · ${periodLabel}`}
+      action={
+        <InfoTooltip label="About payment method split">
+          Payment totals include tax and tips and follow collection dates.
+        </InfoTooltip>
+      }
     >
       {salesLoading ? (
         <PaymentDonutSkeleton />
@@ -121,6 +233,25 @@ export function PaymentSplitCard({
         <PaymentDonut breakdown={sales?.paymentBreakdown ?? []} />
       )}
     </Card>
+  )
+}
+
+function BreakdownRow({
+  label,
+  amount,
+  loading,
+}: {
+  label: string
+  amount?: number
+  loading: boolean
+}) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-semibold tabular-nums">
+        {loading ? "—" : formatMoney(amount ?? 0)}
+      </dd>
+    </div>
   )
 }
 

@@ -2,6 +2,61 @@ import { gql } from "@apollo/client"
 
 import { formatMoney } from "@/features/menu/model"
 
+export type TaxProfileCode = "NOT_REGISTERED" | "GH_STANDARD" | "CUSTOM"
+export type TaxPriceMode = "INCLUSIVE" | "EXCLUSIVE"
+export interface TaxConfiguration {
+  profileCode: TaxProfileCode
+  profileVersionId: string | null
+  priceMode: TaxPriceMode | "CUSTOM"
+  rules: Array<{
+    code: string
+    name: string
+    rateBps: number
+    inclusive: boolean
+  }>
+}
+export const TAX_PROFILE_QUERY = gql`
+  query TaxProfileSettings {
+    taxConfiguration {
+      profileCode
+      profileVersionId
+      priceMode
+      rules {
+        code
+        name
+        rateBps
+        inclusive
+      }
+    }
+    taxProfiles {
+      id
+      profileCode
+      label
+      effectiveFrom
+      rules {
+        code
+        name
+        rateBps
+      }
+    }
+  }
+`
+export const SET_TAX_PROFILE = gql`
+  mutation SetTaxProfile($input: TaxProfileInput!) {
+    setTaxProfile(input: $input) {
+      profileCode
+      profileVersionId
+      priceMode
+      rules {
+        code
+        name
+        rateBps
+        inclusive
+      }
+    }
+  }
+`
+
 export const TAXES_QUERY = gql`
   query RestaurantTaxes {
     restaurantTaxes {

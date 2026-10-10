@@ -55,7 +55,7 @@ export function MenuDialog({
               }
             />
           </div>
-          <div className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-scroll px-4 py-6 sm:px-5">
+          <div className="content-region min-h-0 flex-1 [scrollbar-width:thin] overflow-y-scroll px-4 py-6 sm:px-5">
             {children}
           </div>
           {footer ? (

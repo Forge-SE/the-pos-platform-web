@@ -4,6 +4,8 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
+import { ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -143,6 +145,7 @@ export function RestaurantEditModal({
     data,
     loading: loadingRestaurant,
     error,
+    refetch,
   } = useQuery<
     { platformRestaurant: { restaurant: PlatformRestaurant } },
     { id: string }
@@ -191,14 +194,16 @@ export function RestaurantEditModal({
       }
     >
       {loadingRestaurant && (
-        <p className="mt-5 text-sm text-muted-foreground">Loading details…</p>
+        <LoadingState className="mt-5" label="restaurant details" />
       )}
       {error && (
-        <p className="mt-5 text-sm text-destructive">
-          Couldn’t load restaurant details.
-        </p>
+        <ErrorState
+          className="mt-5"
+          title="Couldn’t load restaurant details."
+          onRetry={refetch}
+        />
       )}
-      {restaurant && (
+      {!error && restaurant && (
         <Form
           id="edit-restaurant"
           className="mt-5 space-y-5"

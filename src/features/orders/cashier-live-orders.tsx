@@ -3,6 +3,7 @@ import { useQuery, useSubscription } from "@apollo/client/react"
 import { ArrowClockwiseIcon } from "@phosphor-icons/react"
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { LoadingState } from "@/components/loading-state"
 import { diningLabel, statusLabels } from "./labels"
 import type { DiningType } from "./labels"
 
@@ -214,9 +215,7 @@ export function CashierLiveOrders() {
           </div>
         )}
         {loading && !data ? (
-          <p role="status" className="p-3 text-sm text-muted-foreground">
-            Loading orders…
-          </p>
+          <LoadingState className="min-h-56" label="orders" />
         ) : !error && orders.length === 0 ? (
           <p className="p-3 text-sm text-muted-foreground">
             No active orders. New tickets will appear here.

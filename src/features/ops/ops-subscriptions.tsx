@@ -5,6 +5,8 @@ import { PencilSimpleIcon, PlusIcon } from "@phosphor-icons/react"
 import * as Yup from "yup"
 
 import { Badge } from "@/components/ui/badge"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
@@ -174,7 +176,7 @@ export function OpsSubscriptions() {
           Add tier
         </Button>
       </OpsHeader>
-      <section className="mx-4 mb-6 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
+      <section className="content-region mx-4 mb-6 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
         <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">
           Tiers
         </h2>
@@ -191,59 +193,84 @@ export function OpsSubscriptions() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-muted-foreground">
-                  Loading plans…
+                <td colSpan={5}>
+                  <LoadingState className="min-h-48" label="plans" />
                 </td>
               </tr>
             )}
-            {!loading && plans.length === 0 && (
+            {error && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-muted-foreground">
-                  No tiers yet.
+                <td colSpan={5}>
+                  <ErrorState
+                    title="Couldn’t load subscriptions."
+                    onRetry={refetch}
+                  />
                 </td>
               </tr>
             )}
-            {plans.map((plan) => (
-              <tr key={plan.id} className="border-t border-border/70">
-                <td className="px-4 py-3">
-                  <span className="block font-medium">{plan.name}</span>
-                  {plan.description && (
-                    <span className="text-xs text-muted-foreground">
-                      {plan.description}
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {formatMoney(plan.amount)} / {plan.interval}
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {plan.paystackPlanCode ?? "Not linked"}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={plan.active ? "secondary" : "outline"}>
-                    {plan.active ? "Active" : "Hidden"}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Edit ${plan.name}`}
-                    onClick={() => {
-                      setFormError(null)
-                      setEditing(plan)
-                    }}
-                  >
-                    <PencilSimpleIcon />
-                  </Button>
+            {!loading && !error && plans.length === 0 && (
+              <tr>
+                <td colSpan={5}>
+                  <EmptyState
+                    title="No tiers yet."
+                    description="Create a pricing tier before assigning subscriptions."
+                    action={
+                      <Button
+                        size="lg"
+                        onClick={() => {
+                          setFormError(null)
+                          setEditing("new")
+                        }}
+                      >
+                        Add tier
+                      </Button>
+                    }
+                  />
                 </td>
               </tr>
-            ))}
+            )}
+            {!error &&
+              plans.map((plan) => (
+                <tr key={plan.id} className="border-t border-border/70">
+                  <td className="px-4 py-3">
+                    <span className="block font-medium">{plan.name}</span>
+                    {plan.description && (
+                      <span className="text-xs text-muted-foreground">
+                        {plan.description}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {formatMoney(plan.amount)} / {plan.interval}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {plan.paystackPlanCode ?? "Not linked"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={plan.active ? "secondary" : "outline"}>
+                      {plan.active ? "Active" : "Hidden"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Edit ${plan.name}`}
+                      onClick={() => {
+                        setFormError(null)
+                        setEditing(plan)
+                      }}
+                    >
+                      <PencilSimpleIcon />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </section>
 
-      <section className="mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
+      <section className="content-region mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
         <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
           <h2 className="text-sm font-semibold">Restaurant subscriptions</h2>
           <Button
@@ -266,35 +293,63 @@ export function OpsSubscriptions() {
             </tr>
           </thead>
           <tbody>
-            {subscriptions.length === 0 && (
+            {error && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-muted-foreground">
-                  No restaurant is on a plan yet.
+                <td colSpan={5}>
+                  <ErrorState
+                    title="Couldn’t load subscriptions."
+                    onRetry={refetch}
+                  />
                 </td>
               </tr>
             )}
-            {subscriptions.map((row) => (
-              <tr key={row.id} className="border-t border-border/70">
-                <td className="px-4 py-3 font-medium">{row.restaurantName}</td>
-                <td className="px-4 py-3">{row.plan.name}</td>
-                <td className="px-4 py-3">{row.status}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {formatWhen(row.lastPaidAt)}
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {formatWhen(row.nextPaymentAt)}
+            {!loading && !error && subscriptions.length === 0 && (
+              <tr>
+                <td colSpan={5}>
+                  <EmptyState
+                    title="No restaurant is on a plan yet."
+                    description={
+                      plans.length
+                        ? "Assign a pricing tier to a restaurant."
+                        : "Add a pricing tier first, then assign it to a restaurant."
+                    }
+                    action={
+                      <Button
+                        size="lg"
+                        onClick={() => {
+                          if (plans.length) setAssigning(true)
+                          else {
+                            setFormError(null)
+                            setEditing("new")
+                          }
+                        }}
+                      >
+                        {plans.length ? "Assign plan" : "Add tier"}
+                      </Button>
+                    }
+                  />
                 </td>
               </tr>
-            ))}
+            )}
+            {!error &&
+              subscriptions.map((row) => (
+                <tr key={row.id} className="border-t border-border/70">
+                  <td className="px-4 py-3 font-medium">
+                    {row.restaurantName}
+                  </td>
+                  <td className="px-4 py-3">{row.plan.name}</td>
+                  <td className="px-4 py-3">{row.status}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatWhen(row.lastPaidAt)}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatWhen(row.nextPaymentAt)}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </section>
-
-      {error && (
-        <p className="mx-4 mb-8 text-sm text-destructive lg:mx-8">
-          Couldn’t load subscriptions.
-        </p>
-      )}
 
       {editing && (
         <OpsModal
@@ -458,7 +513,12 @@ function AssignSubscription({
   const [status, setStatus] = useState("ACTIVE")
   const [confirming, setConfirming] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const { data } = useQuery<
+  const {
+    data,
+    error: restaurantsError,
+    loading: restaurantsLoading,
+    refetch: refetchRestaurants,
+  } = useQuery<
     { platformRestaurants: { items: PlatformRestaurant[] } },
     { search: string | null; limit: number; offset: number }
   >(RESTAURANTS_QUERY, {
@@ -534,6 +594,30 @@ function AssignSubscription({
             placeholder="Search restaurants"
             aria-label="Search restaurants"
           />
+          {restaurantsError && (
+            <ErrorState
+              title="Could not load restaurants."
+              onRetry={refetchRestaurants}
+            />
+          )}
+          {restaurantsLoading && <LoadingState label="restaurants" />}
+          {!restaurantsLoading &&
+            !restaurantsError &&
+            restaurants.length === 0 && (
+              <EmptyState
+                title="No restaurants found."
+                description="Try a different search or provision a restaurant first."
+                action={
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setSearch("")}
+                  >
+                    Clear search
+                  </Button>
+                }
+              />
+            )}
           <select
             aria-label="Restaurant"
             value={restaurantId}

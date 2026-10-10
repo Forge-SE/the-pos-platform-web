@@ -1,4 +1,5 @@
 import { formatMoney } from "@/features/menu/model"
+import { EmptyState } from "@/components/content-state"
 
 const chartColors = [
   "var(--chart-1)",
@@ -100,9 +101,10 @@ export function TrendChart({ points }: { points: DayPoint[] }) {
         </span>
       </figcaption>
       {points.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">
-          Nothing in this range.
-        </p>
+        <EmptyState
+          title="Nothing in this range."
+          description="Choose a different date range or adjust the filters."
+        />
       ) : (
         <svg
           viewBox={`0 0 ${width} ${height}`}
@@ -240,9 +242,10 @@ export function ShareBars({
     <figure className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
       <figcaption className="text-sm font-semibold">{title}</figcaption>
       {rows.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
-          Nothing in this range.
-        </p>
+        <EmptyState
+          title="Nothing in this range."
+          description="Choose a different date range or adjust the filters."
+        />
       ) : (
         <ul className="mt-4 space-y-3" aria-label={title}>
           {rows.map((row, index) => (
@@ -298,9 +301,10 @@ export function ShareDonut({
     <figure className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
       <figcaption className="text-sm font-semibold">{title}</figcaption>
       {rows.length === 0 || total === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
-          Nothing in this range.
-        </p>
+        <EmptyState
+          title="Nothing in this range."
+          description="Choose a different date range or adjust the filters."
+        />
       ) : (
         <div className="mt-4 grid items-center gap-5 sm:grid-cols-[9rem_minmax(0,1fr)]">
           <div

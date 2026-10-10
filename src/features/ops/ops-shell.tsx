@@ -126,7 +126,7 @@ export function OpsShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         </div>
-        <div className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col">
+        <div className="content-page mx-auto flex w-full max-w-[1360px] flex-1 flex-col">
           {children}
         </div>
       </div>

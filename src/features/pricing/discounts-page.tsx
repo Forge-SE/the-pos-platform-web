@@ -3,6 +3,7 @@ import { PlusIcon } from "@phosphor-icons/react"
 import { Navigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toaster"
 import { mutationMessage } from "@/features/menu/model"
@@ -31,7 +32,7 @@ export function DiscountsPage() {
   if (!canManage) return <Navigate to="/overview" replace />
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
@@ -47,16 +48,22 @@ export function DiscountsPage() {
         </Button>
       </div>
 
-      <section className="mt-8">
+      <section className="content-region mt-8">
         {error ? (
-          <div className="rounded-lg bg-destructive/5 p-5 text-sm text-destructive">
-            Discounts could not be loaded.
-            <div className="mt-3">
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                Try again
+          <ErrorState
+            title="Discounts could not be loaded."
+            onRetry={refetch}
+          />
+        ) : !loading && campaigns.length === 0 ? (
+          <EmptyState
+            title="No discounts yet."
+            description="Create a discount to print the first ticket."
+            action={
+              <Button size="lg" onClick={() => setNewDiscount("1")}>
+                Create discount
               </Button>
-            </div>
-          </div>
+            }
+          />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border/70 bg-card">
             <table className="w-full min-w-[760px] border-collapse text-left text-sm">
@@ -175,14 +182,6 @@ export function DiscountsPage() {
                     ))}
               </tbody>
             </table>
-            {!loading && campaigns.length === 0 && (
-              <div className="px-4 py-12 text-center">
-                <p className="text-sm font-medium">No discounts yet.</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Use “Create discount” to print the first ticket.
-                </p>
-              </div>
-            )}
           </div>
         )}
       </section>

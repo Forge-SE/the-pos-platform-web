@@ -5,7 +5,7 @@ import {
   redirect,
 } from "@tanstack/react-router"
 
-import { AppRoot, NotFoundPage } from "@/app/root-document"
+import { AppRoot, NotFoundPage, RouteErrorPage } from "@/app/root-document"
 
 const rootRoute = createRootRoute({
   head: () => ({
@@ -20,6 +20,7 @@ const rootRoute = createRootRoute({
   }),
   component: AppRoot,
   notFoundComponent: NotFoundPage,
+  errorComponent: RouteErrorPage,
 })
 
 const loginRoute = createRoute({

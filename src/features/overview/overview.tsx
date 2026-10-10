@@ -16,6 +16,8 @@ import {
 } from "@phosphor-icons/react"
 
 import { PaymentDonut, PaymentDonutSkeleton } from "@/components/payment-donut"
+import { ContentState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { diningLabel } from "@/features/orders/labels"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -190,6 +192,7 @@ export function Overview() {
   const {
     data: salesData,
     loading: salesLoading,
+    error: salesError,
     refetch: refetchSales,
   } = useQuery<SalesData>(SALES_QUERY, {
     skip: !canSeeSales,
@@ -327,7 +330,7 @@ export function Overview() {
   }
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">
@@ -409,13 +412,13 @@ export function Overview() {
           <>
             <QuickStat
               icon={WalletIcon}
-              label="Today's sales"
+              label="Today's net revenue"
               value={
                 salesLoading
                   ? "—"
                   : formatMoney(salesData?.salesToday.totalSales ?? 0)
               }
-              detail="Settled today"
+              detail="Completed sales, less refunds; excludes tax and tips"
             />
             <QuickStat
               icon={ReceiptIcon}
@@ -453,14 +456,14 @@ export function Overview() {
         <StatePanel
           role="alert"
           variant="error"
-          className="mt-6 min-h-64"
+          className="mt-6"
           icon={WarningCircleIcon}
           title="We couldn’t load live operations"
           description="Check your connection, then try loading the latest shift and order activity again."
           action={
             <Button
               variant="outline"
-              size="sm"
+              size="lg"
               onClick={retryOperations}
               disabled={retrying}
             >
@@ -483,17 +486,20 @@ export function Overview() {
       ) : (
         <>
           <div
-            className={`mt-6 grid gap-6 ${canSeeSales ? "xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)]" : ""}`}
+            className={`mt-6 grid flex-1 gap-6 ${canSeeSales ? "xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)]" : ""}`}
           >
             <ActiveOrders
               orders={visibleOrders}
               loading={loading}
               searching={Boolean(search.trim())}
+              onClearSearch={() => setSearch("")}
             />
             {canSeeSales && (
               <PaymentMix
                 loading={salesLoading}
                 sales={salesData?.salesToday}
+                error={Boolean(salesError)}
+                onRetry={refetchSales}
               />
             )}
           </div>
@@ -507,10 +513,12 @@ function ActiveOrders({
   orders,
   loading,
   searching,
+  onClearSearch,
 }: {
   orders: ActiveOrder[]
   loading: boolean
   searching: boolean
+  onClearSearch: () => void
 }) {
   return (
     <section className="flex flex-col rounded-xl border border-border/70 bg-card p-5 sm:p-6">
@@ -528,23 +536,23 @@ function ActiveOrders({
         </Badge>
       </div>
       {loading ? (
-        <div className="mt-5 space-y-3" aria-label="Loading active orders">
-          {[0, 1, 2].map((item) => (
-            <div
-              key={item}
-              className="h-[70px] animate-pulse rounded-lg bg-muted/70 motion-reduce:animate-none"
-            />
-          ))}
-        </div>
+        <LoadingState className="mt-5" label="active orders" />
       ) : orders.length === 0 ? (
         <StatePanel
-          className="mt-5 min-h-48 flex-1"
+          className="mt-5"
           icon={ReceiptIcon}
           title={searching ? "No matching orders" : "No active orders"}
           description={
             searching
               ? "Try a different order number or item name."
               : "New orders will appear here as soon as service begins."
+          }
+          action={
+            searching ? (
+              <Button variant="outline" size="lg" onClick={onClearSearch}>
+                Clear search
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -592,12 +600,16 @@ function ActiveOrders({
 function PaymentMix({
   loading,
   sales,
+  error,
+  onRetry,
 }: {
   loading: boolean
   sales?: SalesData["salesToday"]
+  error: boolean
+  onRetry: () => unknown
 }) {
   return (
-    <section className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+    <section className="content-region rounded-xl border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
@@ -615,12 +627,18 @@ function PaymentMix({
           />
         </span>
       </div>
-      {loading ? (
+      {error ? (
+        <ErrorState
+          className="mt-6"
+          title="Could not load payment totals."
+          onRetry={onRetry}
+        />
+      ) : loading ? (
         <div className="mt-6">
           <PaymentDonutSkeleton />
         </div>
       ) : (
-        <div className="mt-6">
+        <div className="content-region mt-6">
           <PaymentDonut breakdown={sales?.paymentBreakdown ?? []} />
         </div>
       )}
@@ -635,7 +653,6 @@ function StatePanel({
   action,
   variant = "empty",
   className = "",
-  role,
 }: {
   icon: Icon
   title: string
@@ -645,34 +662,15 @@ function StatePanel({
   className?: string
   role?: "alert" | "status"
 }) {
-  const isError = variant === "error"
-
   return (
-    <div
-      role={role}
-      className={`flex flex-col items-center justify-center rounded-xl border px-6 py-10 text-center ${
-        isError
-          ? "border-destructive/15 bg-destructive/[0.025]"
-          : "border-border/50 bg-muted/20"
-      } ${className}`}
-    >
-      <span
-        className={`flex size-11 items-center justify-center rounded-full ${
-          isError
-            ? "bg-destructive/10 text-destructive"
-            : "bg-primary/20 text-secondary"
-        }`}
-      >
-        <Icon aria-hidden="true" className="size-5" />
-      </span>
-      <h2 className="mt-4 text-base font-semibold tracking-[-0.015em]">
-        {title}
-      </h2>
-      <p className="mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">
-        {description}
-      </p>
-      {action && <div className="mt-5">{action}</div>}
-    </div>
+    <ContentState
+      icon={<Icon />}
+      title={title}
+      description={description}
+      action={action}
+      error={variant === "error"}
+      className={className}
+    />
   )
 }
 

@@ -5,6 +5,7 @@ import { ArrowLeftIcon, ArrowRightIcon } from "@phosphor-icons/react"
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -80,7 +81,12 @@ export function OnboardingMenuStep({
   onBack?: () => void
   onContinue: () => void
 }) {
-  const { data, refetch } = useQuery<MenuData>(MENU_SETUP)
+  const {
+    data,
+    refetch,
+    loading,
+    error: loadError,
+  } = useQuery<MenuData>(MENU_SETUP)
   const [createCategory] = useMutation<
     { createMenuCategory: { id: string } },
     { input: { name: string } }
@@ -204,10 +210,30 @@ export function OnboardingMenuStep({
       </Form>
       {error && <FieldError className="mt-3">{error}</FieldError>}
       <ul className="mt-5 divide-y divide-border rounded-lg border">
-        {items.length === 0 ? (
-          <li className="px-4 py-3 text-sm text-muted-foreground">
-            Add at least one dish before continuing. You can expand the menu
-            later.
+        {loadError ? (
+          <li>
+            <ErrorState
+              title="Could not load the opening menu."
+              onRetry={refetch}
+            />
+          </li>
+        ) : loading ? null : items.length === 0 ? (
+          <li>
+            <EmptyState
+              title="No dishes yet."
+              description="Add at least one dish before continuing. You can expand the menu later."
+              action={
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() =>
+                    document.getElementById("opening-item")?.focus()
+                  }
+                >
+                  Add a dish
+                </Button>
+              }
+            />
           </li>
         ) : (
           items.map((item) => {

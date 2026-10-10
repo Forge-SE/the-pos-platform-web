@@ -6,12 +6,15 @@ import {
   CheckCircleIcon,
   ForkKnifeIcon,
   UsersThreeIcon,
+  ReceiptIcon,
 } from "@phosphor-icons/react"
 
 import { OvaalMark } from "@/components/ovaal-mark"
 import { OnboardingMenuStep } from "@/features/onboarding/components/onboarding-menu-step"
 import { OnboardingStaffStep } from "@/features/onboarding/components/onboarding-staff-step"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { TaxProfileForm } from "@/features/pricing/tax-profile-form"
+import { ErrorState } from "@/components/content-state"
 
 const ONBOARDING_QUERY = gql`
   query OwnerOnboardingRequired {
@@ -27,6 +30,11 @@ const COMPLETE_ONBOARDING = gql`
 
 const steps = [
   {
+    label: "Taxes",
+    description: "Choose your business tax profile",
+    icon: ReceiptIcon,
+  },
+  {
     label: "Staff",
     description: "Add the team, or skip and do it later",
     icon: UsersThreeIcon,
@@ -41,19 +49,30 @@ const steps = [
 export function OwnerOnboarding() {
   const navigate = useNavigate()
   const profile = getAccessTokenProfile()
-  const { data, loading } = useQuery<{ ownerOnboardingRequired: boolean }>(
-    ONBOARDING_QUERY,
-    {
-      skip: profile?.role !== "OWNER",
-      fetchPolicy: "network-only",
-    }
-  )
+  const {
+    data,
+    loading,
+    error: loadError,
+    refetch,
+  } = useQuery<{ ownerOnboardingRequired: boolean }>(ONBOARDING_QUERY, {
+    skip: profile?.role !== "OWNER",
+    fetchPolicy: "network-only",
+  })
   const [complete, completeState] = useMutation(COMPLETE_ONBOARDING)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   if (!profile) return <Navigate to="/" replace />
   if (profile.role !== "OWNER") return <Navigate to="/overview" replace />
+  if (loadError)
+    return (
+      <main className="flex min-h-svh flex-col bg-background p-4">
+        <ErrorState
+          title="Could not load restaurant setup."
+          onRetry={refetch}
+        />
+      </main>
+    )
   if (!loading && data && !data.ownerOnboardingRequired) {
     return <Navigate to="/overview" replace />
   }
@@ -81,7 +100,7 @@ export function OwnerOnboarding() {
           </div>
         </div>
 
-        <ol className="mt-8 grid grid-cols-2 gap-3">
+        <ol className="mt-8 grid gap-3 sm:grid-cols-3">
           {steps.map((item, index) => {
             const done = index < step
             const now = index === step
@@ -116,12 +135,18 @@ export function OwnerOnboarding() {
 
         <header className="mt-8">
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">
-            {step === 0 ? "Who else works the till?" : "Add the opening menu"}
+            {step === 0
+              ? "How does your business charge tax?"
+              : step === 1
+                ? "Who else works the till?"
+                : "Add the opening menu"}
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
             {step === 0
-              ? "Add cashiers, kitchen, or a manager. Each person chooses their own PIN the first time they sign in. You can skip this and add them later."
-              : "Add at least one category and dish. Prices are in Ghana cedis. Photos and modifiers can wait until the menu page."}
+              ? "Choose your VAT registration status and how menu prices include tax. You can update this later in Taxes."
+              : step === 1
+                ? "Add cashiers, kitchen, or a manager. Each person chooses their own PIN the first time they sign in. You can skip this and add them later."
+                : "Add at least one category and dish. Prices are in Ghana cedis. Photos and modifiers can wait until the menu page."}
           </p>
         </header>
 
@@ -132,10 +157,14 @@ export function OwnerOnboarding() {
         )}
 
         {step === 0 ? (
-          <OnboardingStaffStep onContinue={() => setStep(1)} />
+          <div className="mt-6">
+            <TaxProfileForm allowCustom={false} onSaved={() => setStep(1)} />
+          </div>
+        ) : step === 1 ? (
+          <OnboardingStaffStep onContinue={() => setStep(2)} />
         ) : (
           <OnboardingMenuStep
-            onBack={() => setStep(0)}
+            onBack={() => setStep(1)}
             onContinue={() => {
               if (completeState.loading) return
               void finish()

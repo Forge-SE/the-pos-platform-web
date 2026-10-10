@@ -14,6 +14,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr"
 
 import { OvaalMark } from "@/components/ovaal-mark"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/content-state"
 import {
   Field,
   FieldError,
@@ -494,10 +495,19 @@ export function Login() {
                   ) : step === "profiles" ? (
                     <>
                       {profiles.length === 0 ? (
-                        <p className="rounded-lg border border-border/70 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-                          No active staff profiles yet. An owner needs to add
-                          the team before anyone can sign in.
-                        </p>
+                        <EmptyState
+                          title="No active staff profiles yet."
+                          description="An owner needs to add the team before anyone can sign in."
+                          action={
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              onClick={goBack}
+                            >
+                              Back
+                            </Button>
+                          }
+                        />
                       ) : (
                         <StaffRail
                           profiles={profiles}

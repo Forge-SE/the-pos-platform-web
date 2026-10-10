@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useQuery } from "@apollo/client/react"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Input } from "@/components/ui/input"
 import { OpsHeader } from "@/features/ops/ops-shell"
 import {
@@ -27,7 +29,7 @@ export function OpsAudit() {
   const [action, setAction] = useState("")
   const [offset, setOffset] = useState(0)
 
-  const { data, loading, error } = useQuery<
+  const { data, loading, error, refetch } = useQuery<
     { platformAuditLogs: { items: AuditEntry[]; total: number } },
     {
       restaurantId: string | null
@@ -55,7 +57,7 @@ export function OpsAudit() {
         title="Audit log"
         description="Provisioning, staff changes, and other platform activity. This record is append-only."
       />
-      <section className="mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
+      <section className="content-region mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
         <div className="grid gap-3 border-b border-border/70 px-4 py-3 sm:grid-cols-2">
           <Input
             value={restaurantId}
@@ -89,40 +91,61 @@ export function OpsAudit() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-muted-foreground">
-                    Loading audit log…
+                  <td colSpan={4}>
+                    <LoadingState className="min-h-48" label="audit log" />
                   </td>
                 </tr>
               )}
               {error && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-destructive">
-                    Couldn’t load audit logs.
+                  <td colSpan={4}>
+                    <ErrorState
+                      title="Couldn’t load audit logs."
+                      onRetry={refetch}
+                    />
                   </td>
                 </tr>
               )}
               {!loading && !error && items.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-muted-foreground">
-                    No entries found.
+                  <td colSpan={4}>
+                    <EmptyState
+                      title="No entries found."
+                      description="Platform activity will appear here. Clear the filters to see all entries."
+                      action={
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => {
+                            setRestaurantId("")
+                            setAction("")
+                            setOffset(0)
+                            void refetch().catch(() => {})
+                          }}
+                        >
+                          Clear filters
+                        </Button>
+                      }
+                    />
                   </td>
                 </tr>
               )}
-              {items.map((entry) => (
-                <tr key={entry.id} className="border-t border-border/70">
-                  <td className="px-4 py-3 font-medium">{entry.action}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {entry.entityType}
-                    {entry.entityId ? ` · ${entry.entityId.slice(0, 8)}` : ""}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {entry.restaurantId.slice(0, 8)}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatWhen(entry.createdAt)}
-                  </td>
-                </tr>
-              ))}
+              {!error &&
+                items.map((entry) => (
+                  <tr key={entry.id} className="border-t border-border/70">
+                    <td className="px-4 py-3 font-medium">{entry.action}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {entry.entityType}
+                      {entry.entityId ? ` · ${entry.entityId.slice(0, 8)}` : ""}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      {entry.restaurantId.slice(0, 8)}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {formatWhen(entry.createdAt)}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

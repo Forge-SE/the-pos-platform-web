@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/content-state"
 import {
   Field,
   FieldDescription,
@@ -533,10 +534,19 @@ export function AddItemModal({
               )
             })}
             {groups.length === 0 && (
-              <p className="rounded-lg bg-muted/20 p-4 text-sm text-muted-foreground">
-                No modifier groups yet. Create them with Configure Menu Options
-                — you can finish this dish now and attach groups later.
-              </p>
+              <EmptyState
+                title="No modifier groups yet."
+                description="Create them with Configure Menu Options — you can finish this dish now and attach groups later."
+                action={
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    Back to menu
+                  </Button>
+                }
+              />
             )}
           </div>
         </div>

@@ -18,6 +18,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import {
   InputGroup,
   InputGroupAddon,
@@ -170,7 +171,7 @@ export function MenuManagement() {
   }
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
@@ -271,14 +272,11 @@ export function MenuManagement() {
       )}
 
       {error ? (
-        <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center">
-          <p className="font-semibold text-destructive">
-            Could not load menu setup
-          </p>
-          <Button className="mt-4" variant="outline" onClick={() => refetch()}>
-            Try again
-          </Button>
-        </div>
+        <ErrorState
+          className="mt-8"
+          title="Could not load menu setup"
+          onRetry={refetch}
+        />
       ) : (
         <>
           <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -339,25 +337,38 @@ export function MenuManagement() {
               ))}
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="mt-6 flex min-h-[calc(100svh-22rem)] flex-col items-center justify-center rounded-xl border border-dashed border-border/70 px-6 py-12 text-center">
-              <ForkKnifeIcon className="mx-auto size-8 text-muted-foreground" />
-              <p className="mt-4 text-base font-semibold">
-                {items.length === 0
+            <EmptyState
+              className="mt-6"
+              icon={<ForkKnifeIcon />}
+              title={
+                items.length === 0
                   ? "Your menu is empty"
-                  : "No dishes match your search"}
-              </p>
-              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                {items.length === 0
+                  : "No dishes match your search"
+              }
+              description={
+                items.length === 0
                   ? "Add your first dish with a photo, price, and category to start selling."
-                  : "Try a different search or category filter."}
-              </p>
-              {items.length === 0 && (
-                <Button className="mt-6" onClick={openAddModal}>
-                  <PlusIcon data-icon="inline-start" />
-                  Add to menu
-                </Button>
-              )}
-            </div>
+                  : "Try a different search or category filter."
+              }
+              action={
+                items.length === 0 ? (
+                  <Button size="lg" onClick={openAddModal}>
+                    Add to menu
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => {
+                      setSearch("")
+                      setCategoryFilter("ALL")
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )
+              }
+            />
           ) : (
             <div className="mt-6 space-y-8">
               {itemsByCategory

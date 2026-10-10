@@ -6,12 +6,16 @@ import { Dialog } from "@base-ui/react/dialog"
 import { XIcon } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
 import { useUrlState } from "@/lib/url-state"
 import { ReceiptDialog } from "./receipt-dialog"
 import { diningLabel, statusLabels } from "@/features/orders/labels"
 import type { DiningType } from "@/features/orders/labels"
 import { formatMoney } from "@/features/menu/model"
+import { OrderAdjustments } from "./order-adjustments"
+import { getAccessTokenProfile } from "@/lib/auth-token"
 
 interface OwnerOrder {
   id: string
@@ -23,6 +27,14 @@ interface OwnerOrder {
   taxAmount: number
   tip: number
   total: number
+  isComp: boolean
+  taxes: Array<{ name: string; amount: number; inclusive: boolean }>
+  refunds: Array<{
+    id: string
+    amount: number
+    reason: string
+    createdAt: string
+  }>
   notes: string | null
   createdAt: string
   payment: { method: string; amount: number } | null
@@ -48,6 +60,18 @@ const RECENT_ORDERS = gql`
       taxAmount
       tip
       total
+      isComp
+      taxes {
+        name
+        amount
+        inclusive
+      }
+      refunds {
+        id
+        amount
+        reason
+        createdAt
+      }
       notes
       createdAt
       payment {
@@ -91,9 +115,11 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
   })
   const [selected, setSelected] = useState<OwnerOrder | null>(null)
   const orders = data?.recentOrders ?? []
+  const role = getAccessTokenProfile()?.role
+  const canAdjust = role === "OWNER" || role === "MANAGER"
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
       <header>
         {switcher && <div className="mb-5">{switcher}</div>}
         <h1 className="text-3xl font-semibold tracking-[-0.04em]">Orders</h1>
@@ -103,7 +129,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
         </p>
       </header>
 
-      <section className="mt-6 overflow-hidden rounded-xl border border-border/70 bg-card">
+      <section className="content-region mt-6 overflow-hidden rounded-xl border border-border/70 bg-card">
         <table className="w-full text-left text-sm">
           <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             <tr>
@@ -119,27 +145,47 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-muted-foreground">
-                  Loading orders…
+                <td colSpan={5}>
+                  <LoadingState className="min-h-48" label="orders" />
                 </td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-destructive">
-                  Orders could not be loaded.
-                  <Button
-                    variant="outline"
-                    className="ml-3"
-                    onClick={() => void refetch()}
-                  >
-                    Try again
-                  </Button>
+                <td colSpan={5}>
+                  <ErrorState
+                    title="Orders could not be loaded."
+                    onRetry={refetch}
+                  />
                 </td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-muted-foreground">
-                  No orders yet.
+                <td colSpan={5}>
+                  <EmptyState
+                    title={
+                      page > 0 ? "No orders on this page." : "No orders yet."
+                    }
+                    description="Tickets will appear here after they are placed."
+                    action={
+                      page > 0 ? (
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => setPageParam(null)}
+                        >
+                          View newest orders
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => void refetch().catch(() => {})}
+                        >
+                          Check again
+                        </Button>
+                      )
+                    }
+                  />
                 </td>
               </tr>
             ) : (
@@ -277,7 +323,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                   />
                   {selected.discount > 0 && (
                     <Row
-                      label="Discount"
+                      label={selected.isComp ? "Comp" : "Discount"}
                       value={`−${formatMoney(selected.discount)}`}
                     />
                   )}
@@ -287,12 +333,13 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                       value={`+${formatMoney(selected.tip)}`}
                     />
                   )}
-                  {selected.taxAmount > 0 && (
+                  {selected.taxes.map((tax) => (
                     <Row
-                      label="Tax"
-                      value={`+${formatMoney(selected.taxAmount)}`}
+                      key={tax.name}
+                      label={`${tax.name}${tax.inclusive ? " (included)" : ""}`}
+                      value={formatMoney(tax.amount)}
                     />
-                  )}
+                  ))}
                   <Row
                     label="Total"
                     value={formatMoney(selected.total)}
@@ -303,10 +350,33 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                     value={
                       selected.payment
                         ? `${paymentLabels[selected.payment.method] ?? selected.payment.method} · ${formatMoney(selected.payment.amount)}`
-                        : "Unpaid"
+                        : selected.total === 0
+                          ? "No payment due"
+                          : "Unpaid"
                     }
                   />
                 </dl>
+                {selected.refunds.length > 0 && (
+                  <dl className="mt-4 space-y-2 text-sm">
+                    {selected.refunds.map((refund) => (
+                      <Row
+                        key={refund.id}
+                        label={`Refund · ${refund.reason}`}
+                        value={formatMoney(refund.amount)}
+                      />
+                    ))}
+                  </dl>
+                )}
+                {canAdjust && (
+                  <OrderAdjustments
+                    key={selected.id}
+                    order={selected}
+                    onUpdated={() => {
+                      setSelected(null)
+                      void refetch()
+                    }}
+                  />
+                )}
                 <Button
                   className="mt-5 w-full"
                   variant="outline"

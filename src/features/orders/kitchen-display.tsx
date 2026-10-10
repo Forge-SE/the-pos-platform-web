@@ -3,7 +3,6 @@ import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react"
 import {
-  ArrowClockwiseIcon,
   ArrowRightIcon,
   ArrowsInIcon,
   ArrowsOutIcon,
@@ -20,6 +19,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import { diningLabel } from "@/features/orders/labels"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
@@ -499,7 +499,7 @@ export function KitchenDisplay({
 
   return (
     <div
-      className={`mx-auto max-w-[1680px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8 ${readOnly ? "max-h-[calc(100svh-4.5rem)] overflow-y-auto lg:max-h-[calc(100svh-1rem)]" : ""}`}
+      className={`content-page mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8 ${readOnly ? "max-h-[calc(100svh-4.5rem)] overflow-y-auto lg:max-h-[calc(100svh-1rem)]" : ""}`}
     >
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -609,16 +609,11 @@ export function KitchenDisplay({
       )}
 
       {error ? (
-        <StatePanel
-          icon={<WarningCircleIcon aria-hidden="true" />}
+        <ErrorState
+          className="mt-6"
           title="The kitchen board is offline"
           description="We couldn't load the latest tickets. Retry to reconcile anything missed while the connection was down."
-          action={
-            <Button variant="outline" onClick={() => refetch()}>
-              <ArrowClockwiseIcon aria-hidden="true" data-icon="inline-start" />
-              Try again
-            </Button>
-          }
+          onRetry={refetch}
         />
       ) : view === "board" ? (
         <BoardView
@@ -705,7 +700,7 @@ function BoardView({
   return (
     <section
       aria-label="Kitchen order board"
-      className="mt-6 grid gap-4 xl:grid-cols-3"
+      className="mt-6 grid flex-1 gap-4 xl:grid-cols-3"
     >
       {columns.map((column) => {
         const columnOrders = orders.filter(
@@ -715,7 +710,7 @@ function BoardView({
           <section
             key={column.status}
             aria-labelledby={`column-${column.status}`}
-            className="relative min-w-0 rounded-2xl border border-border/70 bg-muted/20 pt-1"
+            className="relative flex min-w-0 flex-col rounded-2xl border border-border/70 bg-muted/20 pt-1"
           >
             <div
               aria-hidden="true"
@@ -737,7 +732,7 @@ function BoardView({
                 {counts[column.status]}
               </span>
             </header>
-            <div className="min-h-64 space-y-3 p-3">
+            <div className="content-region min-h-64 space-y-3 p-3">
               {loading ? (
                 [0, 1].map((item) => (
                   <div
@@ -746,19 +741,15 @@ function BoardView({
                   />
                 ))
               ) : columnOrders.length === 0 ? (
-                <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-card/40 px-6 text-center">
-                  <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <ForkKnifeIcon aria-hidden="true" className="size-5" />
-                  </span>
-                  <p className="mt-3 text-sm font-semibold">
-                    {searching ? "No matching tickets" : "Column clear"}
-                  </p>
-                  <p className="mt-1 max-w-52 text-xs leading-5 text-muted-foreground">
-                    {searching
+                <EmptyState
+                  icon={<ForkKnifeIcon />}
+                  title={searching ? "No matching tickets" : "Column clear"}
+                  description={
+                    searching
                       ? "Try a ticket number, dish, or kitchen note."
-                      : column.empty}
-                  </p>
-                </div>
+                      : column.empty
+                  }
+                />
               ) : (
                 columnOrders.map((order) => (
                   <OrderCard
@@ -927,7 +918,8 @@ function TableView({
   }
   if (orders.length === 0) {
     return (
-      <StatePanel
+      <EmptyState
+        className="mt-6"
         icon={<ForkKnifeIcon aria-hidden="true" />}
         title="No active tickets"
         description="New orders will appear here automatically as soon as the counter submits them."
@@ -1054,30 +1046,5 @@ function StatusPill({ status }: { status: ActiveStatus }) {
     >
       {label[status]}
     </span>
-  )
-}
-
-function StatePanel({
-  icon,
-  title,
-  description,
-  action,
-}: {
-  icon: ReactNode
-  title: string
-  description: string
-  action?: ReactNode
-}) {
-  return (
-    <div className="mt-6 flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-muted/20 px-6 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-primary/20 text-secondary [&>svg]:size-5">
-        {icon}
-      </span>
-      <h2 className="mt-4 text-lg font-semibold tracking-[-0.02em]">{title}</h2>
-      <p className="mt-1.5 max-w-md text-sm leading-6 text-muted-foreground">
-        {description}
-      </p>
-      {action && <div className="mt-5">{action}</div>}
-    </div>
   )
 }

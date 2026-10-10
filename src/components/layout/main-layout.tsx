@@ -12,6 +12,7 @@ import { useUrlState } from "@/lib/url-state"
 import { MobileHeader } from "@/components/layout/mobile-header"
 import { ShiftBanner } from "@/components/layout/shift-banner"
 import { Sidebar } from "@/components/layout/sidebar"
+import { ErrorState } from "@/components/content-state"
 import { clearAuthSession, getAccessTokenProfile } from "@/lib/auth-token"
 import {
   APOLLO_RESTAURANT_SUSPENDED_EVENT,
@@ -70,6 +71,16 @@ export function MainLayout() {
   )
 
   if (!profile) return <Navigate to="/" replace />
+  if (profile.role === "OWNER" && onboarding.error) {
+    return (
+      <main className="flex min-h-svh flex-col bg-background p-4">
+        <ErrorState
+          title="Could not load your workspace."
+          onRetry={onboarding.refetch}
+        />
+      </main>
+    )
+  }
   if (
     (pathname === "/settings" ||
       pathname === "/performance" ||

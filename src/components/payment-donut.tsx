@@ -1,3 +1,6 @@
+import { WalletIcon } from "@phosphor-icons/react"
+import { EmptyState } from "@/components/content-state"
+
 const currency = new Intl.NumberFormat("en-GH", {
   style: "currency",
   currency: "GHS",
@@ -39,6 +42,14 @@ export function PaymentDonut({ breakdown }: { breakdown: PaymentBreakdown }) {
       0,
   }))
   const total = methods.reduce((sum, item) => sum + item.amount, 0)
+  if (total === 0)
+    return (
+      <EmptyState
+        icon={<WalletIcon />}
+        title="No settled payments yet."
+        description="Payments will appear here once sales are settled in the selected period."
+      />
+    )
   let accumulatedPercentage = 0
   const donutBackground = total
     ? `conic-gradient(${methods
@@ -97,12 +108,6 @@ export function PaymentDonut({ breakdown }: { breakdown: PaymentBreakdown }) {
           )
         })}
       </ul>
-
-      {total === 0 && (
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          No settled payments yet today.
-        </p>
-      )}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 
 import { Input } from "@/components/ui/input"
+import { EmptyState, ErrorState } from "@/components/content-state"
 import {
   Select,
   SelectContent,
@@ -82,7 +83,7 @@ export function OpsMetrics() {
   const [category, setCategory] = useState("")
   const [status, setStatus] = useState("")
   const [diningType, setDiningType] = useState("")
-  const { data, loading, error } = useQuery<{
+  const { data, loading, error, refetch } = useQuery<{
     platformMetricOptions: { regions: string[]; categories: string[] }
     platformOrderMetrics: {
       orderCount: number
@@ -134,7 +135,7 @@ export function OpsMetrics() {
         title="Metrics"
         description="Orders, order revenue, and Paystack subscription payments. Date and region apply to both. Category, status, and order type apply to orders."
       />
-      <section className="mx-4 mb-8 space-y-4 lg:mx-8">
+      <section className="content-region mx-4 mb-8 space-y-4 lg:mx-8">
         <div className="grid gap-3 rounded-xl border border-border/70 bg-card p-4 sm:grid-cols-2 lg:grid-cols-3">
           <Filter label="From">
             <Input
@@ -185,101 +186,101 @@ export function OpsMetrics() {
           />
         </div>
 
-        {error && (
-          <p className="text-sm text-destructive" role="alert">
-            Couldn’t load metrics.
-          </p>
+        {error ? (
+          <ErrorState title="Couldn’t load metrics." onRetry={refetch} />
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Stat
+                label="Orders"
+                value={loading ? "—" : String(metrics?.orderCount ?? 0)}
+              />
+              <Stat
+                label="Order revenue"
+                value={loading ? "—" : formatMoney(metrics?.revenue ?? 0)}
+              />
+              <Stat
+                label="Subscription payments"
+                value={
+                  loading ? "—" : String(metrics?.subscriptionPaymentCount ?? 0)
+                }
+              />
+              <Stat
+                label="Subscription revenue"
+                value={
+                  loading ? "—" : formatMoney(metrics?.subscriptionRevenue ?? 0)
+                }
+              />
+            </div>
+
+            <TrendChart points={metrics?.byDay ?? []} />
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ShareBars
+                title="Revenue by region"
+                valueLabel="revenue"
+                rows={(metrics?.byRegion ?? []).map((row) => ({
+                  label: row.region,
+                  orderCount: row.orderCount,
+                  revenue: row.revenue,
+                }))}
+              />
+              <ShareDonut
+                title="Sales by category"
+                rows={(metrics?.byCategory ?? []).slice(0, 6).map((row) => ({
+                  label: row.category,
+                  orderCount: row.orderCount,
+                  revenue: row.revenue,
+                }))}
+              />
+              <ShareBars
+                title="Subscription revenue by plan"
+                valueLabel="subscription revenue"
+                countLabel="payments"
+                rows={(metrics?.subscriptionByPlan ?? []).map((row) => ({
+                  label: row.label,
+                  orderCount: row.paymentCount,
+                  revenue: row.revenue,
+                }))}
+              />
+              <ShareDonut
+                title="Subscription revenue by region"
+                rows={(metrics?.subscriptionByRegion ?? []).map((row) => ({
+                  label: row.label,
+                  orderCount: row.paymentCount,
+                  revenue: row.revenue,
+                }))}
+              />
+            </div>
+
+            <Breakdown
+              title="By region"
+              rows={(metrics?.byRegion ?? []).map((row) => ({
+                label: row.region,
+                orderCount: row.orderCount,
+                revenue: row.revenue,
+              }))}
+            />
+            <Breakdown
+              title="By category"
+              rows={(metrics?.byCategory ?? []).map((row) => ({
+                label: row.category,
+                orderCount: row.orderCount,
+                revenue: row.revenue,
+              }))}
+              revenueLabel="Item sales"
+            />
+            <Breakdown
+              title="Subscription payments by plan"
+              countLabel="Payments"
+              rows={(metrics?.subscriptionByPlan ?? []).map((row) => ({
+                label: row.label,
+                orderCount: row.paymentCount,
+                revenue: row.revenue,
+              }))}
+            />
+          </>
         )}
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat
-            label="Orders"
-            value={loading ? "—" : String(metrics?.orderCount ?? 0)}
-          />
-          <Stat
-            label="Order revenue"
-            value={loading ? "—" : formatMoney(metrics?.revenue ?? 0)}
-          />
-          <Stat
-            label="Subscription payments"
-            value={
-              loading ? "—" : String(metrics?.subscriptionPaymentCount ?? 0)
-            }
-          />
-          <Stat
-            label="Subscription revenue"
-            value={
-              loading ? "—" : formatMoney(metrics?.subscriptionRevenue ?? 0)
-            }
-          />
-        </div>
-
-        <TrendChart points={metrics?.byDay ?? []} />
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ShareBars
-            title="Revenue by region"
-            valueLabel="revenue"
-            rows={(metrics?.byRegion ?? []).map((row) => ({
-              label: row.region,
-              orderCount: row.orderCount,
-              revenue: row.revenue,
-            }))}
-          />
-          <ShareDonut
-            title="Sales by category"
-            rows={(metrics?.byCategory ?? []).slice(0, 6).map((row) => ({
-              label: row.category,
-              orderCount: row.orderCount,
-              revenue: row.revenue,
-            }))}
-          />
-          <ShareBars
-            title="Subscription revenue by plan"
-            valueLabel="subscription revenue"
-            countLabel="payments"
-            rows={(metrics?.subscriptionByPlan ?? []).map((row) => ({
-              label: row.label,
-              orderCount: row.paymentCount,
-              revenue: row.revenue,
-            }))}
-          />
-          <ShareDonut
-            title="Subscription revenue by region"
-            rows={(metrics?.subscriptionByRegion ?? []).map((row) => ({
-              label: row.label,
-              orderCount: row.paymentCount,
-              revenue: row.revenue,
-            }))}
-          />
-        </div>
-
-        <Breakdown
-          title="By region"
-          rows={(metrics?.byRegion ?? []).map((row) => ({
-            label: row.region,
-            orderCount: row.orderCount,
-            revenue: row.revenue,
-          }))}
-        />
-        <Breakdown
-          title="By category"
-          rows={(metrics?.byCategory ?? []).map((row) => ({
-            label: row.category,
-            orderCount: row.orderCount,
-            revenue: row.revenue,
-          }))}
-          revenueLabel="Item sales"
-        />
-        <Breakdown
-          title="Subscription payments by plan"
-          countLabel="Payments"
-          rows={(metrics?.subscriptionByPlan ?? []).map((row) => ({
-            label: row.label,
-            orderCount: row.paymentCount,
-            revenue: row.revenue,
-          }))}
-        />
       </section>
     </>
   )
@@ -354,7 +355,7 @@ function Breakdown({
   countLabel?: string
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border/70 bg-card">
+    <section className="content-region overflow-hidden rounded-xl border border-border/70 bg-card">
       <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">
         {title}
       </h2>
@@ -369,8 +370,11 @@ function Breakdown({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={3} className="px-4 py-6 text-muted-foreground">
-                Nothing in this range.
+              <td colSpan={3}>
+                <EmptyState
+                  title="Nothing in this range."
+                  description="Choose a different date range or adjust the filters."
+                />
               </td>
             </tr>
           ) : (

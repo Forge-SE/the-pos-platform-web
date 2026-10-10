@@ -19,6 +19,7 @@ export interface ReceiptDetails {
   }>
   subtotal: number
   discount: number
+  isComp?: boolean
   taxAmount: number
   taxes: Array<{
     name: string
@@ -129,7 +130,10 @@ export function DigitalReceipt({
       <dl className="space-y-2 border-t border-dashed border-border pt-4">
         <ReceiptRow label="Subtotal" value={money(details.subtotal)} />
         {details.discount > 0 && (
-          <ReceiptRow label="Discount" value={`−${money(details.discount)}`} />
+          <ReceiptRow
+            label={details.isComp ? "Comp" : "Discount"}
+            value={`−${money(details.discount)}`}
+          />
         )}
         {details.taxes.map((tax) => (
           <ReceiptRow

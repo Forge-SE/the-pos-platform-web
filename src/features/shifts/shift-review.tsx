@@ -9,6 +9,8 @@ import type { DateRange } from "@/components/date-range-picker"
 import { SectionPage } from "@/components/layout/section-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { ShareBars } from "@/features/ops/ops-charts"
 import { diningLabel, statusLabels } from "@/features/orders/labels"
 import { formatMoney } from "@/features/menu/model"
@@ -199,12 +201,7 @@ export function ShiftReview() {
       <div className="mt-6">
         <DateRangePicker value={range} onChange={handleRangeChange} />
       </div>
-      {list.error && (
-        <p className="mt-6 text-sm text-destructive" role="alert">
-          Could not load shifts.
-        </p>
-      )}
-      <div className="mt-4 overflow-hidden rounded-xl border border-border/70">
+      <div className="content-region mt-4 overflow-hidden rounded-xl border border-border/70">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-border/70 bg-muted/40 text-xs tracking-[0.06em] text-muted-foreground uppercase">
             <tr>
@@ -216,41 +213,70 @@ export function ShiftReview() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className={`cursor-pointer border-b border-border/50 last:border-0 hover:bg-muted/30 ${
-                  shiftParam === row.id ? "bg-primary/15" : ""
-                }`}
-                onClick={() => {
-                  setShiftParam(row.id)
-                  setTabParam("orders")
-                }}
-              >
-                <td className="px-4 py-3">{formatWhen(row.openedAt)}</td>
-                <td className="px-4 py-3">{formatWhen(row.closedAt)}</td>
-                <td className="px-4 py-3">
-                  <Badge
-                    variant={row.status === "OPEN" ? "secondary" : "outline"}
-                  >
-                    {row.status === "OPEN" ? "Open" : "Closed"}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  {row.orderCount}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  {formatMoney(row.revenue)}
+            {list.error && (
+              <tr>
+                <td colSpan={5}>
+                  <ErrorState
+                    title="Could not load shifts."
+                    onRetry={list.refetch}
+                  />
                 </td>
               </tr>
-            ))}
+            )}
+            {!list.loading && !list.error && rows.length === 0 && (
+              <tr>
+                <td colSpan={5}>
+                  <EmptyState
+                    title="No shifts in this range."
+                    description="Choose a different date range to review previous shifts."
+                    action={
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => {
+                          setRangeParam(null)
+                          setFromParam(null)
+                          setToParam(null)
+                        }}
+                      >
+                        Reset date range
+                      </Button>
+                    }
+                  />
+                </td>
+              </tr>
+            )}
+            {!list.error &&
+              rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className={`cursor-pointer border-b border-border/50 last:border-0 hover:bg-muted/30 ${
+                    shiftParam === row.id ? "bg-primary/15" : ""
+                  }`}
+                  onClick={() => {
+                    setShiftParam(row.id)
+                    setTabParam("orders")
+                  }}
+                >
+                  <td className="px-4 py-3">{formatWhen(row.openedAt)}</td>
+                  <td className="px-4 py-3">{formatWhen(row.closedAt)}</td>
+                  <td className="px-4 py-3">
+                    <Badge
+                      variant={row.status === "OPEN" ? "secondary" : "outline"}
+                    >
+                      {row.status === "OPEN" ? "Open" : "Closed"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {row.orderCount}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {formatMoney(row.revenue)}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
-        {!list.loading && rows.length === 0 && (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            No shifts in this range.
-          </p>
-        )}
       </div>
 
       <Dialog.Root
@@ -270,7 +296,7 @@ export function ShiftReview() {
                 <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                   {detail
                     ? `Started ${formatWhen(detail.openedAt)} · ${detail.closedAt ? `Ended ${formatWhen(detail.closedAt)}` : "Still open"}`
-                    : "Loading this shift…"}
+                    : "Shift details"}
                 </Dialog.Description>
               </div>
               <Dialog.Close
@@ -286,12 +312,28 @@ export function ShiftReview() {
               />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
-              {report.loading && (
-                <p className="text-sm text-muted-foreground">
-                  Loading this shift…
-                </p>
+              {report.loading && <LoadingState label="shift details" />}
+              {report.error && (
+                <ErrorState
+                  title="Could not load this shift."
+                  onRetry={report.refetch}
+                />
               )}
-              {detail && (
+              {!report.loading && !report.error && !detail && (
+                <EmptyState
+                  title="This shift is unavailable."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setShiftParam(null)}
+                    >
+                      Close details
+                    </Button>
+                  }
+                />
+              )}
+              {!report.error && detail && (
                 <>
                   <dl className="grid gap-3 sm:grid-cols-4">
                     <Stat label="Orders" value={String(detail.orderCount)} />
@@ -332,7 +374,7 @@ export function ShiftReview() {
                     ))}
                   </div>
                   {tab === "orders" && (
-                    <div className="mt-4 overflow-x-auto">
+                    <div className="content-region mt-4 overflow-x-auto">
                       <table className="w-full text-left text-sm">
                         <thead className="text-xs tracking-[0.06em] text-muted-foreground uppercase">
                           <tr>
@@ -346,6 +388,16 @@ export function ShiftReview() {
                           </tr>
                         </thead>
                         <tbody>
+                          {detail.orders.length === 0 && (
+                            <tr>
+                              <td colSpan={5}>
+                                <EmptyState
+                                  title="No orders on this shift."
+                                  description="This shift has no recorded orders."
+                                />
+                              </td>
+                            </tr>
+                          )}
                           {detail.orders.map((order) => (
                             <tr
                               key={order.id}
@@ -370,11 +422,6 @@ export function ShiftReview() {
                           ))}
                         </tbody>
                       </table>
-                      {detail.orders.length === 0 && (
-                        <p className="py-8 text-center text-sm text-muted-foreground">
-                          No orders on this shift.
-                        </p>
-                      )}
                     </div>
                   )}
                   {tab === "revenue" && (

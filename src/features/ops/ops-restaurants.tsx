@@ -12,6 +12,8 @@ import {
 import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { EmptyState, ErrorState } from "@/components/content-state"
+import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { RestaurantEditModal } from "@/features/ops/ops-restaurant-edit"
@@ -158,7 +160,7 @@ export function OpsRestaurants() {
         </Button>
       </OpsHeader>
 
-      <section className="mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
+      <section className="content-region mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
         <div className="border-b border-border/70 px-4 py-3">
           <Input
             value={search}
@@ -183,111 +185,139 @@ export function OpsRestaurants() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-muted-foreground">
-                    Loading restaurants…
+                  <td colSpan={6}>
+                    <LoadingState className="min-h-48" label="restaurants" />
                   </td>
                 </tr>
               )}
               {error && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-destructive">
-                    Couldn’t load restaurants.
+                  <td colSpan={6}>
+                    <ErrorState
+                      title="Couldn’t load restaurants."
+                      onRetry={refetch}
+                    />
                   </td>
                 </tr>
               )}
               {!loading && !error && items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-muted-foreground">
-                    No restaurants found.
+                  <td colSpan={6}>
+                    <EmptyState
+                      title="No restaurants found."
+                      description={
+                        debounced
+                          ? "Try a different search or clear the current search."
+                          : "Provision the first restaurant workspace to get started."
+                      }
+                      action={
+                        debounced ? (
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={() => onSearchChange("")}
+                          >
+                            Clear search
+                          </Button>
+                        ) : (
+                          <Button size="lg" render={<Link to="/ops/new" />}>
+                            Add restaurant
+                          </Button>
+                        )
+                      }
+                    />
                   </td>
                 </tr>
               )}
-              {items.map((restaurant) => (
-                <tr
-                  key={restaurant.id}
-                  className="cursor-pointer border-t border-border/70 hover:bg-muted/40"
-                  onClick={() => setSelectedId(restaurant.id)}
-                >
-                  <td className="px-4 py-3">
-                    <span className="block font-medium">{restaurant.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {restaurant.slug}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {[restaurant.city, restaurant.region]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
-                      {restaurant.code}
-                    </code>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      variant={
-                        restaurant.suspended ? "destructive" : "secondary"
-                      }
-                    >
-                      {restaurant.suspended ? "Suspended" : "Active"}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatWhen(restaurant.createdAt)}
-                  </td>
-                  <td
-                    className="px-4 py-3"
-                    onClick={(event) => event.stopPropagation()}
+              {!error &&
+                items.map((restaurant) => (
+                  <tr
+                    key={restaurant.id}
+                    className="cursor-pointer border-t border-border/70 hover:bg-muted/40"
+                    onClick={() => setSelectedId(restaurant.id)}
                   >
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Edit ${restaurant.name}`}
-                        onClick={() => setEditingId(restaurant.id)}
-                      >
-                        <PencilSimpleIcon />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={
-                          restaurant.suspended
-                            ? `Reinstate ${restaurant.name}`
-                            : `Suspend ${restaurant.name}`
+                    <td className="px-4 py-3">
+                      <span className="block font-medium">
+                        {restaurant.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {restaurant.slug}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {[restaurant.city, restaurant.region]
+                        .filter(Boolean)
+                        .join(", ") || "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+                        {restaurant.code}
+                      </code>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge
+                        variant={
+                          restaurant.suspended ? "destructive" : "secondary"
                         }
-                        onClick={() => {
-                          setActionError(null)
-                          setSuspendTarget(restaurant)
-                        }}
                       >
-                        {restaurant.suspended ? <PlayIcon /> : <PauseIcon />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={
-                          restaurant.owner?.active
-                            ? `Deactivate ${restaurant.owner.name}`
-                            : `Reactivate ${restaurant.owner?.name ?? "owner"}`
-                        }
-                        disabled={!restaurant.owner}
-                        onClick={() => {
-                          setActionError(null)
-                          setOwnerTarget(restaurant)
-                        }}
-                      >
-                        {restaurant.owner?.active === false ? (
-                          <UserCheckIcon />
-                        ) : (
-                          <UserMinusIcon />
-                        )}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {restaurant.suspended ? "Suspended" : "Active"}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {formatWhen(restaurant.createdAt)}
+                    </td>
+                    <td
+                      className="px-4 py-3"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Edit ${restaurant.name}`}
+                          onClick={() => setEditingId(restaurant.id)}
+                        >
+                          <PencilSimpleIcon />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={
+                            restaurant.suspended
+                              ? `Reinstate ${restaurant.name}`
+                              : `Suspend ${restaurant.name}`
+                          }
+                          onClick={() => {
+                            setActionError(null)
+                            setSuspendTarget(restaurant)
+                          }}
+                        >
+                          {restaurant.suspended ? <PlayIcon /> : <PauseIcon />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={
+                            restaurant.owner?.active
+                              ? `Deactivate ${restaurant.owner.name}`
+                              : `Reactivate ${restaurant.owner?.name ?? "owner"}`
+                          }
+                          disabled={!restaurant.owner}
+                          onClick={() => {
+                            setActionError(null)
+                            setOwnerTarget(restaurant)
+                          }}
+                        >
+                          {restaurant.owner?.active === false ? (
+                            <UserCheckIcon />
+                          ) : (
+                            <UserMinusIcon />
+                          )}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -492,15 +522,14 @@ function RestaurantDrawer({
             : undefined
         }
       >
-        {loading && (
-          <p className="text-sm text-muted-foreground">Loading restaurant…</p>
-        )}
+        {loading && <LoadingState label="restaurant" />}
         {error && (
-          <p className="text-sm text-destructive">
-            Couldn’t load this restaurant.
-          </p>
+          <ErrorState
+            title="Couldn’t load this restaurant."
+            onRetry={refetch}
+          />
         )}
-        {restaurant && (
+        {!error && restaurant && (
           <div className="space-y-6">
             <Badge variant={restaurant.suspended ? "destructive" : "secondary"}>
               {restaurant.suspended ? "Suspended" : "Active"}
@@ -533,9 +562,10 @@ function RestaurantDrawer({
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Hours haven’t been added.
-                </p>
+                <EmptyState
+                  title="Hours haven’t been added."
+                  description="Add opening times in the restaurant details."
+                />
               )}
             </Section>
             <Section title="Compliance">
@@ -576,9 +606,10 @@ function RestaurantDrawer({
             </Section>
             <Section title="Recent activity">
               {auditEntries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No audit entries.
-                </p>
+                <EmptyState
+                  title="No audit entries."
+                  description="Restaurant activity will appear here."
+                />
               ) : (
                 <ul className="space-y-2 text-sm">
                   {auditEntries.map((entry) => (
@@ -679,9 +710,10 @@ function ComplianceList({
 
   if (rows.length === 0 && !compliance?.notes) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No compliance records on file.
-      </p>
+      <EmptyState
+        title="No compliance records on file."
+        description="Add compliance details in the restaurant settings."
+      />
     )
   }
 
