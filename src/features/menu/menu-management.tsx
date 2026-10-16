@@ -18,6 +18,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import {
   InputGroup,
@@ -467,44 +468,10 @@ export function MenuManagement() {
                                   {item.description}
                                 </p>
                               )}
-                              {item.modifierGroups.length > 0 && (
-                                <ul className="mt-2.5 flex flex-wrap gap-1.5">
-                                  {item.modifierGroups.flatMap((attached) => {
-                                    const group = groups.find(
-                                      (entry) => entry.id === attached.id
-                                    )
-                                    const options = (
-                                      group?.options ?? []
-                                    ).filter((option) => option.active)
-                                    if (options.length === 0) {
-                                      return [
-                                        <li key={attached.id}>
-                                          <Badge variant="outline">
-                                            {attached.name}
-                                          </Badge>
-                                        </li>,
-                                      ]
-                                    }
-                                    return options.map((option) => (
-                                      <li
-                                        key={option.id}
-                                        className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/70 px-2 py-1 text-xs"
-                                      >
-                                        {option.imageUrl ? (
-                                          <img
-                                            src={option.imageUrl}
-                                            alt=""
-                                            className="size-5 shrink-0 rounded-full object-cover"
-                                          />
-                                        ) : null}
-                                        <span className="truncate">
-                                          {option.name}
-                                        </span>
-                                      </li>
-                                    ))
-                                  })}
-                                </ul>
-                              )}
+                              <MealPreparationTime
+                                minutes={item.preparationTimeMinutes}
+                                showUnset
+                              />
                               {uploadState.status === "error" && (
                                 <p className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
                                   <WarningCircleIcon className="size-3.5" />

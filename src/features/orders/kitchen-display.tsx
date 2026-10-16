@@ -19,6 +19,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { diningLabel } from "@/features/orders/labels"
 import { getAccessTokenProfile } from "@/lib/auth-token"
@@ -38,6 +39,7 @@ interface OrderItem {
   id: string
   name: string
   quantity: number
+  preparationTimeMinutes: number | null
   notes: string | null
   imageUrl?: string | null
   modifiers: OrderModifier[]
@@ -88,6 +90,7 @@ const ORDER_FIELDS = gql`
       id
       name
       quantity
+      preparationTimeMinutes
       notes
       imageUrl
       modifiers {
@@ -836,6 +839,10 @@ function OrderCard({
                 <span className="mr-1 tabular-nums">{item.quantity}×</span>
                 {item.name}
               </p>
+              <MealPreparationTime
+                minutes={item.preparationTimeMinutes}
+                showUnset
+              />
               {item.modifiers.length > 0 && (
                 <ul className="mt-1.5 space-y-1 pl-5 text-xs leading-4 text-muted-foreground">
                   {item.modifiers.map((modifier) => (
@@ -974,10 +981,14 @@ function TableView({
                           imageUrl={item.imageUrl}
                           size="sm"
                         />
-                        <span>
+                        <div>
                           <span className="tabular-nums">{item.quantity}×</span>{" "}
                           {item.name}
-                        </span>
+                          <MealPreparationTime
+                            minutes={item.preparationTimeMinutes}
+                            showUnset
+                          />
+                        </div>
                       </li>
                     ))}
                   </ul>

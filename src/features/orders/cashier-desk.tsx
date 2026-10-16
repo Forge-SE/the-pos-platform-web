@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toaster"
@@ -54,6 +55,7 @@ interface CounterItem {
   name: string
   description: string | null
   price: number
+  preparationTimeMinutes: number | null
   imageUrl: string | null
   modifierGroups: ModifierGroup[]
 }
@@ -92,6 +94,7 @@ const MENU_QUERY = gql`
       name
       description
       price
+      preparationTimeMinutes
       imageUrl
       modifierGroups {
         id
@@ -673,6 +676,9 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
                           {item.description}
                         </p>
                       )}
+                      <MealPreparationTime
+                        minutes={item.preparationTimeMinutes}
+                      />
                       <div className="flex items-end justify-between gap-3 pt-1">
                         <p>
                           <span className="block text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
@@ -844,6 +850,7 @@ function CustomizeDialog({
             <Dialog.Description className="mt-1 text-sm text-muted-foreground">
               Base {formatMoney(item.price)}
             </Dialog.Description>
+            <MealPreparationTime minutes={item.preparationTimeMinutes} />
             <div className="mt-5 space-y-5">
               {item.modifierGroups.length === 0 && (
                 <p className="text-sm text-muted-foreground">

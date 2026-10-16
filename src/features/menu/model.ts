@@ -16,6 +16,7 @@ export const MENU_MANAGEMENT_QUERY = gql`
       name
       description
       price
+      preparationTimeMinutes
       active
       imageUrl
       modifierGroups {
@@ -186,6 +187,7 @@ export interface MenuItem {
   name: string
   description: string | null
   price: number
+  preparationTimeMinutes: number | null
   active: boolean
   imageUrl: string | null
   modifierGroups: Array<{ id: string; name: string }>

@@ -11,6 +11,7 @@ import {
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
+import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -43,6 +44,14 @@ import type {
 } from "@/features/menu/model"
 
 import { MenuDialog } from "./menu-dialog"
+import {
+  PreparationTimeField,
+  preparationTimeSchema,
+} from "../preparation-time-field"
+import {
+  parsePreparationTime,
+  preparationTimeFields,
+} from "@/lib/preparation-time"
 
 const STEPS = ["Details", "Photo", "Choices", "Preview"] as const
 
@@ -103,6 +112,7 @@ function kindOf(group: ModifierGroup, remembered?: ChoiceKind): ChoiceKind {
 }
 
 const itemSchema = Yup.object({
+  ...preparationTimeSchema,
   categoryId: Yup.string().required("Choose a category."),
   name: Yup.string().trim().required("Enter an item name."),
   description: Yup.string(),
@@ -246,6 +256,7 @@ export function EditItemModal({
   )?.name
 
   const initialValues = {
+    ...preparationTimeFields(item?.preparationTimeMinutes),
     categoryId: item?.categoryId ?? "",
     name: item?.name ?? "",
     description: item?.description ?? "",
@@ -267,6 +278,11 @@ export function EditItemModal({
   }
 
   async function submitDetails(values: typeof initialValues) {
+    const preparationTimeMinutes = parsePreparationTime(
+      values.preparationTime,
+      values.preparationTimeUnit
+    )
+    if (preparationTimeMinutes === undefined) return
     if (!item) return
     const price = cedisToPesewas(values.price)
     if (price === null) return
@@ -280,6 +296,7 @@ export function EditItemModal({
             name: values.name.trim(),
             description: values.description.trim() || null,
             price,
+            preparationTimeMinutes,
           },
         },
       })
@@ -599,6 +616,7 @@ export function EditItemModal({
                   />
                   <FieldError>{priceError}</FieldError>
                 </Field>
+                <PreparationTimeField />
               </>
             )
           }}
@@ -913,6 +931,7 @@ export function EditItemModal({
             <p className="mt-1 text-sm text-muted-foreground">
               Base {formatMoney(item.price)}
             </p>
+            <MealPreparationTime minutes={item.preparationTimeMinutes} />
             <div className="mt-5 space-y-5">
               {attached.length === 0 && (
                 <p className="text-sm text-muted-foreground">

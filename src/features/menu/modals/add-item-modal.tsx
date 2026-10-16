@@ -48,6 +48,11 @@ import type {
 } from "@/features/menu/model"
 
 import { MenuDialog } from "./menu-dialog"
+import {
+  PreparationTimeField,
+  preparationTimeSchema,
+} from "../preparation-time-field"
+import { parsePreparationTime } from "@/lib/preparation-time"
 
 const STEPS = ["Details", "Photo", "Modifiers"] as const
 
@@ -56,9 +61,12 @@ const itemValues = {
   name: "",
   description: "",
   price: "",
+  preparationTime: "",
+  preparationTimeUnit: "minutes",
 }
 
 const itemSchema = Yup.object({
+  ...preparationTimeSchema,
   categoryId: Yup.string().required("Choose a category."),
   name: Yup.string().trim().required("Enter an item name."),
   description: Yup.string(),
@@ -170,6 +178,11 @@ export function AddItemModal({
   }
 
   async function submitNewItem(values: typeof itemValues) {
+    const preparationTimeMinutes = parsePreparationTime(
+      values.preparationTime,
+      values.preparationTimeUnit
+    )
+    if (preparationTimeMinutes === undefined) return
     const price = cedisToPesewas(values.price)
     if (price === null) return
     try {
@@ -181,6 +194,7 @@ export function AddItemModal({
             name: values.name.trim(),
             description: values.description.trim() || null,
             price,
+            preparationTimeMinutes,
           },
         },
       })
@@ -391,6 +405,7 @@ export function AddItemModal({
                   <FieldDescription>Up to two decimal places.</FieldDescription>
                   <FieldError>{priceError}</FieldError>
                 </Field>
+                <PreparationTimeField />
                 {categories.length === 0 && (
                   <p className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
                     <InfoIcon
