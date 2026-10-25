@@ -9,12 +9,14 @@ import type { DateRange } from "@/components/date-range-picker"
 import { SectionPage } from "@/components/layout/section-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { ShareBars } from "@/features/ops/ops-charts"
 import { diningLabel, statusLabels } from "@/features/orders/labels"
 import { formatMoney } from "@/features/menu/model"
 import { useUrlState } from "@/lib/url-state"
+import { useTablePagination } from "@/lib/table-state"
 
 const SHIFTS_QUERY = gql`
   query ShiftList($from: DateTime!, $to: DateTime!) {
@@ -160,6 +162,28 @@ export function ShiftReview() {
   })
   const rows = list.data?.shifts ?? []
   const detail = report.data?.shiftReport
+  const [shiftSearch, setShiftSearch] = useUrlState("shiftSearch")
+  const [orderSearch, setOrderSearch] = useUrlState("shiftOrderSearch")
+  const shiftPaging = useTablePagination("shifts")
+  const orderPaging = useTablePagination("shiftOrders")
+  const filteredShifts = rows.filter((row) =>
+    `${row.id} ${row.status} ${formatWhen(row.openedAt)}`
+      .toLowerCase()
+      .includes((shiftSearch ?? "").toLowerCase().trim())
+  )
+  const visibleShifts = filteredShifts.slice(
+    shiftPaging.pageIndex * shiftPaging.pageSize,
+    (shiftPaging.pageIndex + 1) * shiftPaging.pageSize
+  )
+  const filteredOrders = (detail?.orders ?? []).filter((order) =>
+    `${order.id} ${order.status} ${order.diningType}`
+      .toLowerCase()
+      .includes((orderSearch ?? "").toLowerCase().trim())
+  )
+  const visibleOrders = filteredOrders.slice(
+    orderPaging.pageIndex * orderPaging.pageSize,
+    (orderPaging.pageIndex + 1) * orderPaging.pageSize
+  )
 
   function handleRangeChange(next: DateRange | undefined) {
     setShiftParam(null)
@@ -197,12 +221,27 @@ export function ShiftReview() {
     <SectionPage
       title="Shifts"
       description="Every register sitting in the range. Open one to see its orders and revenue."
+      fillHeight
     >
       <div className="mt-6">
         <DateRangePicker value={range} onChange={handleRangeChange} />
       </div>
-      <div className="content-region mt-4 overflow-hidden rounded-xl border border-border/70">
-        <table className="w-full text-left text-sm">
+      <div className="content-region mt-4 overflow-hidden rounded-md lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        <DataTable
+          ariaLabel="Shifts"
+          rows={visibleShifts}
+          search={{
+            value: shiftSearch ?? "",
+            onChange: (value) => {
+              setShiftSearch(value || null)
+              shiftPaging.resetPage()
+            },
+            placeholder: "Search shifts",
+          }}
+          onRefresh={() => void list.refetch()}
+          isLoading={list.loading}
+          pagination={{ ...shiftPaging, totalCount: filteredShifts.length }}
+        >
           <thead className="border-b border-border/70 bg-muted/40 text-xs tracking-[0.06em] text-muted-foreground uppercase">
             <tr>
               <th className="px-4 py-3 font-medium">Opened</th>
@@ -213,6 +252,19 @@ export function ShiftReview() {
             </tr>
           </thead>
           <tbody>
+            {!list.loading &&
+              !list.error &&
+              visibleShifts.length === 0 &&
+              rows.length > 0 && (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      title="No shifts match your search."
+                      description="Try another date or status."
+                    />
+                  </td>
+                </tr>
+              )}
             {list.error && (
               <tr>
                 <td colSpan={5}>
@@ -247,7 +299,7 @@ export function ShiftReview() {
               </tr>
             )}
             {!list.error &&
-              rows.map((row) => (
+              visibleShifts.map((row) => (
                 <tr
                   key={row.id}
                   className={`cursor-pointer border-b border-border/50 last:border-0 hover:bg-muted/30 ${
@@ -276,7 +328,7 @@ export function ShiftReview() {
                 </tr>
               ))}
           </tbody>
-        </table>
+        </DataTable>
       </div>
 
       <Dialog.Root
@@ -375,7 +427,22 @@ export function ShiftReview() {
                   </div>
                   {tab === "orders" && (
                     <div className="content-region mt-4 overflow-x-auto">
-                      <table className="w-full text-left text-sm">
+                      <DataTable
+                        ariaLabel="Shift orders"
+                        rows={visibleOrders}
+                        search={{
+                          value: orderSearch ?? "",
+                          onChange: (value) => {
+                            setOrderSearch(value || null)
+                            orderPaging.resetPage()
+                          },
+                          placeholder: "Search shift orders",
+                        }}
+                        pagination={{
+                          ...orderPaging,
+                          totalCount: filteredOrders.length,
+                        }}
+                      >
                         <thead className="text-xs tracking-[0.06em] text-muted-foreground uppercase">
                           <tr>
                             <th className="py-2 pr-3 font-medium">When</th>
@@ -388,6 +455,17 @@ export function ShiftReview() {
                           </tr>
                         </thead>
                         <tbody>
+                          {visibleOrders.length === 0 &&
+                            detail.orders.length > 0 && (
+                              <tr>
+                                <td colSpan={5}>
+                                  <EmptyState
+                                    title="No orders match your search."
+                                    description="Try another ticket or status."
+                                  />
+                                </td>
+                              </tr>
+                            )}
                           {detail.orders.length === 0 && (
                             <tr>
                               <td colSpan={5}>
@@ -398,7 +476,7 @@ export function ShiftReview() {
                               </td>
                             </tr>
                           )}
-                          {detail.orders.map((order) => (
+                          {visibleOrders.map((order) => (
                             <tr
                               key={order.id}
                               className="border-t border-border/50"
@@ -421,7 +499,7 @@ export function ShiftReview() {
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                      </DataTable>
                     </div>
                   )}
                   {tab === "revenue" && (

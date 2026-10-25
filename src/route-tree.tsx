@@ -107,6 +107,13 @@ const taxesRoute = createRoute({
   head: () => ({ meta: [{ title: "Taxes | Ovaal" }] }),
 })
 
+const inventoryRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/inventory",
+  component: lazyRouteComponent(() => import("@/pages/Inventory"), "Inventory"),
+  head: () => ({ meta: [{ title: "Inventory | Ovaal" }] }),
+})
+
 const discountsRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/discounts",
@@ -249,6 +256,7 @@ export const routeTree = rootRoute.addChildren([
     performanceRoute,
     teamRoute,
     menuRoute,
+    inventoryRoute,
     shiftRoute,
     taxesRoute,
     discountsRoute,

@@ -49,7 +49,7 @@ export function OnboardingReviewStep({
         />
         <ReviewRow
           label="Cash variance alert"
-          value={`GH₵ ${Number(values.reconciliationVarianceGhs || 0).toFixed(2)}`}
+          value={`GHS ${Number(values.reconciliationVarianceGhs || 0).toFixed(2)}`}
         />
       </ReviewSection>
     </div>

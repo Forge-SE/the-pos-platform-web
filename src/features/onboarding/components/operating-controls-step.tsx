@@ -56,7 +56,7 @@ export function OperatingControlsStep({
           </FieldLabel>
           <div className="relative">
             <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
-              GH₵
+              GHS
             </span>
             <Input
               id="variance-threshold"

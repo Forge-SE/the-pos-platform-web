@@ -4,6 +4,7 @@ import type { Icon } from "@phosphor-icons/react"
 import {
   ChartLineUpIcon,
   CookingPotIcon,
+  PackageIcon,
   ForkKnifeIcon,
   GearSixIcon,
   HouseIcon,
@@ -52,6 +53,12 @@ export function primaryNavigationFor(role: AccessTokenProfile["role"]) {
 }
 
 export const managementNavigation = [
+  {
+    label: "Inventory",
+    to: "/inventory",
+    icon: PackageIcon,
+    permission: "INVENTORY_VIEW",
+  },
   {
     label: "Menu",
     to: "/menu",
@@ -166,7 +173,7 @@ function NavigationSection({
                 aria-current={active ? "page" : undefined}
                 aria-label={collapsed ? item.label : undefined}
                 title={collapsed ? item.label : undefined}
-                className={`flex min-h-10 flex-1 items-center rounded-lg text-xs font-medium transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"} ${active ? "bg-primary/25 text-secondary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                className={`flex min-h-10 flex-1 items-center rounded-lg text-sm font-medium transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"} ${active ? "bg-primary/25 text-secondary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
               >
                 <item.icon
                   aria-hidden="true"
@@ -209,7 +216,7 @@ export function Sidebar({
         {!collapsed && (
           <Link
             to="/overview"
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 focus-visible:outline-2 focus-visible:outline-ring"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 font-brand focus-visible:outline-2 focus-visible:outline-ring"
           >
             <OvaalMark elevated={false} />
             <span className="min-w-0">

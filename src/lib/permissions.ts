@@ -6,6 +6,8 @@ export const PERMISSIONS = [
   "PAYMENTS_RECORD",
   "SHIFTS_MANAGE",
   "MENU_MANAGE",
+  "INVENTORY_VIEW",
+  "INVENTORY_MANAGE",
   "STAFF_MANAGE",
   "REPORTS_VIEW",
   "SETTINGS_MANAGE",
@@ -45,6 +47,15 @@ export const PERMISSION_META: Record<
   MENU_MANAGE: {
     label: "Manage menu",
     description: "Create categories, items, modifiers, and availability.",
+  },
+  INVENTORY_VIEW: {
+    label: "View inventory",
+    description: "See stock balances, recipes, and movement history.",
+  },
+  INVENTORY_MANAGE: {
+    label: "Manage inventory",
+    description:
+      "Receive stock, record waste and counts, and version meal recipes.",
   },
   STAFF_MANAGE: {
     label: "Manage staff",

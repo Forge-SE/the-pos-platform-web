@@ -25,8 +25,8 @@ export interface SharePoint {
 
 function compactCedis(pesewas: number) {
   const cedis = pesewas / 100
-  if (Math.abs(cedis) >= 1000) return `₵${(cedis / 1000).toFixed(1)}k`
-  return `₵${Math.round(cedis)}`
+  if (Math.abs(cedis) >= 1000) return `GHS ${(cedis / 1000).toFixed(1)}k`
+  return `GHS ${Math.round(cedis)}`
 }
 
 function dayLabel(day: string) {

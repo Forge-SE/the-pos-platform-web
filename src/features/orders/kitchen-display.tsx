@@ -19,12 +19,14 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { DataTable } from "@/components/ui/data-table"
 import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { diningLabel } from "@/features/orders/labels"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
+import { useTablePagination } from "@/lib/table-state"
 
 type ActiveStatus = "NEW" | "PREPARING" | "READY"
 type OrderStatus = ActiveStatus | "COMPLETED" | "CANCELLED"
@@ -502,7 +504,7 @@ export function KitchenDisplay({
 
   return (
     <div
-      className={`content-page mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8 ${readOnly ? "max-h-[calc(100svh-4.5rem)] overflow-y-auto lg:max-h-[calc(100svh-1rem)]" : ""}`}
+      className={`content-page mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8 ${view === "table" ? "lg:flex lg:h-full lg:min-h-0 lg:flex-col" : ""} ${readOnly ? "max-h-[calc(100svh-4.5rem)] overflow-y-auto lg:max-h-[calc(100svh-1rem)]" : ""}`}
     >
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -542,19 +544,21 @@ export function KitchenDisplay({
       </header>
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label className="relative min-w-0 sm:w-64">
-          <MagnifyingGlassIcon
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search ticket or dish"
-            className="h-10 w-full rounded-lg border border-input bg-muted/30 pr-3 pl-9 text-sm shadow-xs transition-[background-color,border-color,box-shadow] outline-none placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:ring-3 focus:ring-ring/20"
-          />
-        </label>
+        {view === "board" && (
+          <label className="relative min-w-0 sm:w-64">
+            <MagnifyingGlassIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search ticket or dish"
+              className="h-10 w-full rounded-lg border border-input bg-muted/30 pr-3 pl-9 text-sm shadow-xs transition-[background-color,border-color,box-shadow] outline-none placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:ring-3 focus:ring-ring/20"
+            />
+          </label>
+        )}
         <div
           className="grid grid-cols-2 rounded-lg border border-border/70 bg-muted/50 p-1 sm:ml-auto"
           aria-label="Order view"
@@ -634,6 +638,9 @@ export function KitchenDisplay({
       ) : (
         <TableView
           orders={orders}
+          search={search}
+          onSearchChange={setSearch}
+          onRefresh={() => void refetch()}
           loading={loading}
           now={now}
           canAdvance={canAdvance}
@@ -901,6 +908,9 @@ function OrderCard({
 
 function TableView({
   orders,
+  search,
+  onSearchChange,
+  onRefresh,
   loading,
   now,
   canAdvance,
@@ -910,6 +920,9 @@ function TableView({
   onAdvance,
 }: {
   orders: Array<KitchenOrder & { status: ActiveStatus }>
+  search: string
+  onSearchChange: (value: string) => void
+  onRefresh: () => void
   loading: boolean
   now: number
   canAdvance: boolean
@@ -918,25 +931,32 @@ function TableView({
   highlightId: string | null
   onAdvance: (order: KitchenOrder) => void
 }) {
+  const paging = useTablePagination("kitchen")
+  const visible = orders.slice(
+    paging.pageIndex * paging.pageSize,
+    (paging.pageIndex + 1) * paging.pageSize
+  )
   if (loading) {
     return (
       <div className="mt-6 h-72 animate-pulse rounded-2xl border border-border/70 bg-muted/30 motion-reduce:animate-none" />
     )
   }
-  if (orders.length === 0) {
-    return (
-      <EmptyState
-        className="mt-6"
-        icon={<ForkKnifeIcon aria-hidden="true" />}
-        title="No active tickets"
-        description="New orders will appear here automatically as soon as the counter submits them."
-      />
-    )
-  }
-
   return (
-    <div className="mt-6 overflow-x-auto rounded-2xl border border-border/70 bg-card">
-      <table className="w-full min-w-[820px] border-collapse text-left text-sm">
+    <div className="mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+      <DataTable
+        ariaLabel="Kitchen orders"
+        rows={visible}
+        search={{
+          value: search,
+          onChange: (value) => {
+            onSearchChange(value)
+            paging.resetPage()
+          },
+          placeholder: "Search ticket or dish",
+        }}
+        onRefresh={onRefresh}
+        pagination={{ ...paging, totalCount: orders.length }}
+      >
         <thead>
           <tr className="border-b border-border/70 bg-muted/35 text-xs tracking-[0.08em] text-muted-foreground uppercase">
             <th className="px-4 py-3 font-semibold">Ticket</th>
@@ -949,7 +969,22 @@ function TableView({
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
-          {orders.map((order) => {
+          {orders.length === 0 && (
+            <tr>
+              <td colSpan={readOnly ? 4 : 5}>
+                <EmptyState
+                  icon={<ForkKnifeIcon aria-hidden="true" />}
+                  title={search ? "No matching tickets" : "No active tickets"}
+                  description={
+                    search
+                      ? "Try a different ticket or dish."
+                      : "New orders will appear here automatically as soon as the counter submits them."
+                  }
+                />
+              </td>
+            </tr>
+          )}
+          {visible.map((order) => {
             const ActionIcon = actionIcon[order.status]
             const pending = pendingOrderId === order.id
             const highlighted = highlightId === order.id
@@ -1032,7 +1067,7 @@ function TableView({
             )
           })}
         </tbody>
-      </table>
+      </DataTable>
     </div>
   )
 }

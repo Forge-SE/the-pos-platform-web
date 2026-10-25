@@ -223,6 +223,7 @@ export type UploadState =
 const currency = new Intl.NumberFormat("en-GH", {
   style: "currency",
   currency: "GHS",
+  currencyDisplay: "code",
   minimumFractionDigits: 2,
 })
 

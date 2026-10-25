@@ -119,7 +119,7 @@ describe("restaurant detail page", () => {
       screen.queryByRole("textbox", { name: "Filter by restaurant ID" })
     ).toBeNull()
     fireEvent.change(
-      screen.getByRole("textbox", { name: "Filter by action" }),
+      screen.getByRole("searchbox", { name: "Search audit actions" }),
       { target: { value: "staff.updated" } }
     )
     expect(state.query).toHaveBeenLastCalledWith(

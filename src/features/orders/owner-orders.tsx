@@ -6,10 +6,12 @@ import { Dialog } from "@base-ui/react/dialog"
 import { XIcon } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
+import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
 import { useUrlState } from "@/lib/url-state"
+import { useTablePagination } from "@/lib/table-state"
 import { ReceiptDialog } from "./receipt-dialog"
 import { diningLabel, statusLabels } from "@/features/orders/labels"
 import type { DiningType } from "@/features/orders/labels"
@@ -102,24 +104,24 @@ const paymentLabels: Record<string, string> = {
 
 export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
   const [receiptOrderId, setReceiptOrderId] = useUrlState("receipt")
-  const [pageParam, setPageParam] = useUrlState("page")
-  const page = Math.max(
-    0,
-    Math.min(1_000_000, Number.parseInt(pageParam ?? "0", 10) || 0)
-  )
+  const paging = useTablePagination("orders", 50, [10, 20, 50])
   const { data, loading, error, refetch } = useQuery<{
     recentOrders: OwnerOrder[]
   }>(RECENT_ORDERS, {
-    variables: { limit: 50, offset: page * 50 },
+    variables: {
+      limit: paging.pageSize + 1,
+      offset: paging.pageIndex * paging.pageSize,
+    },
     pollInterval: 30_000,
   })
   const [selected, setSelected] = useState<OwnerOrder | null>(null)
   const orders = data?.recentOrders ?? []
+  const visible = orders.slice(0, paging.pageSize)
   const role = getAccessTokenProfile()?.role
   const canAdjust = role === "OWNER" || role === "MANAGER"
 
   return (
-    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:px-8 lg:py-8">
       <header>
         {switcher && <div className="mb-5">{switcher}</div>}
         <h1 className="text-3xl font-semibold tracking-[-0.04em]">Orders</h1>
@@ -129,8 +131,18 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
         </p>
       </header>
 
-      <section className="content-region mt-6 overflow-hidden rounded-xl border border-border/70 bg-card">
-        <table className="w-full text-left text-sm">
+      <section className="content-region mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        <DataTable
+          ariaLabel="Orders"
+          rows={visible}
+          onRefresh={() => void refetch()}
+          isLoading={loading}
+          pagination={{
+            ...paging,
+            hasNextPage: orders.length > paging.pageSize,
+            pageSizeOptions: [10, 20, 50],
+          }}
+        >
           <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             <tr>
               <th className="px-4 py-3 font-medium">Ticket</th>
@@ -163,15 +175,17 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                 <td colSpan={5}>
                   <EmptyState
                     title={
-                      page > 0 ? "No orders on this page." : "No orders yet."
+                      paging.pageIndex > 0
+                        ? "No orders on this page."
+                        : "No orders yet."
                     }
                     description="Tickets will appear here after they are placed."
                     action={
-                      page > 0 ? (
+                      paging.pageIndex > 0 ? (
                         <Button
                           variant="outline"
                           size="lg"
-                          onClick={() => setPageParam(null)}
+                          onClick={() => paging.onPageChange(0)}
                         >
                           View newest orders
                         </Button>
@@ -189,7 +203,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                 </td>
               </tr>
             ) : (
-              orders.map((order) => (
+              visible.map((order) => (
                 <tr
                   key={order.id}
                   className="cursor-pointer border-t border-border/70 hover:bg-muted/40"
@@ -228,29 +242,8 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
               ))
             )}
           </tbody>
-        </table>
+        </DataTable>
       </section>
-      <nav
-        aria-label="Order history pages"
-        className="mt-4 flex items-center justify-end gap-3"
-      >
-        <Button
-          variant="outline"
-          disabled={page === 0 || loading}
-          onClick={() => setPageParam(page > 1 ? String(page - 1) : null)}
-        >
-          Newer
-        </Button>
-        <span className="text-xs text-muted-foreground">Page {page + 1}</span>
-        <Button
-          variant="outline"
-          disabled={loading || Boolean(error) || orders.length < 50}
-          onClick={() => setPageParam(String(page + 1))}
-        >
-          Older
-        </Button>
-      </nav>
-
       <Dialog.Root
         open={Boolean(selected)}
         onOpenChange={(open) => !open && setSelected(null)}

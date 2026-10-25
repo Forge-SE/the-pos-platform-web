@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/content-state"
 const currency = new Intl.NumberFormat("en-GH", {
   style: "currency",
   currency: "GHS",
+  currencyDisplay: "code",
   minimumFractionDigits: 2,
 })
 

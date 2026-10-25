@@ -3,6 +3,14 @@
 @import "shadcn/tailwind.css";
 
 @font-face {
+  font-family: "Season Sans";
+  src: url("/fonts/SeasonCollectionVF-TRIAL.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "Tomato Grotesk";
   src: url("/fonts/TomatoGrotesk-Regular.63ff49eb.otf") format("opentype");
   font-style: normal;
@@ -26,19 +34,12 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "General Sans";
-  src: url("/fonts/GeneralSans-Variable.ttf") format("truetype-variations");
-  font-style: normal;
-  font-weight: 200 700;
-  font-display: swap;
-}
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: "Tomato Grotesk", "General Sans", Arial, sans-serif;
-  --font-sans: "Tomato Grotesk", "General Sans", Arial, sans-serif;
+  --font-brand: "Tomato Grotesk", Arial, sans-serif;
+  --font-heading: "Season Sans", Arial, sans-serif;
+  --font-sans: "Season Sans", Arial, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -166,6 +167,7 @@
   }
   html {
     @apply font-sans;
+    font-variation-settings: "SERF" 0;
   }
   h1,
   h2,
@@ -178,6 +180,63 @@
   ::selection {
     @apply bg-primary/20 text-foreground;
   }
+}
+
+/* Shared MLA-style table rhythm, including legacy table content. */
+[data-slot="data-table"] table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+[data-slot="data-table"] table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 2.25rem;
+  color: var(--muted-foreground);
+}
+
+[data-slot="data-table"] table thead tr {
+  background: transparent;
+  border: 0;
+  font-size: 0.875rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+[data-slot="data-table"] table th {
+  padding: 0.5rem 0.75rem;
+  background: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+[data-slot="data-table"] table th:first-child {
+  border-radius: 0.25rem 0 0 0.25rem;
+}
+
+[data-slot="data-table"] table th:last-child {
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+[data-slot="data-table"] table th:only-child {
+  border-radius: 0.25rem;
+}
+
+[data-slot="data-table"] table td {
+  padding: 0.625rem 0.75rem;
+}
+
+[data-slot="data-table"] table tbody tr {
+  border: 0;
+}
+
+[data-slot="data-table"] table tbody tr:nth-child(even) {
+  background: color-mix(in oklch, var(--muted) 60%, transparent);
+}
+
+[data-slot="data-table"] table tbody tr:hover {
+  background: color-mix(in oklch, var(--muted) 80%, transparent);
 }
 
 @keyframes tagline-reveal {
@@ -195,6 +254,13 @@
 
 @utility animate-tagline-reveal {
   animation: tagline-reveal 0.8s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/* Room for the constant notification bell in the content heading. */
+@media (min-width: 64rem) {
+  .content-page > :first-child {
+    padding-right: 3.5rem;
+  }
 }
 
 /* Content feedback fills its page/region, without stretching populated views. */

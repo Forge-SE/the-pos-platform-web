@@ -7,7 +7,12 @@ function readParam(key: string): string | null {
   return new URLSearchParams(window.location.search).get(key)
 }
 
-function writeParam(key: string, value: string | null) {
+function writeParam(
+  key: string,
+  value: string | null,
+  historyMode: "replace" | "push" = "replace"
+) {
+  if (readParam(key) === value) return
   const params = new URLSearchParams(window.location.search)
   if (value === null) {
     params.delete(key)
@@ -15,7 +20,7 @@ function writeParam(key: string, value: string | null) {
     params.set(key, value)
   }
   const query = params.toString()
-  window.history.replaceState(
+  window.history[historyMode === "push" ? "pushState" : "replaceState"](
     null,
     "",
     `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`
@@ -24,12 +29,14 @@ function writeParam(key: string, value: string | null) {
 }
 
 /**
- * Syncs a single value with a URL search param (via history.replaceState, so
- * no navigation occurs). Dialogs, modal steps, and tabs built on this are
+ * Syncs a single value with a URL search param. Callers can push history for
+ * navigable states such as table pages; the default replaces the current URL.
+ * Dialogs, modal steps, and tabs built on this are
  * deep-linkable and survive refreshes and back/forward navigation.
  */
 export function useUrlState(
-  key: string
+  key: string,
+  historyMode: "replace" | "push" = "replace"
 ): [string | null, (value: string | null) => void] {
   const [value, setValue] = useState<string | null>(() => readParam(key))
 
@@ -45,10 +52,10 @@ export function useUrlState(
 
   const set = useCallback(
     (next: string | null) => {
-      writeParam(key, next)
+      writeParam(key, next, historyMode)
       setValue(next)
     },
-    [key]
+    [key, historyMode]
   )
 
   return [value, set]

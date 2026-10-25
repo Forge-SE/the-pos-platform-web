@@ -93,7 +93,9 @@ export function OwnerOnboarding() {
         <div className="flex items-center gap-3">
           <OvaalMark elevated={false} />
           <div>
-            <p className="text-sm font-semibold tracking-[-0.02em]">Ovaal</p>
+            <p className="font-brand text-sm font-semibold tracking-[-0.02em]">
+              Ovaal
+            </p>
             <p className="text-xs text-muted-foreground">
               First sign-in for {profile.name}
             </p>

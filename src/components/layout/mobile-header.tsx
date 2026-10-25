@@ -5,6 +5,7 @@ import {
   primaryNavigationFor,
   seesManagementItem,
 } from "@/components/layout/sidebar"
+import { NotificationButton } from "@/components/layout/notification-button"
 import { OvaalMark } from "@/components/ovaal-mark"
 import { ProfileMenu } from "@/components/layout/profile-menu"
 import type { AccessTokenProfile } from "@/lib/auth-token"
@@ -29,7 +30,7 @@ export function MobileHeader({
       <div className="flex items-center justify-between px-4 py-3">
         <Link
           to="/overview"
-          className="flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
+          className="flex items-center gap-2.5 rounded-lg font-brand focus-visible:outline-2 focus-visible:outline-ring"
         >
           <OvaalMark elevated={false} />
           <span className="font-semibold tracking-[-0.025em]">Ovaal</span>
@@ -38,6 +39,7 @@ export function MobileHeader({
           <span className="hidden text-sm text-muted-foreground sm:inline">
             {profile.name}
           </span>
+          <NotificationButton />
           <ProfileMenu onSignOut={onSignOut} />
         </div>
       </div>
@@ -52,7 +54,7 @@ export function MobileHeader({
               key={item.to}
               to={item.to}
               aria-current={active ? "page" : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
                 active
                   ? "bg-primary/25 text-secondary"
                   : "bg-muted text-muted-foreground"
@@ -60,7 +62,7 @@ export function MobileHeader({
             >
               <item.icon
                 aria-hidden="true"
-                className="size-3.5"
+                className="size-4"
                 weight={active ? "fill" : "regular"}
               />
               {item.label}

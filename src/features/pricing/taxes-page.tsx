@@ -4,6 +4,7 @@ import { PlusIcon, ReceiptIcon, WarningCircleIcon } from "@phosphor-icons/react"
 import { Navigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { DataTable } from "@/components/ui/data-table"
 import { ContentState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
@@ -18,6 +19,7 @@ import {
 import type { Tax } from "@/features/pricing/model"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { useUrlState } from "@/lib/url-state"
+import { useTablePagination } from "@/lib/table-state"
 
 export function TaxesPage() {
   const profile = getAccessTokenProfile()
@@ -27,13 +29,21 @@ export function TaxesPage() {
   }>(TAXES_QUERY, { skip: !canManage })
   const [setTaxActive] = useMutation(SET_TAX_ACTIVE)
   const [newTax, setNewTax] = useUrlState("newTax")
+  const [search, setSearch] = useUrlState("taxSearch")
+  const paging = useTablePagination("taxes")
+  const taxes = data?.restaurantTaxes ?? []
+  const filtered = taxes.filter((tax) =>
+    tax.name.toLowerCase().includes((search ?? "").toLowerCase().trim())
+  )
+  const visible = filtered.slice(
+    paging.pageIndex * paging.pageSize,
+    (paging.pageIndex + 1) * paging.pageSize
+  )
 
   if (!canManage) return <Navigate to="/overview" replace />
 
-  const taxes = data?.restaurantTaxes ?? []
-
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-[1440px] flex-col px-4 py-5 sm:px-6 lg:min-h-full lg:px-8 lg:py-8">
+    <div className="content-page mx-auto flex min-h-svh w-full max-w-[1440px] flex-col px-4 py-5 sm:px-6 lg:min-h-full lg:px-8 lg:py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
@@ -101,8 +111,22 @@ export function TaxesPage() {
               }
             />
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border/70 bg-card">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+            <div className="overflow-hidden rounded-md bg-card">
+              <DataTable
+                ariaLabel="Custom tax rates"
+                rows={visible}
+                search={{
+                  value: search ?? "",
+                  onChange: (value) => {
+                    setSearch(value || null)
+                    paging.resetPage()
+                  },
+                  placeholder: "Search tax rates",
+                }}
+                onRefresh={() => void refetch()}
+                isLoading={loading}
+                pagination={{ ...paging, totalCount: filtered.length }}
+              >
                 <thead>
                   <tr className="border-b border-border/60 bg-muted/30 text-xs tracking-[0.06em] text-muted-foreground uppercase">
                     <th scope="col" className="px-4 py-3 font-semibold">
@@ -126,6 +150,17 @@ export function TaxesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
+                  {!loading && visible.length === 0 && (
+                    <tr>
+                      <td colSpan={5}>
+                        <ContentState
+                          icon={<ReceiptIcon />}
+                          title="No tax rates match your search."
+                          description="Try a different name."
+                        />
+                      </td>
+                    </tr>
+                  )}
                   {loading
                     ? Array.from({ length: 4 }).map((_, index) => (
                         <tr key={index} className="animate-pulse">
@@ -146,7 +181,7 @@ export function TaxesPage() {
                           </td>
                         </tr>
                       ))
-                    : taxes.map((tax) => (
+                    : visible.map((tax) => (
                         <tr
                           key={tax.id}
                           className="transition-colors hover:bg-muted/30"
@@ -200,7 +235,7 @@ export function TaxesPage() {
                         </tr>
                       ))}
                 </tbody>
-              </table>
+              </DataTable>
             </div>
           )}
         </section>
