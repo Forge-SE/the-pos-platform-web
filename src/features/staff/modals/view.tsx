@@ -1,6 +1,7 @@
 import { Dialog } from "@base-ui/react/dialog"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Button } from "@/components/ui/button"
 import { roleLabels } from "@/features/staff/model"
 import type { StaffMember } from "@/features/staff/model"
@@ -59,20 +60,9 @@ export function ViewStaffDialog({
           <div className="flex items-center justify-between gap-4">
             <dt className="text-muted-foreground">Status</dt>
             <dd>
-              {member.active ? (
-                <Badge
-                  variant="outline"
-                  className="border-transparent bg-primary/25 text-primary-foreground"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="size-1.5 rounded-full bg-secondary"
-                  />
-                  Active
-                </Badge>
-              ) : (
-                <Badge variant="destructive">Inactive</Badge>
-              )}
+              <StatusBadge tone={member.active ? "success" : "destructive"}>
+                {member.active ? "Active" : "Inactive"}
+              </StatusBadge>
             </dd>
           </div>
         </dl>

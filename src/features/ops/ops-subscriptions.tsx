@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
+import { DataTable } from "@/components/ui/data-table"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,8 @@ import {
   mutationMessage,
 } from "@/features/menu/model"
 import { opsAuthContext } from "@/lib/ops-token"
+import { useUrlState } from "@/lib/url-state"
+import { useTablePagination } from "@/lib/table-state"
 
 const PLANS_QUERY = gql`
   query PlatformSubscriptionPlans {
@@ -158,6 +161,27 @@ export function OpsSubscriptions() {
   })
   const plans = data?.platformSubscriptionPlans ?? []
   const subscriptions = data?.platformRestaurantSubscriptions ?? []
+  const [planSearch, setPlanSearch] = useUrlState("planSearch")
+  const [subscriptionSearch, setSubscriptionSearch] =
+    useUrlState("subscriptionSearch")
+  const planPaging = useTablePagination("plans")
+  const subscriptionPaging = useTablePagination("subscriptions")
+  const filteredPlans = plans.filter((plan) =>
+    plan.name.toLowerCase().includes((planSearch ?? "").toLowerCase().trim())
+  )
+  const filteredSubscriptions = subscriptions.filter((row) =>
+    `${row.restaurantName} ${row.plan.name} ${row.status}`
+      .toLowerCase()
+      .includes((subscriptionSearch ?? "").toLowerCase().trim())
+  )
+  const visiblePlans = filteredPlans.slice(
+    planPaging.pageIndex * planPaging.pageSize,
+    (planPaging.pageIndex + 1) * planPaging.pageSize
+  )
+  const visibleSubscriptions = filteredSubscriptions.slice(
+    subscriptionPaging.pageIndex * subscriptionPaging.pageSize,
+    (subscriptionPaging.pageIndex + 1) * subscriptionPaging.pageSize
+  )
   const saving = creating || updating
 
   return (
@@ -176,11 +200,25 @@ export function OpsSubscriptions() {
           Add tier
         </Button>
       </OpsHeader>
-      <section className="content-region mx-4 mb-6 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
+      <section className="content-region mx-4 mb-6 overflow-hidden rounded-md bg-card lg:mx-8">
         <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">
           Tiers
         </h2>
-        <table className="w-full text-left text-sm">
+        <DataTable
+          ariaLabel="Subscription plans"
+          rows={visiblePlans}
+          search={{
+            value: planSearch ?? "",
+            onChange: (value) => {
+              setPlanSearch(value || null)
+              planPaging.resetPage()
+            },
+            placeholder: "Search plans",
+          }}
+          onRefresh={() => void refetch()}
+          isLoading={loading}
+          pagination={{ ...planPaging, totalCount: filteredPlans.length }}
+        >
           <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             <tr>
               <th className="px-4 py-3 font-medium">Plan</th>
@@ -191,6 +229,19 @@ export function OpsSubscriptions() {
             </tr>
           </thead>
           <tbody>
+            {!loading &&
+              !error &&
+              visiblePlans.length === 0 &&
+              plans.length > 0 && (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      title="No plans match your search."
+                      description="Try another plan name."
+                    />
+                  </td>
+                </tr>
+              )}
             {loading && (
               <tr>
                 <td colSpan={5}>
@@ -230,7 +281,7 @@ export function OpsSubscriptions() {
               </tr>
             )}
             {!error &&
-              plans.map((plan) => (
+              visiblePlans.map((plan) => (
                 <tr key={plan.id} className="border-t border-border/70">
                   <td className="px-4 py-3">
                     <span className="block font-medium">{plan.name}</span>
@@ -267,10 +318,10 @@ export function OpsSubscriptions() {
                 </tr>
               ))}
           </tbody>
-        </table>
+        </DataTable>
       </section>
 
-      <section className="content-region mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
+      <section className="content-region mx-4 mb-8 overflow-hidden rounded-md bg-card lg:mx-8">
         <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
           <h2 className="text-sm font-semibold">Restaurant subscriptions</h2>
           <Button
@@ -282,7 +333,24 @@ export function OpsSubscriptions() {
             Assign plan
           </Button>
         </div>
-        <table className="w-full text-left text-sm">
+        <DataTable
+          ariaLabel="Restaurant subscriptions"
+          rows={visibleSubscriptions}
+          search={{
+            value: subscriptionSearch ?? "",
+            onChange: (value) => {
+              setSubscriptionSearch(value || null)
+              subscriptionPaging.resetPage()
+            },
+            placeholder: "Search subscriptions",
+          }}
+          onRefresh={() => void refetch()}
+          isLoading={loading}
+          pagination={{
+            ...subscriptionPaging,
+            totalCount: filteredSubscriptions.length,
+          }}
+        >
           <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             <tr>
               <th className="px-4 py-3 font-medium">Restaurant</th>
@@ -293,6 +361,19 @@ export function OpsSubscriptions() {
             </tr>
           </thead>
           <tbody>
+            {!loading &&
+              !error &&
+              visibleSubscriptions.length === 0 &&
+              subscriptions.length > 0 && (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      title="No subscriptions match your search."
+                      description="Try another restaurant or plan."
+                    />
+                  </td>
+                </tr>
+              )}
             {error && (
               <tr>
                 <td colSpan={5}>
@@ -332,7 +413,7 @@ export function OpsSubscriptions() {
               </tr>
             )}
             {!error &&
-              subscriptions.map((row) => (
+              visibleSubscriptions.map((row) => (
                 <tr key={row.id} className="border-t border-border/70">
                   <td className="px-4 py-3 font-medium">
                     {row.restaurantName}
@@ -348,7 +429,7 @@ export function OpsSubscriptions() {
                 </tr>
               ))}
           </tbody>
-        </table>
+        </DataTable>
       </section>
 
       {editing && (

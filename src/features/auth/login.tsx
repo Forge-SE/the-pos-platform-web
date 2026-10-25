@@ -679,7 +679,16 @@ function RotatingTagline() {
       aria-live="polite"
       className="animate-tagline-reveal font-heading text-xl leading-tight font-medium text-white drop-shadow-md sm:text-2xl"
     >
-      {tagline.lead} <span className="text-primary">{tagline.accent}</span>
+      {tagline.lead}{" "}
+      <span
+        className={
+          tagline.accent === "Ovaal"
+            ? "font-brand text-primary"
+            : "text-primary"
+        }
+      >
+        {tagline.accent}
+      </span>
     </p>
   )
 }

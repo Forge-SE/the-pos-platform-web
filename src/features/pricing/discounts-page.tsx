@@ -3,6 +3,8 @@ import { PlusIcon } from "@phosphor-icons/react"
 import { Navigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
+import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toaster"
@@ -18,6 +20,7 @@ import {
 import type { Campaign } from "@/features/pricing/model"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { useUrlState } from "@/lib/url-state"
+import { useTablePagination } from "@/lib/table-state"
 
 export function DiscountsPage() {
   const profile = getAccessTokenProfile()
@@ -27,12 +30,23 @@ export function DiscountsPage() {
   }>(DISCOUNTS_QUERY, { skip: !canManage })
   const [setDiscountStatus] = useMutation(SET_DISCOUNT_STATUS)
   const [newDiscount, setNewDiscount] = useUrlState("newDiscount")
+  const [search, setSearch] = useUrlState("discountSearch")
+  const paging = useTablePagination("discounts")
   const campaigns = data?.discountCampaigns ?? []
+  const filtered = campaigns.filter((campaign) =>
+    `${campaign.name} ${campaign.code ?? ""} ${campaign.status}`
+      .toLowerCase()
+      .includes((search ?? "").toLowerCase().trim())
+  )
+  const visible = filtered.slice(
+    paging.pageIndex * paging.pageSize,
+    (paging.pageIndex + 1) * paging.pageSize
+  )
 
   if (!canManage) return <Navigate to="/overview" replace />
 
   return (
-    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:px-8 lg:py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
@@ -48,7 +62,7 @@ export function DiscountsPage() {
         </Button>
       </div>
 
-      <section className="content-region mt-8">
+      <section className="content-region mt-8 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         {error ? (
           <ErrorState
             title="Discounts could not be loaded."
@@ -65,8 +79,22 @@ export function DiscountsPage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border/70 bg-card">
-            <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+          <div className="overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+            <DataTable
+              ariaLabel="Discounts"
+              rows={visible}
+              search={{
+                value: search ?? "",
+                onChange: (value) => {
+                  setSearch(value || null)
+                  paging.resetPage()
+                },
+                placeholder: "Search discounts",
+              }}
+              onRefresh={() => void refetch()}
+              isLoading={loading}
+              pagination={{ ...paging, totalCount: filtered.length }}
+            >
               <thead>
                 <tr className="border-b border-border/60 bg-muted/30 text-xs tracking-[0.06em] text-muted-foreground uppercase">
                   <th scope="col" className="px-4 py-3 font-semibold">
@@ -96,6 +124,16 @@ export function DiscountsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
+                {!loading && visible.length === 0 && (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState
+                        title="No discounts match your search."
+                        description="Try a different name or code."
+                      />
+                    </td>
+                  </tr>
+                )}
                 {loading
                   ? Array.from({ length: 4 }).map((_, index) => (
                       <tr key={index} className="animate-pulse">
@@ -106,7 +144,7 @@ export function DiscountsPage() {
                         ))}
                       </tr>
                     ))
-                  : campaigns.map((campaign) => (
+                  : visible.map((campaign) => (
                       <tr
                         key={campaign.id}
                         className="transition-colors hover:bg-muted/30"
@@ -130,20 +168,21 @@ export function DiscountsPage() {
                           {campaign.maxUses ? `/${campaign.maxUses}` : ""}
                         </td>
                         <td className="px-4 py-3.5">
-                          {campaign.status === "ACTIVE" ? (
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-primary/25 text-primary-foreground"
-                            >
-                              Active
-                            </Badge>
-                          ) : campaign.status === "PAUSED" ? (
-                            <Badge variant="destructive">Paused</Badge>
-                          ) : (
-                            <Badge variant="outline">
-                              {statusLabels[campaign.status]}
-                            </Badge>
-                          )}
+                          <StatusBadge
+                            tone={
+                              campaign.status === "ACTIVE"
+                                ? "success"
+                                : campaign.status === "PAUSED"
+                                  ? "destructive"
+                                  : "neutral"
+                            }
+                          >
+                            {campaign.status === "ACTIVE"
+                              ? "Active"
+                              : campaign.status === "PAUSED"
+                                ? "Paused"
+                                : statusLabels[campaign.status]}
+                          </StatusBadge>
                         </td>
                         <td className="px-4 py-3.5 text-right">
                           <Button
@@ -181,7 +220,7 @@ export function DiscountsPage() {
                       </tr>
                     ))}
               </tbody>
-            </table>
+            </DataTable>
           </div>
         )}
       </section>

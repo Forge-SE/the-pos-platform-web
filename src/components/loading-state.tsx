@@ -11,7 +11,7 @@ export function LoadingState({
     <div
       role="status"
       aria-live="polite"
-      className={`flex min-h-40 w-full flex-col items-center justify-center gap-3 py-8 text-center ${className}`}
+      className={`flex min-h-40 w-full flex-col items-center justify-center gap-3 py-8 text-center font-brand ${className}`}
     >
       <span className="relative flex size-14 items-center justify-center rounded-full text-primary">
         <span className="absolute inset-0 animate-spin rounded-full border-2 border-primary/20 border-t-primary motion-reduce:animate-none" />

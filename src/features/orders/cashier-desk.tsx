@@ -160,9 +160,9 @@ const INITIATE_MOMO = gql`
 
 const tipPresets = [
   { id: "none", label: "None", amount: 0 },
-  { id: "2", label: "GH₵2", amount: 200 },
-  { id: "5", label: "GH₵5", amount: 500 },
-  { id: "10", label: "GH₵10", amount: 1000 },
+  { id: "2", label: "GHS 2", amount: 200 },
+  { id: "5", label: "GHS 5", amount: 500 },
+  { id: "10", label: "GHS 10", amount: 1000 },
 ] as const
 
 const networks = [
@@ -536,7 +536,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             : "content-region flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]"
         }
       >
-        <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
+        <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:pt-8 lg:pr-20 lg:pl-8">
           <div className="min-w-0">
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
               Counter
@@ -1231,7 +1231,7 @@ function BagDrawer(props: {
                   props.onCustomTip(event.target.value)
                   props.onTipChoice("custom")
                 }}
-                placeholder="Custom GH₵"
+                placeholder="Custom GHS"
                 aria-label="Custom tip in cedis"
                 className="mt-3"
               />

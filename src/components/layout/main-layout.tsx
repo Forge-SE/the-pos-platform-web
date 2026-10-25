@@ -10,6 +10,7 @@ import {
 import { useUrlState } from "@/lib/url-state"
 
 import { MobileHeader } from "@/components/layout/mobile-header"
+import { NotificationButton } from "@/components/layout/notification-button"
 import { ShiftBanner } from "@/components/layout/shift-banner"
 import { Sidebar } from "@/components/layout/sidebar"
 import { ErrorState } from "@/components/content-state"
@@ -128,11 +129,22 @@ export function MainLayout() {
           className={
             fullscreen
               ? "min-h-0 flex-1 overflow-hidden bg-card text-card-foreground"
-              : "min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto"
+              : "relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto"
           }
         >
           <div className={fullscreen ? "hidden" : "contents"}>
             <MobileHeader profile={profile} onSignOut={signOut} />
+          </div>
+          <div
+            className={
+              fullscreen
+                ? "hidden"
+                : "pointer-events-none absolute top-8 right-8 z-30 hidden lg:block"
+            }
+          >
+            <div className="pointer-events-auto">
+              <NotificationButton />
+            </div>
           </div>
           <Outlet />
         </section>

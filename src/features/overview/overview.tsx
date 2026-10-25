@@ -18,8 +18,13 @@ import {
 import { PaymentDonut, PaymentDonutSkeleton } from "@/components/payment-donut"
 import { ContentState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
-import { diningLabel } from "@/features/orders/labels"
+import {
+  diningLabel,
+  orderStatusTone,
+  statusLabels,
+} from "@/features/orders/labels"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Button } from "@/components/ui/button"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import type { AccessTokenProfile } from "@/lib/auth-token"
@@ -30,12 +35,22 @@ const ACTIVE_ORDER_FIELDS = gql`
     id
     status
     diningType
+    notes
+    tip
     total
     createdAt
+    payment {
+      method
+    }
     items {
       id
       name
       quantity
+      notes
+      modifiers {
+        id
+        name
+      }
     }
   }
 `
@@ -108,9 +123,18 @@ interface ActiveOrder {
   id: string
   status: "NEW" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED"
   diningType: "DINE_IN" | "TAKEAWAY" | "DELIVERY"
+  notes: string | null
+  tip: number
   total: number
   createdAt: string
-  items: Array<{ id: string; name: string; quantity: number }>
+  payment: { method: "CASH" | "MOMO" | "TRANSFER" } | null
+  items: Array<{
+    id: string
+    name: string
+    quantity: number
+    notes: string | null
+    modifiers: Array<{ id: string; name: string }>
+  }>
 }
 
 interface OperationsData {
@@ -148,22 +172,34 @@ interface OpenShiftVariables {
   }
 }
 
-const statusStyles: Record<ActiveOrder["status"], string> = {
-  NEW: "border-amber-200 bg-amber-50 text-amber-800",
-  PREPARING: "border-sky-200 bg-sky-50 text-sky-800",
-  READY: "border-primary/30 bg-primary/10 text-secondary",
-  COMPLETED: "border-border bg-muted text-muted-foreground",
-  CANCELLED: "border-destructive/20 bg-destructive/5 text-destructive",
-}
-
 const currency = new Intl.NumberFormat("en-GH", {
   style: "currency",
   currency: "GHS",
+  currencyDisplay: "code",
   minimumFractionDigits: 2,
 })
 
 function formatMoney(value: number) {
   return currency.format(value / 100)
+}
+
+const paymentLabels: Record<
+  NonNullable<ActiveOrder["payment"]>["method"],
+  string
+> = {
+  CASH: "Cash",
+  MOMO: "Mobile money",
+  TRANSFER: "Transfer",
+}
+
+function elapsedLabel(createdAt: string) {
+  const minutes = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000)
+  )
+  if (minutes < 1) return "Just now"
+  if (minutes === 1) return "1 min ago"
+  return `${minutes} min ago`
 }
 
 function greeting() {
@@ -289,7 +325,15 @@ export function Overview() {
     return orders.filter(
       (order) =>
         order.id.toLowerCase().includes(query) ||
-        order.items.some((item) => item.name.toLowerCase().includes(query))
+        order.notes?.toLowerCase().includes(query) ||
+        order.items.some(
+          (item) =>
+            item.name.toLowerCase().includes(query) ||
+            item.notes?.toLowerCase().includes(query) ||
+            item.modifiers.some((modifier) =>
+              modifier.name.toLowerCase().includes(query)
+            )
+        )
     )
   }, [orders, search])
   const shift = data?.currentShift
@@ -392,7 +436,7 @@ export function Overview() {
       {!loading && opensShift && shift && (
         <Link
           to="/shift"
-          className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-card px-4 py-3 transition-colors hover:bg-muted/40"
+          className="mt-5 flex items-center justify-between gap-4 rounded-lg border border-border/70 bg-card px-4 py-3 transition-colors hover:bg-muted/40"
         >
           <span>
             <span className="block text-sm font-semibold">Shift is open</span>
@@ -418,7 +462,6 @@ export function Overview() {
                   ? "—"
                   : formatMoney(salesData?.salesToday.totalSales ?? 0)
               }
-              detail="Completed sales, less refunds; excludes tax and tips"
             />
             <QuickStat
               icon={ReceiptIcon}
@@ -428,7 +471,6 @@ export function Overview() {
                   ? "—"
                   : String(salesData?.salesToday.orderCount ?? 0)
               }
-              detail="Completed today"
             />
           </>
         )}
@@ -436,20 +478,21 @@ export function Overview() {
           icon={ReceiptIcon}
           label="Active orders"
           value={loading ? "—" : String(orders.length)}
-          detail="Across the floor"
         />
-        <QuickStat
-          icon={ForkKnifeIcon}
-          label="In preparation"
-          value={loading ? "—" : String(orderCounts.preparing)}
-          detail="With the kitchen"
-        />
-        <QuickStat
-          icon={UsersThreeIcon}
-          label="Ready to serve"
-          value={loading ? "—" : String(orderCounts.ready)}
-          detail="Needs attention"
-        />
+        {!canSeeSales && (
+          <>
+            <QuickStat
+              icon={ForkKnifeIcon}
+              label="In preparation"
+              value={loading ? "—" : String(orderCounts.preparing)}
+            />
+            <QuickStat
+              icon={UsersThreeIcon}
+              label="Ready to serve"
+              value={loading ? "—" : String(orderCounts.ready)}
+            />
+          </>
+        )}
       </section>
 
       {error ? (
@@ -521,7 +564,7 @@ function ActiveOrders({
   onClearSearch: () => void
 }) {
   return (
-    <section className="flex flex-col rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+    <section className="flex flex-col rounded-lg border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
@@ -556,42 +599,96 @@ function ActiveOrders({
           }
         />
       ) : (
-        <ul className="mt-4 divide-y divide-border/70">
-          {orders.slice(0, 5).map((order) => (
-            <li
-              key={order.id}
-              className="group flex items-center gap-4 py-3.5 first:pt-1 last:pb-0"
-            >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-semibold tabular-nums">
-                #{order.id.slice(-3).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">
-                  {order.items
-                    .map((item) => `${item.quantity}× ${item.name}`)
-                    .join(", ") || "Order items"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {diningLabel(order.diningType)} ·{" "}
-                  {new Date(order.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold tabular-nums">
-                  {formatMoney(order.total)}
-                </p>
-                <span
-                  className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${statusStyles[order.status]}`}
+        <div className="mt-4 max-h-[32rem] overflow-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="sticky top-0 bg-card text-xs tracking-[0.06em] text-muted-foreground uppercase">
+              <tr className="border-b border-border/70">
+                <th className="py-2 pr-3 font-medium">Ticket</th>
+                <th className="py-2 pr-3 font-medium">Opened</th>
+                <th className="py-2 pr-3 font-medium">Dining</th>
+                <th className="py-2 pr-3 font-medium">Items</th>
+                <th className="py-2 pr-3 font-medium">Status</th>
+                <th className="py-2 pr-3 font-medium">Payment</th>
+                <th className="py-2 text-right font-medium">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr
+                  key={order.id}
+                  className="border-t border-border/50 align-top"
                 >
-                  {order.status.toLowerCase()}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  <td className="py-3 pr-3 font-semibold tabular-nums">
+                    #{order.id.slice(-6).toUpperCase()}
+                  </td>
+                  <td className="py-3 pr-3 whitespace-nowrap">
+                    <span className="block">
+                      {new Date(order.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {elapsedLabel(order.createdAt)}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-3 whitespace-nowrap">
+                    {diningLabel(order.diningType)}
+                  </td>
+                  <td className="py-3 pr-3">
+                    <ul className="space-y-2">
+                      {order.items.map((item) => (
+                        <li key={item.id}>
+                          <p className="font-medium">
+                            <span className="tabular-nums">
+                              {item.quantity}×
+                            </span>{" "}
+                            {item.name}
+                          </p>
+                          {item.modifiers.length > 0 && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {item.modifiers
+                                .map((modifier) => modifier.name)
+                                .join(" · ")}
+                            </p>
+                          )}
+                          {item.notes && (
+                            <p className="mt-0.5 text-xs text-destructive">
+                              {item.notes}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {order.notes && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Note: {order.notes}
+                      </p>
+                    )}
+                  </td>
+                  <td className="py-3 pr-3">
+                    <StatusBadge tone={orderStatusTone(order.status)}>
+                      {statusLabels[order.status] ?? order.status}
+                    </StatusBadge>
+                  </td>
+                  <td className="py-3 pr-3 whitespace-nowrap">
+                    {order.payment
+                      ? paymentLabels[order.payment.method]
+                      : "Unpaid"}
+                    {order.tip > 0 && (
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Tip {formatMoney(order.tip)}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 text-right font-semibold whitespace-nowrap tabular-nums">
+                    {formatMoney(order.total)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )
@@ -609,7 +706,7 @@ function PaymentMix({
   onRetry: () => unknown
 }) {
   return (
-    <section className="content-region rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+    <section className="content-region rounded-lg border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
@@ -619,7 +716,7 @@ function PaymentMix({
             How today&apos;s settled sales were collected.
           </p>
         </div>
-        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-secondary">
+        <span className="flex size-9 items-center justify-center rounded-md bg-primary/15 text-secondary">
           <WalletIcon
             aria-hidden="true"
             className="size-[18px]"
@@ -678,27 +775,20 @@ function QuickStat({
   icon: Icon,
   label,
   value,
-  detail,
 }: {
   icon: Icon
   label: string
   value: string
-  detail: string
 }) {
   return (
-    <article className="min-w-0 rounded-xl border border-border/70 bg-card p-4">
+    <article className="flex min-h-32 min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card p-5">
       <div className="flex items-start justify-between gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-secondary">
-          <Icon aria-hidden="true" className="size-4" />
+        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-secondary">
+          <Icon aria-hidden="true" className="size-[18px]" />
         </span>
-        <p className="truncate text-[10px] font-medium text-muted-foreground">
-          {detail}
-        </p>
       </div>
-      <p className="mt-4 truncate text-xs font-medium text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1 truncate text-xl font-semibold tracking-[-0.02em] tabular-nums">
+      <p className="mt-5 truncate text-2xl font-semibold tracking-[-0.03em] tabular-nums sm:text-3xl">
         {value}
       </p>
     </article>

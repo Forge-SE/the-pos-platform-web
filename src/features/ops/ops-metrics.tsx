@@ -4,6 +4,7 @@ import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 
 import { Input } from "@/components/ui/input"
+import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import {
   Select,
@@ -17,6 +18,8 @@ import { OpsHeader } from "@/features/ops/ops-shell"
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
 import { formatMoney } from "@/features/menu/model"
 import { opsAuthContext } from "@/lib/ops-token"
+import { useUrlState } from "@/lib/url-state"
+import { useTablePagination } from "@/lib/table-state"
 
 const METRICS_QUERY = gql`
   query PlatformOrderMetrics(
@@ -354,12 +357,34 @@ function Breakdown({
   revenueLabel?: string
   countLabel?: string
 }) {
+  const key = title.toLowerCase().replace(/[^a-z0-9]+/g, "")
+  const [search, setSearch] = useUrlState(`${key}Search`)
+  const paging = useTablePagination(key)
+  const filtered = rows.filter((row) =>
+    row.label.toLowerCase().includes((search ?? "").toLowerCase().trim())
+  )
+  const visible = filtered.slice(
+    paging.pageIndex * paging.pageSize,
+    (paging.pageIndex + 1) * paging.pageSize
+  )
   return (
-    <section className="content-region overflow-hidden rounded-xl border border-border/70 bg-card">
+    <section className="content-region overflow-hidden rounded-md bg-card">
       <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">
         {title}
       </h2>
-      <table className="w-full text-left text-sm">
+      <DataTable
+        ariaLabel={title}
+        rows={visible}
+        search={{
+          value: search ?? "",
+          onChange: (value) => {
+            setSearch(value || null)
+            paging.resetPage()
+          },
+          placeholder: `Search ${title.toLowerCase()}`,
+        }}
+        pagination={{ ...paging, totalCount: filtered.length }}
+      >
         <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
           <tr>
             <th className="px-4 py-3 font-medium">Name</th>
@@ -368,7 +393,7 @@ function Breakdown({
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 ? (
+          {visible.length === 0 ? (
             <tr>
               <td colSpan={3}>
                 <EmptyState
@@ -378,7 +403,7 @@ function Breakdown({
               </td>
             </tr>
           ) : (
-            rows.map((row) => (
+            visible.map((row) => (
               <tr key={row.label} className="border-t border-border/70">
                 <td className="px-4 py-3 font-medium">{row.label}</td>
                 <td className="px-4 py-3">{row.orderCount}</td>
@@ -387,7 +412,7 @@ function Breakdown({
             ))
           )}
         </tbody>
-      </table>
+      </DataTable>
     </section>
   )
 }

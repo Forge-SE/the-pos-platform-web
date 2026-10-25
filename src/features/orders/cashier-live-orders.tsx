@@ -2,9 +2,10 @@ import { gql } from "@apollo/client"
 import { useQuery, useSubscription } from "@apollo/client/react"
 import { ArrowClockwiseIcon } from "@phosphor-icons/react"
 import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { LoadingState } from "@/components/loading-state"
-import { diningLabel, statusLabels } from "./labels"
+import { Button } from "@/components/ui/button"
+import { StatusBadge } from "@/components/ui/status-badge"
+import { diningLabel, orderStatusTone, statusLabels } from "./labels"
 import type { DiningType } from "./labels"
 
 const ACTIVE_ORDERS = gql`
@@ -231,11 +232,9 @@ export function CashierLiveOrders() {
               <h3 className="text-sm font-semibold tabular-nums">
                 #{order.id.slice(-6).toUpperCase()}
               </h3>
-              <span
-                className={`rounded-md px-2 py-1 text-xs font-medium ${order.status === "READY" ? "bg-emerald-100 text-emerald-900" : order.status === "PREPARING" ? "bg-amber-100 text-amber-900" : "bg-sky-100 text-sky-900"}`}
-              >
+              <StatusBadge tone={orderStatusTone(order.status)}>
                 {statusLabels[order.status] ?? order.status}
-              </span>
+              </StatusBadge>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               {diningLabel(order.diningType)} ·{" "}

@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import * as Yup from "yup"
 
 import { SectionPage } from "@/components/layout/section-page"
-import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
@@ -207,7 +207,7 @@ export function ShiftDesk() {
               <h2 className="text-lg font-semibold tracking-[-0.025em]">
                 Current shift
               </h2>
-              <Badge>Open</Badge>
+              <StatusBadge tone="success">Open</StatusBadge>
             </div>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
@@ -331,11 +331,11 @@ export function ShiftDesk() {
               <h2 className="text-lg font-semibold tracking-[-0.025em]">
                 Last close
               </h2>
-              <Badge
-                variant={closed.varianceFlagged ? "destructive" : "secondary"}
+              <StatusBadge
+                tone={closed.varianceFlagged ? "destructive" : "success"}
               >
                 {closed.varianceFlagged ? "Variance flagged" : "Balanced"}
-              </Badge>
+              </StatusBadge>
             </div>
             <dl className="mt-4 space-y-2 text-sm">
               <CashRow label="Expected cash" amount={closed.expectedCash} />

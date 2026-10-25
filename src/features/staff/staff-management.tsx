@@ -1,23 +1,13 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { useQuery } from "@apollo/client/react"
 import { Navigate } from "@tanstack/react-router"
-import {
-  CaretLeftIcon,
-  CaretRightIcon,
-  EyeIcon,
-  MagnifyingGlassIcon,
-  PencilSimpleIcon,
-  PlusIcon,
-} from "@phosphor-icons/react"
+import { EyeIcon, PencilSimpleIcon, PlusIcon } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
+import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import {
   Select,
   SelectContent,
@@ -34,8 +24,7 @@ import { StaffAvatar } from "@/features/staff/staff-avatar"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
-
-const PAGE_SIZE = 8
+import { useTablePagination } from "@/lib/table-state"
 
 type RoleFilter = "ALL" | StaffRole
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE"
@@ -47,10 +36,12 @@ export function StaffManagement() {
     skip: !canManage,
   })
 
-  const [search, setSearch] = useState("")
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL")
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
-  const [page, setPage] = useState(1)
+  const [search, setSearch] = useUrlState("staffSearch")
+  const [roleParam, setRoleParam] = useUrlState("staffRole")
+  const [statusParam, setStatusParam] = useUrlState("staffStatus")
+  const roleFilter = (roleParam ?? "ALL") as RoleFilter
+  const statusFilter = (statusParam ?? "ALL") as StatusFilter
+  const paging = useTablePagination("staff")
 
   const [newStaffParam, setNewStaffParam] = useUrlState("newStaff")
   const [viewStaffParam, setViewStaffParam] = useUrlState("viewStaff")
@@ -63,7 +54,7 @@ export function StaffManagement() {
     staffList.find((member) => member.id === editStaffParam) ?? null
 
   const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    const query = (search ?? "").trim().toLowerCase()
     return (data?.staff ?? []).filter((member) => {
       if (roleFilter !== "ALL" && member.role !== roleFilter) return false
       if (statusFilter === "ACTIVE" && !member.active) return false
@@ -73,24 +64,22 @@ export function StaffManagement() {
     })
   }, [data, search, roleFilter, statusFilter])
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(page, pageCount)
   const pageItems = filtered.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE
+    paging.pageIndex * paging.pageSize,
+    (paging.pageIndex + 1) * paging.pageSize
   )
 
   function resetFilters() {
-    setSearch("")
-    setRoleFilter("ALL")
-    setStatusFilter("ALL")
-    setPage(1)
+    setSearch(null)
+    setRoleParam(null)
+    setStatusParam(null)
+    paging.resetPage()
   }
 
   if (!canManage) return <Navigate to="/overview" replace />
 
   return (
-    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:px-8 lg:py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
@@ -107,104 +96,91 @@ export function StaffManagement() {
         </Button>
       </div>
 
-      <section className="content-region mt-8">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <InputGroup className="w-full lg:max-w-xs">
-            <InputGroupAddon align="inline-start">
-              <MagnifyingGlassIcon aria-hidden="true" />
-            </InputGroupAddon>
-            <InputGroupInput
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value)
-                setPage(1)
-              }}
-              placeholder="Search staff by name…"
-              aria-label="Search staff by name"
-            />
-          </InputGroup>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Select
-              value={roleFilter}
-              onValueChange={(value) => {
-                setRoleFilter(value ?? "ALL")
-                setPage(1)
-              }}
-            >
-              <SelectTrigger
-                className="w-full sm:w-36"
-                aria-label="Filter by role"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All roles</SelectItem>
-                {Object.entries(roleLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value ?? "ALL")
-                setPage(1)
-              }}
-            >
-              <SelectTrigger
-                className="w-full sm:w-36"
-                aria-label="Filter by status"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All statuses</SelectItem>
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="INACTIVE">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
+      <section className="content-region mt-8 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         {error ? (
           <ErrorState
             className="mt-6"
             title="Could not load staff."
             onRetry={refetch}
           />
-        ) : !loading && filtered.length === 0 ? (
+        ) : !loading && staffList.length === 0 ? (
           <EmptyState
             className="mt-6"
-            title={
-              staffList.length === 0
-                ? "No staff accounts yet."
-                : "No staff match these filters."
-            }
-            description={
-              staffList.length === 0
-                ? "Add the first account to give your team access to the till."
-                : "Try a different search or clear the filters."
-            }
+            title="No staff accounts yet."
+            description="Add the first account to give your team access to the till."
             action={
               <Button
                 size="lg"
-                variant={staffList.length === 0 ? "default" : "outline"}
-                onClick={
-                  staffList.length === 0
-                    ? () => setNewStaffParam("1")
-                    : resetFilters
-                }
+                variant="default"
+                onClick={() => setNewStaffParam("1")}
               >
-                {staffList.length === 0 ? "Add new staff" : "Clear filters"}
+                Add new staff
               </Button>
             }
           />
         ) : (
           <>
-            <div className="mt-6 overflow-x-auto rounded-xl border border-border/70 bg-card">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+            <div className="mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+              <DataTable
+                ariaLabel="Staff"
+                rows={pageItems}
+                search={{
+                  value: search ?? "",
+                  onChange: (value) => {
+                    setSearch(value || null)
+                    paging.resetPage()
+                  },
+                  placeholder: "Search staff by name",
+                }}
+                filters={
+                  <>
+                    <Select
+                      value={roleFilter}
+                      onValueChange={(value) => {
+                        setRoleParam(value === "ALL" ? null : value)
+                        paging.resetPage()
+                      }}
+                    >
+                      <SelectTrigger
+                        className="w-36"
+                        aria-label="Filter by role"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">All roles</SelectItem>
+                        {Object.entries(roleLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) => {
+                        setStatusParam(value === "ALL" ? null : value)
+                        paging.resetPage()
+                      }}
+                    >
+                      <SelectTrigger
+                        className="w-36"
+                        aria-label="Filter by status"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">All statuses</SelectItem>
+                        <SelectItem value="ACTIVE">Active</SelectItem>
+                        <SelectItem value="INACTIVE">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </>
+                }
+                onRefresh={() => void refetch()}
+                isLoading={loading}
+                pagination={{ ...paging, totalCount: filtered.length }}
+              >
                 <thead>
                   <tr className="border-b border-border/60 bg-muted/30 text-xs tracking-[0.06em] text-muted-foreground uppercase">
                     <th scope="col" className="px-4 py-3 font-semibold">
@@ -225,6 +201,21 @@ export function StaffManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
+                  {!loading && pageItems.length === 0 && (
+                    <tr>
+                      <td colSpan={4}>
+                        <EmptyState
+                          title="No staff match these filters."
+                          description="Try a different search or clear the filters."
+                          action={
+                            <Button variant="outline" onClick={resetFilters}>
+                              Clear filters
+                            </Button>
+                          }
+                        />
+                      </td>
+                    </tr>
+                  )}
                   {loading
                     ? Array.from({ length: 4 }).map((_, index) => (
                         <tr key={index} className="animate-pulse">
@@ -270,20 +261,11 @@ export function StaffManagement() {
                             </Badge>
                           </td>
                           <td className="px-4 py-3.5">
-                            {member.active ? (
-                              <Badge
-                                variant="outline"
-                                className="border-transparent bg-primary/25 text-primary-foreground"
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className="size-1.5 rounded-full bg-secondary"
-                                />
-                                Active
-                              </Badge>
-                            ) : (
-                              <Badge variant="destructive">Inactive</Badge>
-                            )}
+                            <StatusBadge
+                              tone={member.active ? "success" : "destructive"}
+                            >
+                              {member.active ? "Active" : "Inactive"}
+                            </StatusBadge>
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="flex items-center justify-end gap-1">
@@ -310,57 +292,7 @@ export function StaffManagement() {
                         </tr>
                       ))}
                 </tbody>
-              </table>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-              <p className="mr-auto text-xs text-muted-foreground">
-                Showing{" "}
-                {filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–
-                {Math.min(safePage * PAGE_SIZE, filtered.length)} of{" "}
-                {filtered.length} staff
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label="Previous page"
-                  disabled={safePage <= 1}
-                  onClick={() => setPage(safePage - 1)}
-                >
-                  <CaretLeftIcon />
-                </Button>
-                {Array.from({ length: pageCount }).map((_, index) => {
-                  const pageNumber = index + 1
-                  const isCurrent = pageNumber === safePage
-                  return (
-                    <Button
-                      key={pageNumber}
-                      variant={isCurrent ? "default" : "ghost"}
-                      size="icon-xs"
-                      className={
-                        isCurrent
-                          ? "bg-primary text-xs text-primary-foreground hover:bg-primary/80"
-                          : "text-xs"
-                      }
-                      aria-label={`Go to page ${pageNumber}`}
-                      aria-current={isCurrent ? "page" : undefined}
-                      onClick={() => setPage(pageNumber)}
-                    >
-                      {pageNumber}
-                    </Button>
-                  )
-                })}
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label="Next page"
-                  disabled={safePage >= pageCount}
-                  onClick={() => setPage(safePage + 1)}
-                >
-                  <CaretRightIcon />
-                </Button>
-              </div>
+              </DataTable>
             </div>
           </>
         )}

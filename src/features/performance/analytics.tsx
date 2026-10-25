@@ -19,7 +19,7 @@ function AnalyticsCard({
 }) {
   return (
     <section
-      className="content-region min-w-0 rounded-xl border border-border/70 bg-card p-5 sm:p-6"
+      className="content-region min-w-0 rounded-lg border border-border/70 bg-card p-5 sm:p-6"
       aria-label={title}
     >
       <h2 className="text-lg font-semibold tracking-[-0.025em]">{title}</h2>
@@ -306,7 +306,7 @@ export function AnalyticsCards({
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="rounded-lg bg-muted/35 px-2 py-3"
+                    className="rounded-md bg-muted/35 px-2 py-3"
                   >
                     <dt className="text-[10px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
                       {stat.label}

@@ -12,10 +12,11 @@ import {
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { DataTable } from "@/components/ui/data-table"
 import { RestaurantEditModal } from "@/features/ops/ops-restaurant-edit"
 import { PaystackSettings } from "@/features/payouts/paystack-settings"
 import { OpsModal } from "@/features/ops/ops-overlays"
@@ -36,6 +37,8 @@ import type {
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
 import { mutationMessage } from "@/features/menu/model"
 import { opsAuthContext } from "@/lib/ops-token"
+import { useTablePagination } from "@/lib/table-state"
+import { useUrlState } from "@/lib/url-state"
 import { OpsAudit } from "./ops-audit"
 
 const dayLabels: Record<string, string> = {
@@ -49,9 +52,8 @@ const dayLabels: Record<string, string> = {
 }
 
 export function OpsRestaurants() {
-  const [search, setSearch] = useState("")
-  const [debounced, setDebounced] = useState<string | null>(null)
-  const [offset, setOffset] = useState(0)
+  const [searchParam, setSearchParam] = useUrlState("restaurantSearch")
+  const paging = useTablePagination("restaurants", PAGE_SIZE)
   const navigate = useNavigate()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [suspendTarget, setSuspendTarget] = useState<PlatformRestaurant | null>(
@@ -63,13 +65,8 @@ export function OpsRestaurants() {
   const [actionError, setActionError] = useState<string | null>(null)
 
   function onSearchChange(value: string) {
-    setSearch(value)
-    setOffset(0)
-    window.clearTimeout((onSearchChange as { timer?: number }).timer)
-    ;(onSearchChange as { timer?: number }).timer = window.setTimeout(
-      () => setDebounced(value.trim() || null),
-      300
-    )
+    setSearchParam(value || null)
+    paging.resetPage()
   }
 
   const { data, loading, error, refetch } = useQuery<
@@ -81,7 +78,11 @@ export function OpsRestaurants() {
     },
     { search: string | null; limit: number; offset: number }
   >(RESTAURANTS_QUERY, {
-    variables: { search: debounced || null, limit: PAGE_SIZE, offset },
+    variables: {
+      search: searchParam?.trim() || null,
+      limit: paging.pageSize,
+      offset: paging.pageIndex * paging.pageSize,
+    },
     context: opsAuthContext(),
   })
   useOpsAuthError(error)
@@ -162,205 +163,182 @@ export function OpsRestaurants() {
         </Button>
       </OpsHeader>
 
-      <section className="content-region mx-4 mb-8 overflow-hidden rounded-xl border border-border/70 bg-card lg:mx-8">
-        <div className="border-b border-border/70 px-4 py-3">
-          <Input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search by name or slug"
-            aria-label="Search restaurants"
-            className="max-w-sm"
-          />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <section className="content-region mx-4 mb-8 overflow-hidden rounded-md bg-card lg:mx-8 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        <DataTable
+          ariaLabel="Restaurants"
+          rows={items}
+          search={{
+            value: searchParam ?? "",
+            onChange: onSearchChange,
+            placeholder: "Search by name or slug…",
+            label: "Search restaurants",
+          }}
+          onRefresh={() => void refetch()}
+          isLoading={loading}
+          pagination={{
+            ...paging,
+            totalCount: total,
+            pageSizeOptions: [10, 25, 50, 100],
+          }}
+        >
+          <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <tr>
+              <th className="px-4 py-3 font-medium">Restaurant</th>
+              <th className="px-4 py-3 font-medium">Location</th>
+              <th className="px-4 py-3 font-medium">Code</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Created</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
               <tr>
-                <th className="px-4 py-3 font-medium">Restaurant</th>
-                <th className="px-4 py-3 font-medium">Location</th>
-                <th className="px-4 py-3 font-medium">Code</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Created</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <td colSpan={6}>
+                  <LoadingState className="min-h-48" label="restaurants" />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={6}>
-                    <LoadingState className="min-h-48" label="restaurants" />
-                  </td>
-                </tr>
-              )}
-              {error && (
-                <tr>
-                  <td colSpan={6}>
-                    <ErrorState
-                      title="Couldn’t load restaurants."
-                      onRetry={refetch}
-                    />
-                  </td>
-                </tr>
-              )}
-              {!loading && !error && items.length === 0 && (
-                <tr>
-                  <td colSpan={6}>
-                    <EmptyState
-                      title="No restaurants found."
-                      description={
-                        debounced
-                          ? "Try a different search or clear the current search."
-                          : "Provision the first restaurant workspace to get started."
-                      }
-                      action={
-                        debounced ? (
-                          <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={() => onSearchChange("")}
-                          >
-                            Clear search
-                          </Button>
-                        ) : (
-                          <Button size="lg" render={<Link to="/ops/new" />}>
-                            Add restaurant
-                          </Button>
-                        )
-                      }
-                    />
-                  </td>
-                </tr>
-              )}
-              {!error &&
-                items.map((restaurant) => (
-                  <tr
-                    key={restaurant.id}
-                    className="cursor-pointer border-t border-border/70 hover:bg-muted/40"
-                    onClick={() =>
-                      void navigate({
-                        to: "/ops/restaurants/$restaurantId",
-                        params: { restaurantId: restaurant.id },
-                        search: { tab: "general" },
-                      })
+            )}
+            {error && (
+              <tr>
+                <td colSpan={6}>
+                  <ErrorState
+                    title="Couldn’t load restaurants."
+                    onRetry={refetch}
+                  />
+                </td>
+              </tr>
+            )}
+            {!loading && !error && items.length === 0 && (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState
+                    title="No restaurants found."
+                    description={
+                      searchParam
+                        ? "Try a different search or clear the current search."
+                        : "Provision the first restaurant workspace to get started."
                     }
-                  >
-                    <td className="px-4 py-3">
-                      <Link
-                        to="/ops/restaurants/$restaurantId"
-                        params={{ restaurantId: restaurant.id }}
-                        search={{ tab: "general" }}
-                        className="block font-medium hover:underline"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        {restaurant.name}
-                      </Link>
-                      <span className="text-xs text-muted-foreground">
-                        {restaurant.slug}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {[restaurant.city, restaurant.region]
-                        .filter(Boolean)
-                        .join(", ") || "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
-                        {restaurant.code}
-                      </code>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant={
-                          restaurant.suspended ? "destructive" : "secondary"
-                        }
-                      >
-                        {restaurant.suspended ? "Suspended" : "Active"}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {formatWhen(restaurant.createdAt)}
-                    </td>
-                    <td
-                      className="px-4 py-3"
+                    action={
+                      searchParam ? (
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => onSearchChange("")}
+                        >
+                          Clear search
+                        </Button>
+                      ) : (
+                        <Button size="lg" render={<Link to="/ops/new" />}>
+                          Add restaurant
+                        </Button>
+                      )
+                    }
+                  />
+                </td>
+              </tr>
+            )}
+            {!error &&
+              items.map((restaurant) => (
+                <tr
+                  key={restaurant.id}
+                  className="cursor-pointer border-t border-border/70 hover:bg-muted/40"
+                  onClick={() =>
+                    void navigate({
+                      to: "/ops/restaurants/$restaurantId",
+                      params: { restaurantId: restaurant.id },
+                      search: { tab: "general" },
+                    })
+                  }
+                >
+                  <td className="px-4 py-3">
+                    <Link
+                      to="/ops/restaurants/$restaurantId"
+                      params={{ restaurantId: restaurant.id }}
+                      search={{ tab: "general" }}
+                      className="block font-medium hover:underline"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={`Edit ${restaurant.name}`}
-                          onClick={() => setEditingId(restaurant.id)}
-                        >
-                          <PencilSimpleIcon />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={
-                            restaurant.suspended
-                              ? `Reinstate ${restaurant.name}`
-                              : `Suspend ${restaurant.name}`
-                          }
-                          onClick={() => {
-                            setActionError(null)
-                            setSuspendTarget(restaurant)
-                          }}
-                        >
-                          {restaurant.suspended ? <PlayIcon /> : <PauseIcon />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={
-                            restaurant.owner?.active
-                              ? `Deactivate ${restaurant.owner.name}`
-                              : `Reactivate ${restaurant.owner?.name ?? "owner"}`
-                          }
-                          disabled={!restaurant.owner}
-                          onClick={() => {
-                            setActionError(null)
-                            setOwnerTarget(restaurant)
-                          }}
-                        >
-                          {restaurant.owner?.active === false ? (
-                            <UserCheckIcon />
-                          ) : (
-                            <UserMinusIcon />
-                          )}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex items-center justify-between border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">
-          <span>
-            {total === 0 ? "0" : `${offset + 1}–${offset + items.length}`} of{" "}
-            {total}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={offset === 0}
-              onClick={() =>
-                setOffset((current) => Math.max(0, current - PAGE_SIZE))
-              }
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={offset + items.length >= total}
-              onClick={() => setOffset((current) => current + PAGE_SIZE)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+                      {restaurant.name}
+                    </Link>
+                    <span className="text-xs text-muted-foreground">
+                      {restaurant.slug}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {[restaurant.city, restaurant.region]
+                      .filter(Boolean)
+                      .join(", ") || "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+                      {restaurant.code}
+                    </code>
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge
+                      tone={restaurant.suspended ? "destructive" : "success"}
+                    >
+                      {restaurant.suspended ? "Suspended" : "Active"}
+                    </StatusBadge>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatWhen(restaurant.createdAt)}
+                  </td>
+                  <td
+                    className="px-4 py-3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Edit ${restaurant.name}`}
+                        onClick={() => setEditingId(restaurant.id)}
+                      >
+                        <PencilSimpleIcon />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={
+                          restaurant.suspended
+                            ? `Reinstate ${restaurant.name}`
+                            : `Suspend ${restaurant.name}`
+                        }
+                        onClick={() => {
+                          setActionError(null)
+                          setSuspendTarget(restaurant)
+                        }}
+                      >
+                        {restaurant.suspended ? <PlayIcon /> : <PauseIcon />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={
+                          restaurant.owner?.active
+                            ? `Deactivate ${restaurant.owner.name}`
+                            : `Reactivate ${restaurant.owner?.name ?? "owner"}`
+                        }
+                        disabled={!restaurant.owner}
+                        onClick={() => {
+                          setActionError(null)
+                          setOwnerTarget(restaurant)
+                        }}
+                      >
+                        {restaurant.owner?.active === false ? (
+                          <UserCheckIcon />
+                        ) : (
+                          <UserMinusIcon />
+                        )}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </DataTable>
       </section>
 
       <OpsModal
@@ -530,9 +508,11 @@ export function RestaurantDetail({
       >
         {restaurant && (
           <>
-            <Badge variant={restaurant.suspended ? "destructive" : "secondary"}>
+            <StatusBadge
+              tone={restaurant.suspended ? "destructive" : "success"}
+            >
               {restaurant.suspended ? "Suspended" : "Active"}
-            </Badge>
+            </StatusBadge>
             <Button variant="outline" onClick={() => setEditing(true)}>
               <PencilSimpleIcon data-icon="inline-start" />
               Edit details

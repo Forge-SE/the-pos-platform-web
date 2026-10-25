@@ -1,7 +1,7 @@
-import { useState } from "react"
 import { useQuery } from "@apollo/client/react"
 
 import { Button } from "@/components/ui/button"
+import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,8 @@ import {
 } from "@/features/ops/ops-model"
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
 import { opsAuthContext } from "@/lib/ops-token"
+import { useTablePagination } from "@/lib/table-state"
+import { useUrlState } from "@/lib/url-state"
 
 interface AuditEntry {
   id: string
@@ -28,9 +30,9 @@ export function OpsAudit({
   restaurantId: fixedRestaurantId,
   embedded = false,
 }: { restaurantId?: string; embedded?: boolean } = {}) {
-  const [restaurantId, setRestaurantId] = useState("")
-  const [action, setAction] = useState("")
-  const [offset, setOffset] = useState(0)
+  const [restaurantId, setRestaurantId] = useUrlState("auditRestaurant")
+  const [action, setAction] = useUrlState("auditAction")
+  const paging = useTablePagination("audit", PAGE_SIZE)
 
   const { data, loading, error, refetch } = useQuery<
     { platformAuditLogs: { items: AuditEntry[]; total: number } },
@@ -42,10 +44,10 @@ export function OpsAudit({
     }
   >(AUDIT_LOGS_QUERY, {
     variables: {
-      restaurantId: fixedRestaurantId ?? (restaurantId.trim() || null),
-      action: action.trim() || null,
-      limit: PAGE_SIZE,
-      offset,
+      restaurantId: fixedRestaurantId ?? (restaurantId?.trim() || null),
+      action: action?.trim() || null,
+      limit: paging.pageSize,
+      offset: paging.pageIndex * paging.pageSize,
     },
     context: opsAuthContext(),
   })
@@ -63,127 +65,110 @@ export function OpsAudit({
         />
       )}
       <section
-        className={`content-region overflow-hidden rounded-xl border border-border/70 bg-card ${embedded ? "" : "mx-4 mb-8 lg:mx-8"}`}
+        className={`content-region overflow-hidden rounded-md bg-card ${embedded ? "" : "mx-4 mb-8 lg:mx-8 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"}`}
       >
-        <div className="grid gap-3 border-b border-border/70 px-4 py-3 sm:grid-cols-2">
-          {!fixedRestaurantId && (
-            <Input
-              value={restaurantId}
-              onChange={(event) => {
-                setRestaurantId(event.target.value)
-                setOffset(0)
-              }}
-              placeholder="Filter by restaurant ID"
-              aria-label="Filter by restaurant ID"
-            />
-          )}
-          <Input
-            value={action}
-            onChange={(event) => {
-              setAction(event.target.value)
-              setOffset(0)
-            }}
-            placeholder="Filter by action, e.g. staff.created"
-            aria-label="Filter by action"
-          />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <DataTable
+          ariaLabel="Platform audit log"
+          rows={items}
+          search={{
+            value: action ?? "",
+            onChange: (value) => {
+              setAction(value || null)
+              paging.resetPage()
+            },
+            placeholder: "Search actions…",
+            label: "Search audit actions",
+          }}
+          filters={
+            !fixedRestaurantId ? (
+              <Input
+                value={restaurantId ?? ""}
+                onChange={(event) => {
+                  setRestaurantId(event.target.value || null)
+                  paging.resetPage()
+                }}
+                placeholder="Restaurant ID"
+                aria-label="Filter by restaurant ID"
+                className="w-48"
+              />
+            ) : undefined
+          }
+          onRefresh={() => void refetch()}
+          isLoading={loading}
+          pagination={{
+            ...paging,
+            totalCount: total,
+            pageSizeOptions: [10, 25, 50, 100],
+          }}
+        >
+          <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <tr>
+              <th className="px-4 py-3 font-medium">Action</th>
+              <th className="px-4 py-3 font-medium">Entity</th>
+              <th className="px-4 py-3 font-medium">Restaurant</th>
+              <th className="px-4 py-3 font-medium">When</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
               <tr>
-                <th className="px-4 py-3 font-medium">Action</th>
-                <th className="px-4 py-3 font-medium">Entity</th>
-                <th className="px-4 py-3 font-medium">Restaurant</th>
-                <th className="px-4 py-3 font-medium">When</th>
+                <td colSpan={4}>
+                  <LoadingState className="min-h-48" label="audit log" />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={4}>
-                    <LoadingState className="min-h-48" label="audit log" />
+            )}
+            {error && (
+              <tr>
+                <td colSpan={4}>
+                  <ErrorState
+                    title="Couldn’t load audit logs."
+                    onRetry={refetch}
+                  />
+                </td>
+              </tr>
+            )}
+            {!loading && !error && items.length === 0 && (
+              <tr>
+                <td colSpan={4}>
+                  <EmptyState
+                    title="No entries found."
+                    description="Platform activity will appear here. Clear the filters to see all entries."
+                    action={
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => {
+                          setRestaurantId(null)
+                          setAction(null)
+                          paging.resetPage()
+                          void refetch().catch(() => {})
+                        }}
+                      >
+                        Clear filters
+                      </Button>
+                    }
+                  />
+                </td>
+              </tr>
+            )}
+            {!error &&
+              items.map((entry) => (
+                <tr key={entry.id} className="border-t border-border/70">
+                  <td className="px-4 py-3 font-medium">{entry.action}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {entry.entityType}
+                    {entry.entityId ? ` · ${entry.entityId.slice(0, 8)}` : ""}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    {entry.restaurantId.slice(0, 8)}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatWhen(entry.createdAt)}
                   </td>
                 </tr>
-              )}
-              {error && (
-                <tr>
-                  <td colSpan={4}>
-                    <ErrorState
-                      title="Couldn’t load audit logs."
-                      onRetry={refetch}
-                    />
-                  </td>
-                </tr>
-              )}
-              {!loading && !error && items.length === 0 && (
-                <tr>
-                  <td colSpan={4}>
-                    <EmptyState
-                      title="No entries found."
-                      description="Platform activity will appear here. Clear the filters to see all entries."
-                      action={
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          onClick={() => {
-                            setRestaurantId("")
-                            setAction("")
-                            setOffset(0)
-                            void refetch().catch(() => {})
-                          }}
-                        >
-                          Clear filters
-                        </Button>
-                      }
-                    />
-                  </td>
-                </tr>
-              )}
-              {!error &&
-                items.map((entry) => (
-                  <tr key={entry.id} className="border-t border-border/70">
-                    <td className="px-4 py-3 font-medium">{entry.action}</td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {entry.entityType}
-                      {entry.entityId ? ` · ${entry.entityId.slice(0, 8)}` : ""}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                      {entry.restaurantId.slice(0, 8)}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {formatWhen(entry.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex items-center justify-between border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">
-          <span>
-            {total === 0 ? "0" : `${offset + 1}–${offset + items.length}`} of{" "}
-            {total}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={offset === 0}
-              onClick={() =>
-                setOffset((current) => Math.max(0, current - PAGE_SIZE))
-              }
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={offset + items.length >= total}
-              onClick={() => setOffset((current) => current + PAGE_SIZE)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+              ))}
+          </tbody>
+        </DataTable>
       </section>
     </>
   )

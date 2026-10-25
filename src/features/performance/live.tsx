@@ -35,7 +35,7 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+    <section className="rounded-lg border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">{title}</h2>
@@ -66,7 +66,7 @@ export function HeroStats({
   const count = sales?.orderCount ?? 0
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+      <article className="rounded-lg border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <WalletIcon aria-hidden="true" className="size-4" />
@@ -92,7 +92,7 @@ export function HeroStats({
           <CaretRightIcon aria-hidden="true" className="size-4" />
         </Button>
       </article>
-      <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+      <article className="rounded-lg border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <ReceiptIcon aria-hidden="true" className="size-4" />
@@ -107,7 +107,7 @@ export function HeroStats({
         </p>
         <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
       </article>
-      <article className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
+      <article className="rounded-lg border border-border/70 bg-card p-5 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <ChartLineUpIcon aria-hidden="true" className="size-4" />
@@ -327,7 +327,7 @@ export function ShiftProgressCard({
           ).map((stage) => (
             <li
               key={stage.label}
-              className="rounded-lg bg-muted/35 px-3 py-3 text-center"
+              className="rounded-md bg-muted/35 px-3 py-3 text-center"
             >
               <p className="text-2xl font-semibold tabular-nums">
                 {stage.value}
