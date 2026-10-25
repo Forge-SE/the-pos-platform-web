@@ -17,3 +17,11 @@ export const statusLabels: Record<string, string> = {
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
 }
+
+export function orderStatusTone(status: string) {
+  if (status === "NEW") return "info" as const
+  if (status === "PREPARING") return "progress" as const
+  if (status === "READY") return "warning" as const
+  if (status === "COMPLETED") return "success" as const
+  return "neutral" as const
+}

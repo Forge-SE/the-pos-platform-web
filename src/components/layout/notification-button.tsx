@@ -80,7 +80,9 @@ const tabs: { value: "all" | NoticeTab; label: string }[] = [
 export function NotificationButton() {
   const [tab, setTab] = useState<(typeof tabs)[number]["value"]>("all")
   const [read, setRead] = useState(false)
-  const visible = notices.filter((notice) => tab === "all" || notice.tab === tab)
+  const visible = notices.filter(
+    (notice) => tab === "all" || notice.tab === tab
+  )
   const inboxCount = notices.filter((notice) => notice.tab === "inbox").length
 
   return (
@@ -201,14 +203,25 @@ export function NotificationButton() {
                         </div>
                       )}
                       {notice.kind === "file" && (
-                        <Button variant="outline" size="sm" className="font-normal">
-                          <PaperclipIcon aria-hidden="true" data-icon="inline-start" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="font-normal"
+                        >
+                          <PaperclipIcon
+                            aria-hidden="true"
+                            data-icon="inline-start"
+                          />
                           end-of-day.csv
                           <span className="text-muted-foreground">(4mb)</span>
                         </Button>
                       )}
                       {notice.kind === "note" && (
-                        <Button variant="outline" size="sm" className="font-normal">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="font-normal"
+                        >
                           Extra pepper on the side
                         </Button>
                       )}

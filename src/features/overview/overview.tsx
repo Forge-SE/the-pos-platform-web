@@ -18,8 +18,13 @@ import {
 import { PaymentDonut, PaymentDonutSkeleton } from "@/components/payment-donut"
 import { ContentState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
-import { diningLabel, statusLabels } from "@/features/orders/labels"
+import {
+  diningLabel,
+  orderStatusTone,
+  statusLabels,
+} from "@/features/orders/labels"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Button } from "@/components/ui/button"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import type { AccessTokenProfile } from "@/lib/auth-token"
@@ -167,14 +172,6 @@ interface OpenShiftVariables {
   }
 }
 
-const statusStyles: Record<ActiveOrder["status"], string> = {
-  NEW: "border-amber-200 bg-amber-50 text-amber-800",
-  PREPARING: "border-sky-200 bg-sky-50 text-sky-800",
-  READY: "border-primary/30 bg-primary/10 text-secondary",
-  COMPLETED: "border-border bg-muted text-muted-foreground",
-  CANCELLED: "border-destructive/20 bg-destructive/5 text-destructive",
-}
-
 const currency = new Intl.NumberFormat("en-GH", {
   style: "currency",
   currency: "GHS",
@@ -186,14 +183,20 @@ function formatMoney(value: number) {
   return currency.format(value / 100)
 }
 
-const paymentLabels: Record<NonNullable<ActiveOrder["payment"]>["method"], string> = {
+const paymentLabels: Record<
+  NonNullable<ActiveOrder["payment"]>["method"],
+  string
+> = {
   CASH: "Cash",
   MOMO: "Mobile money",
   TRANSFER: "Transfer",
 }
 
 function elapsedLabel(createdAt: string) {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000))
+  const minutes = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000)
+  )
   if (minutes < 1) return "Just now"
   if (minutes === 1) return "1 min ago"
   return `${minutes} min ago`
@@ -611,7 +614,10 @@ function ActiveOrders({
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr key={order.id} className="border-t border-border/50 align-top">
+                <tr
+                  key={order.id}
+                  className="border-t border-border/50 align-top"
+                >
                   <td className="py-3 pr-3 font-semibold tabular-nums">
                     #{order.id.slice(-6).toUpperCase()}
                   </td>
@@ -634,12 +640,16 @@ function ActiveOrders({
                       {order.items.map((item) => (
                         <li key={item.id}>
                           <p className="font-medium">
-                            <span className="tabular-nums">{item.quantity}×</span>{" "}
+                            <span className="tabular-nums">
+                              {item.quantity}×
+                            </span>{" "}
                             {item.name}
                           </p>
                           {item.modifiers.length > 0 && (
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                              {item.modifiers.map((modifier) => modifier.name).join(" · ")}
+                              {item.modifiers
+                                .map((modifier) => modifier.name)
+                                .join(" · ")}
                             </p>
                           )}
                           {item.notes && (
@@ -657,11 +667,9 @@ function ActiveOrders({
                     )}
                   </td>
                   <td className="py-3 pr-3">
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${statusStyles[order.status]}`}
-                    >
+                    <StatusBadge tone={orderStatusTone(order.status)}>
                       {statusLabels[order.status] ?? order.status}
-                    </span>
+                    </StatusBadge>
                   </td>
                   <td className="py-3 pr-3 whitespace-nowrap">
                     {order.payment
@@ -673,7 +681,7 @@ function ActiveOrders({
                       </span>
                     )}
                   </td>
-                  <td className="py-3 text-right font-semibold tabular-nums whitespace-nowrap">
+                  <td className="py-3 text-right font-semibold whitespace-nowrap tabular-nums">
                     {formatMoney(order.total)}
                   </td>
                 </tr>

@@ -7,13 +7,17 @@ import { isSameDay } from "date-fns"
 import { DateRangePicker, defaultPresets } from "@/components/date-range-picker"
 import type { DateRange } from "@/components/date-range-picker"
 import { SectionPage } from "@/components/layout/section-page"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { ShareBars } from "@/features/ops/ops-charts"
-import { diningLabel, statusLabels } from "@/features/orders/labels"
+import {
+  diningLabel,
+  orderStatusTone,
+  statusLabels,
+} from "@/features/orders/labels"
 import { formatMoney } from "@/features/menu/model"
 import { useUrlState } from "@/lib/url-state"
 import { useTablePagination } from "@/lib/table-state"
@@ -223,10 +227,7 @@ export function ShiftReview() {
       description="Every register sitting in the range. Open one to see its orders and revenue."
       fillHeight
     >
-      <div className="mt-6">
-        <DateRangePicker value={range} onChange={handleRangeChange} />
-      </div>
-      <div className="content-region mt-4 overflow-hidden rounded-md lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+      <div className="content-region mt-6 overflow-hidden rounded-md lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
           ariaLabel="Shifts"
           rows={visibleShifts}
@@ -238,6 +239,9 @@ export function ShiftReview() {
             },
             placeholder: "Search shifts",
           }}
+          filters={
+            <DateRangePicker value={range} onChange={handleRangeChange} />
+          }
           onRefresh={() => void list.refetch()}
           isLoading={list.loading}
           pagination={{ ...shiftPaging, totalCount: filteredShifts.length }}
@@ -313,11 +317,11 @@ export function ShiftReview() {
                   <td className="px-4 py-3">{formatWhen(row.openedAt)}</td>
                   <td className="px-4 py-3">{formatWhen(row.closedAt)}</td>
                   <td className="px-4 py-3">
-                    <Badge
-                      variant={row.status === "OPEN" ? "secondary" : "outline"}
+                    <StatusBadge
+                      tone={row.status === "OPEN" ? "success" : "neutral"}
                     >
                       {row.status === "OPEN" ? "Open" : "Closed"}
-                    </Badge>
+                    </StatusBadge>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
                     {row.orderCount}
@@ -488,7 +492,11 @@ export function ShiftReview() {
                                 {diningLabel(order.diningType)}
                               </td>
                               <td className="py-2.5 pr-3">
-                                {statusLabels[order.status] ?? order.status}
+                                <StatusBadge
+                                  tone={orderStatusTone(order.status)}
+                                >
+                                  {statusLabels[order.status] ?? order.status}
+                                </StatusBadge>
                               </td>
                               <td className="py-2.5 pr-3">
                                 {order.paid ? "Paid" : "Unpaid"}

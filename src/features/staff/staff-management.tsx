@@ -4,6 +4,7 @@ import { Navigate } from "@tanstack/react-router"
 import { EyeIcon, PencilSimpleIcon, PlusIcon } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
@@ -260,20 +261,11 @@ export function StaffManagement() {
                             </Badge>
                           </td>
                           <td className="px-4 py-3.5">
-                            {member.active ? (
-                              <Badge
-                                variant="outline"
-                                className="border-transparent bg-primary/25 text-primary-foreground"
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className="size-1.5 rounded-full bg-secondary"
-                                />
-                                Active
-                              </Badge>
-                            ) : (
-                              <Badge variant="destructive">Inactive</Badge>
-                            )}
+                            <StatusBadge
+                              tone={member.active ? "success" : "destructive"}
+                            >
+                              {member.active ? "Active" : "Inactive"}
+                            </StatusBadge>
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="flex items-center justify-end gap-1">

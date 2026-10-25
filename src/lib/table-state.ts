@@ -5,7 +5,11 @@ function positiveInteger(value: string | null, fallback: number) {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback
 }
 
-export function useTablePagination(key: string, defaultPageSize = 20, allowedSizes: readonly number[] = [10, 20, 25, 50, 100]) {
+export function useTablePagination(
+  key: string,
+  defaultPageSize = 20,
+  allowedSizes: readonly number[] = [10, 20, 25, 50, 100]
+) {
   const [pageParam, setPageParam] = useUrlState(`${key}Page`, "push")
   const [sizeParam, setSizeParam] = useUrlState(`${key}PageSize`)
   const pageIndex = positiveInteger(pageParam, 1) - 1

@@ -536,7 +536,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             : "content-region flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]"
         }
       >
-        <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:pt-8 lg:pl-8 lg:pr-20">
+        <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:pt-8 lg:pr-20 lg:pl-8">
           <div className="min-w-0">
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
               Counter

@@ -3,6 +3,7 @@ import { PlusIcon } from "@phosphor-icons/react"
 import { Navigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
@@ -167,20 +168,21 @@ export function DiscountsPage() {
                           {campaign.maxUses ? `/${campaign.maxUses}` : ""}
                         </td>
                         <td className="px-4 py-3.5">
-                          {campaign.status === "ACTIVE" ? (
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-primary/25 text-primary-foreground"
-                            >
-                              Active
-                            </Badge>
-                          ) : campaign.status === "PAUSED" ? (
-                            <Badge variant="destructive">Paused</Badge>
-                          ) : (
-                            <Badge variant="outline">
-                              {statusLabels[campaign.status]}
-                            </Badge>
-                          )}
+                          <StatusBadge
+                            tone={
+                              campaign.status === "ACTIVE"
+                                ? "success"
+                                : campaign.status === "PAUSED"
+                                  ? "destructive"
+                                  : "neutral"
+                            }
+                          >
+                            {campaign.status === "ACTIVE"
+                              ? "Active"
+                              : campaign.status === "PAUSED"
+                                ? "Paused"
+                                : statusLabels[campaign.status]}
+                          </StatusBadge>
                         </td>
                         <td className="px-4 py-3.5 text-right">
                           <Button

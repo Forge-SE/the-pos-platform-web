@@ -12,6 +12,7 @@ import {
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { Button } from "@/components/ui/button"
@@ -275,13 +276,11 @@ export function OpsRestaurants() {
                     </code>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge
-                      variant={
-                        restaurant.suspended ? "destructive" : "secondary"
-                      }
+                    <StatusBadge
+                      tone={restaurant.suspended ? "destructive" : "success"}
                     >
                       {restaurant.suspended ? "Suspended" : "Active"}
-                    </Badge>
+                    </StatusBadge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatWhen(restaurant.createdAt)}
@@ -509,9 +508,11 @@ export function RestaurantDetail({
       >
         {restaurant && (
           <>
-            <Badge variant={restaurant.suspended ? "destructive" : "secondary"}>
+            <StatusBadge
+              tone={restaurant.suspended ? "destructive" : "success"}
+            >
               {restaurant.suspended ? "Suspended" : "Active"}
-            </Badge>
+            </StatusBadge>
             <Button variant="outline" onClick={() => setEditing(true)}>
               <PencilSimpleIcon data-icon="inline-start" />
               Edit details

@@ -152,24 +152,24 @@ const columns: Array<{
     step: "1",
     title: "NEW",
     empty: "New tickets will land here automatically.",
-    dot: "bg-sky-600",
-    rail: "bg-sky-500",
+    dot: "bg-info-foreground",
+    rail: "bg-info-foreground",
   },
   {
     status: "PREPARING",
     step: "2",
     title: "PREPARING",
     empty: "Orders being cooked will appear here.",
-    dot: "bg-amber-600",
-    rail: "bg-amber-500",
+    dot: "bg-progress-foreground",
+    rail: "bg-progress-foreground",
   },
   {
     status: "READY",
     step: "3",
     title: "READY",
     empty: "Finished orders waiting for handoff appear here.",
-    dot: "bg-emerald-600",
-    rail: "bg-emerald-500",
+    dot: "bg-warning-foreground",
+    rail: "bg-warning-foreground",
   },
 ]
 
@@ -1080,15 +1080,13 @@ function StatusPill({ status }: { status: ActiveStatus }) {
     READY: "READY",
   }
   const style: Record<ActiveStatus, string> = {
-    NEW: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20",
-    PREPARING:
-      "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-500/20",
-    READY:
-      "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20",
+    NEW: "bg-info text-info-foreground",
+    PREPARING: "bg-progress text-progress-foreground",
+    READY: "bg-warning text-warning-foreground",
   }
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${style[status]}`}
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${style[status]}`}
     >
       {label[status]}
     </span>
