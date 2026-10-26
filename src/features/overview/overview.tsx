@@ -421,7 +421,7 @@ export function Overview() {
               {openingShift ? "Starting shift…" : "Start shift"}
             </Button>
           ) : (
-            <Button render={<Link to="/orders" />}>
+            <Button nativeButton={false} render={<Link to="/orders" />}>
               <ReceiptIcon aria-hidden="true" data-icon="inline-start" />
               View orders
             </Button>

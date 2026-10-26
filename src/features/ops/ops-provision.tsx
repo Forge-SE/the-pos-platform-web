@@ -230,7 +230,11 @@ export function OpsProvision() {
               {created.code}
             </code>
           </p>
-          <Button className="mt-6" render={<Link to="/ops" />}>
+          <Button
+            className="mt-6"
+            nativeButton={false}
+            render={<Link to="/ops" />}
+          >
             Back to restaurants
           </Button>
         </section>

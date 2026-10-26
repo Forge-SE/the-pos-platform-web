@@ -157,7 +157,7 @@ export function OpsRestaurants() {
         title="Restaurants"
         description="Workspaces provisioned on Ovaal. Open a row to edit details, suspend the restaurant, or review staff."
       >
-        <Button render={<Link to="/ops/new" />}>
+        <Button nativeButton={false} render={<Link to="/ops/new" />}>
           <PlusIcon data-icon="inline-start" />
           Add restaurant
         </Button>
@@ -229,7 +229,11 @@ export function OpsRestaurants() {
                           Clear search
                         </Button>
                       ) : (
-                        <Button size="lg" render={<Link to="/ops/new" />}>
+                        <Button
+                          size="lg"
+                          nativeButton={false}
+                          render={<Link to="/ops/new" />}
+                        >
                           Add restaurant
                         </Button>
                       )
@@ -494,7 +498,12 @@ export function RestaurantDetail({
   return (
     <>
       <div className="px-4 pt-5 lg:px-8">
-        <Button variant="ghost" size="sm" render={<Link to="/ops" />}>
+        <Button
+          variant="ghost"
+          size="sm"
+          nativeButton={false}
+          render={<Link to="/ops" />}
+        >
           ← Restaurants
         </Button>
       </div>

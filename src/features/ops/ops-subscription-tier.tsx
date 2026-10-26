@@ -141,6 +141,7 @@ export function OpsSubscriptionTier({
         <Button
           variant="ghost"
           size="sm"
+          nativeButton={false}
           render={<Link to="/ops/subscriptions" />}
         >
           ← Subscriptions

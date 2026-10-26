@@ -77,9 +77,10 @@ describe("restaurant Paystack settings", () => {
     fireEvent.change(screen.getByLabelText("Settlement contact email"), {
       target: { value: "owner@example.com" },
     })
-    fireEvent.change(screen.getByLabelText("Bank or mobile money provider"), {
-      target: { value: "001" },
-    })
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Bank or mobile money provider" })
+    )
+    fireEvent.click(screen.getByRole("option", { name: "Saved bank" }))
     fireEvent.change(screen.getByLabelText("Account number"), {
       target: { value: "0123456789" },
     })

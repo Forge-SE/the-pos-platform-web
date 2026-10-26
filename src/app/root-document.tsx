@@ -22,7 +22,7 @@ export function NotFoundPage() {
         title="Page not found."
         description="The requested page could not be found."
         action={
-          <Button size="lg" render={<Link to="/" />}>
+          <Button size="lg" nativeButton={false} render={<Link to="/" />}>
             Go to sign in
           </Button>
         }
