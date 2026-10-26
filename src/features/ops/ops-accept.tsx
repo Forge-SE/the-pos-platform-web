@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react"
+import { useState } from "react"
+import type { FormEvent } from "react"
 import { gql } from "@apollo/client"
 import { useMutation } from "@apollo/client/react"
 import { Link, useNavigate } from "@tanstack/react-router"

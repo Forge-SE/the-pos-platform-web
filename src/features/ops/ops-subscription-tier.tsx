@@ -11,7 +11,8 @@ import {
 
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table"
+import { DataTable } from "@/components/ui/data-table"
+import type { DataTableColumn } from "@/components/ui/data-table"
 import { MetricCard } from "@/components/ui/metric-card"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { ShareBars } from "@/features/ops/ops-charts"

@@ -8,8 +8,8 @@ import {
   readQueue,
   removeQueued,
   updateQueued,
-  type QueuedOrder,
 } from "@/features/offline/queue"
+import type { QueuedOrder } from "@/features/offline/queue"
 
 const CREATE_ORDER = gql`
   mutation SyncOfflineOrder($input: CreateOrderInput!) {

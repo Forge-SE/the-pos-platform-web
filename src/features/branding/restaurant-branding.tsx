@@ -280,10 +280,10 @@ export function RestaurantBranding({
                           setDigestNote(null)
                           void saveDigest({ variables: { email: digestEmail } })
                             .then(() => setDigestNote("Digest email saved."))
-                            .catch((error: unknown) =>
+                            .catch((failure: unknown) =>
                               setDigestNote(
-                                error instanceof Error
-                                  ? error.message
+                                failure instanceof Error
+                                  ? failure.message
                                   : "Could not save the digest email."
                               )
                             )
