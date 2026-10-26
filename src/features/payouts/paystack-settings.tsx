@@ -3,12 +3,20 @@ import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Badge } from "@/components/ui/badge"
 import { LoadingState } from "@/components/loading-state"
 import { ErrorState } from "@/components/content-state"
 import { opsAuthContext } from "@/lib/ops-token"
 import { toast } from "@/components/ui/toaster"
+import { formatMoney } from "@/features/menu/model"
 
 export const PAYSTACK_SETTINGS_QUERY = gql`
   query PaystackSettings($restaurantId: ID) {
@@ -99,7 +107,113 @@ export interface PaystackSettingsData {
   }
 }
 
-export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
+const PAYSTACK_KEY = gql`
+  query RestaurantPaystackKey {
+    restaurantPaystackKey {
+      connected
+      domain
+      secretLast4
+      collectedPesewas
+      capPesewas
+    }
+  }
+`
+const CONNECT_PAYSTACK_KEY = gql`
+  mutation ConnectRestaurantPaystackKey($secretKey: String!) {
+    connectRestaurantPaystackKey(secretKey: $secretKey) {
+      connected
+      domain
+      secretLast4
+      collectedPesewas
+      capPesewas
+    }
+  }
+`
+
+function OwnPaystackAccount() {
+  const { data, loading, error, refetch } = useQuery<{
+    restaurantPaystackKey: {
+      connected: boolean
+      domain: string | null
+      secretLast4: string | null
+      collectedPesewas: number
+      capPesewas: number
+    }
+  }>(PAYSTACK_KEY)
+  const [connect, { loading: saving }] = useMutation(CONNECT_PAYSTACK_KEY)
+  const [secret, setSecret] = useState("")
+  const [message, setMessage] = useState<string | null>(null)
+  const key = data?.restaurantPaystackKey
+  const ratio =
+    key && key.capPesewas > 0
+      ? Math.min(100, Math.round((key.collectedPesewas / key.capPesewas) * 100))
+      : 0
+  return (
+    <div className="mt-4 space-y-3">
+      {loading && <LoadingState label="Paystack account" />}
+      {error && (
+        <ErrorState
+          title="Could not load the Paystack account"
+          onRetry={refetch}
+        />
+      )}
+      {key?.connected && (
+        <p className="text-sm">
+          Connected {key.domain} key ending {key.secretLast4}. Collections{" "}
+          {formatMoney(key.collectedPesewas)} of {formatMoney(key.capPesewas)} (
+          {ratio}%).
+        </p>
+      )}
+      <Field>
+        <FieldLabel htmlFor="paystack-secret">Paystack secret key</FieldLabel>
+        <Input
+          id="paystack-secret"
+          type="password"
+          autoComplete="off"
+          value={secret}
+          onChange={(event) => setSecret(event.target.value)}
+          placeholder="sk_live_..."
+        />
+      </Field>
+      {message && (
+        <p className="text-sm text-destructive" role="alert">
+          {message}
+        </p>
+      )}
+      <Button
+        type="button"
+        disabled={saving || secret.trim().length < 12}
+        onClick={() => {
+          setMessage(null)
+          void connect({ variables: { secretKey: secret.trim() } })
+            .then(async () => {
+              setSecret("")
+              toast({ title: "Paystack account connected.", status: "success" })
+              await refetch()
+            })
+            .catch((failure: unknown) => {
+              setMessage(
+                failure instanceof Error
+                  ? failure.message
+                  : "Could not connect that Paystack account"
+              )
+            })
+        }}
+      >
+        {saving ? "Checking Paystack…" : "Connect account"}
+      </Button>
+    </div>
+  )
+}
+
+export function PaystackSettings({
+  restaurantId,
+  embedded = false,
+}: {
+  restaurantId?: string
+  /** When true, omit the settings-card chrome so the settings shell supplies it. */
+  embedded?: boolean
+}) {
   const id = useId()
   const context = restaurantId ? opsAuthContext() : undefined
   const variables = { restaurantId }
@@ -110,6 +224,8 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
   const settings = data?.paystackSettings
   const account = settings?.account
   const [editing, setEditing] = useState(false)
+  const [bankCode, setBankCode] = useState("")
+  const [feeBearer, setFeeBearer] = useState("subaccount")
   const [linking, setLinking] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -148,6 +264,18 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
     account &&
     ["CREATING", "UPDATING", "REVIEW_REQUIRED"].includes(account.syncState)
   const matches = !account || settings.mode === account.domain
+  if (embedded) {
+    return (
+      <section className="min-w-0">
+        <h3 className="text-sm font-medium">Paystack account</h3>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Mobile money is charged on this restaurant&apos;s own Paystack
+          account. Subaccounts are not used.
+        </p>
+        <OwnPaystackAccount />
+      </section>
+    )
+  }
   return (
     <section className="content-region mt-6 min-w-0 rounded-xl border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -276,6 +404,8 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
                     <Button
                       disabled={busy || !matches || Boolean(recovery)}
                       onClick={() => {
+                        setBankCode(account?.bankCode ?? "")
+                        setFeeBearer(account?.feeBearer ?? "subaccount")
                         setEditing(true)
                         setActionError(null)
                       }}
@@ -341,9 +471,10 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
                     onSubmit={(event) => {
                       event.preventDefault()
                       const form = new FormData(event.currentTarget)
+                      if (!bankCode) return
                       const input = {
                         businessName: String(form.get("businessName")),
-                        bankCode: String(form.get("bankCode")),
+                        bankCode,
                         accountNumber: String(form.get("accountNumber")),
                         contactEmail: String(form.get("contactEmail")),
                         ...(restaurantId
@@ -351,7 +482,7 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
                               platformShareBps: Math.round(
                                 Number(form.get("share")) * 100
                               ),
-                              feeBearer: String(form.get("bearer")),
+                              feeBearer,
                             }
                           : {}),
                       }
@@ -392,23 +523,22 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
                       <FieldLabel htmlFor={`${id}-bank`}>
                         Bank or mobile money provider
                       </FieldLabel>
-                      <select
-                        id={`${id}-bank`}
-                        name="bankCode"
-                        defaultValue={account?.bankCode ?? ""}
-                        required
+                      <Select
+                        value={bankCode || null}
+                        onValueChange={(value) => setBankCode(value ?? "")}
                         disabled={busy || banksLoading || Boolean(bankError)}
-                        className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 text-sm focus-visible:outline-ring"
                       >
-                        <option value="">
-                          Choose a settlement destination
-                        </option>
-                        {bankData?.paystackBanks.map((bank) => (
-                          <option key={bank.code} value={bank.code}>
-                            {bank.name}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger id={`${id}-bank`} className="w-full">
+                          <SelectValue placeholder="Choose a settlement destination" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bankData?.paystackBanks.map((bank) => (
+                            <SelectItem key={bank.code} value={bank.code}>
+                              {bank.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                     <Field>
                       <FieldLabel htmlFor={`${id}-number`}>
@@ -452,16 +582,26 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
                           <FieldLabel htmlFor={`${id}-bearer`}>
                             Paystack fee bearer
                           </FieldLabel>
-                          <select
-                            id={`${id}-bearer`}
-                            name="bearer"
-                            defaultValue={account?.feeBearer ?? "subaccount"}
+                          <Select
+                            value={feeBearer}
+                            onValueChange={(value) =>
+                              setFeeBearer(value ?? "subaccount")
+                            }
                             disabled={busy}
-                            className="h-10 rounded-md border border-input bg-muted/30 px-3 text-sm"
                           >
-                            <option value="subaccount">Restaurant</option>
-                            <option value="account">Platform</option>
-                          </select>
+                            <SelectTrigger
+                              id={`${id}-bearer`}
+                              className="w-full"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="subaccount">
+                                Restaurant
+                              </SelectItem>
+                              <SelectItem value="account">Platform</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </Field>
                       </>
                     )}
@@ -483,6 +623,7 @@ export function PaystackSettings({ restaurantId }: { restaurantId?: string }) {
                         disabled={
                           busy ||
                           banksLoading ||
+                          !bankCode ||
                           !bankData ||
                           Boolean(bankError)
                         }

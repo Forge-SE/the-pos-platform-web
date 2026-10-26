@@ -18,6 +18,7 @@ export const MENU_MANAGEMENT_QUERY = gql`
       price
       preparationTimeMinutes
       active
+      available
       imageUrl
       modifierGroups {
         id
@@ -71,7 +72,7 @@ export const SET_ITEM_AVAILABILITY = gql`
   mutation SetMenuItemAvailability($itemId: ID!, $active: Boolean!) {
     setMenuItemAvailability(itemId: $itemId, active: $active) {
       id
-      active
+      available
     }
   }
 `
@@ -189,6 +190,7 @@ export interface MenuItem {
   price: number
   preparationTimeMinutes: number | null
   active: boolean
+  available: boolean
   imageUrl: string | null
   modifierGroups: Array<{ id: string; name: string }>
 }

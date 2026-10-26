@@ -86,6 +86,13 @@ const teamRoute = createRoute({
   head: () => ({ meta: [{ title: "Team | Ovaal" }] }),
 })
 
+const customersRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/customers",
+  component: lazyRouteComponent(() => import("@/pages/Customers"), "Customers"),
+  head: () => ({ meta: [{ title: "Customers | Ovaal" }] }),
+})
+
 const shiftRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/shift",
@@ -165,6 +172,15 @@ const opsLoginRoute = createRoute({
   }),
 })
 
+const opsAcceptRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/ops/accept",
+  component: lazyRouteComponent(() => import("@/pages/OpsAccept"), "OpsAccept"),
+  head: () => ({
+    meta: [{ title: "Join operations | Platform" }, ...noIndexMeta],
+  }),
+})
+
 const opsLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "_ops",
@@ -239,6 +255,42 @@ const opsSubscriptionsRoute = createRoute({
   }),
 })
 
+const opsSubscriptionTierRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/subscriptions/$tierId",
+  validateSearch: (
+    search: Record<string, unknown>
+  ): { tab: "analytics" | "renewals" | "restaurants" } => ({
+    tab:
+      search.tab === "renewals" || search.tab === "restaurants"
+        ? search.tab
+        : "analytics",
+  }),
+  component: lazyRouteComponent(
+    () => import("@/pages/OpsSubscriptionTier"),
+    "OpsSubscriptionTierPage"
+  ),
+  head: () => ({
+    meta: [{ title: "Subscription tier | Platform" }, ...noIndexMeta],
+  }),
+})
+
+const opsHealthRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/health",
+  component: lazyRouteComponent(() => import("@/pages/OpsHealth"), "OpsHealth"),
+  head: () => ({
+    meta: [{ title: "Pilot health | Platform" }, ...noIndexMeta],
+  }),
+})
+
+const opsTeamRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/team",
+  component: lazyRouteComponent(() => import("@/pages/OpsTeam"), "OpsTeam"),
+  head: () => ({ meta: [{ title: "Team | Platform" }, ...noIndexMeta] }),
+})
+
 const opsAuditRoute = createRoute({
   getParentRoute: () => opsLayoutRoute,
   path: "/ops/audit",
@@ -255,6 +307,7 @@ export const routeTree = rootRoute.addChildren([
     ordersRoute,
     performanceRoute,
     teamRoute,
+    customersRoute,
     menuRoute,
     inventoryRoute,
     shiftRoute,
@@ -265,12 +318,16 @@ export const routeTree = rootRoute.addChildren([
   legacyDashboardRoute,
   onboardingRoute,
   opsLoginRoute,
+  opsAcceptRoute,
   opsLayoutRoute.addChildren([
     opsRestaurantsRoute,
     opsRestaurantDetailRoute,
     opsProvisionRoute,
     opsMetricsRoute,
+    opsHealthRoute,
+    opsTeamRoute,
     opsSubscriptionsRoute,
+    opsSubscriptionTierRoute,
     opsAuditRoute,
   ]),
 ])

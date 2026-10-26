@@ -78,6 +78,12 @@ export const managementNavigation = [
     permission: "STAFF_MANAGE",
   },
   {
+    label: "Customers",
+    to: "/customers",
+    icon: UsersThreeIcon,
+    permission: "REPORTS_VIEW",
+  },
+  {
     label: "Taxes",
     to: "/taxes",
     icon: PercentIcon,
@@ -108,6 +114,7 @@ export function seesManagementItem(
 ) {
   if (
     item.to === "/settings" ||
+    item.to === "/customers" ||
     item.to === "/taxes" ||
     item.to === "/discounts"
   ) {
@@ -138,6 +145,7 @@ function NavigationSection({
   label,
   items,
   collapsed,
+  onOpenSettings,
 }: {
   label: string
   items: ReadonlyArray<{
@@ -147,6 +155,7 @@ function NavigationSection({
     permission?: Permission
   }>
   collapsed: boolean
+  onOpenSettings?: () => void
 }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -162,26 +171,40 @@ function NavigationSection({
       <ul className="mt-2 space-y-1">
         {items.map((item) => {
           const active = pathname === item.to
+          const className = `flex min-h-10 flex-1 items-center rounded-md text-sm font-medium transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"} ${active ? "bg-primary/25 text-secondary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`
           return (
             <li key={item.label} className="flex items-center gap-1">
               <span
                 aria-hidden="true"
                 className={`h-6 w-[3px] shrink-0 rounded-full bg-secondary transition-opacity duration-150 ${active ? "opacity-100" : "opacity-0"}`}
               />
-              <Link
-                to={item.to}
-                aria-current={active ? "page" : undefined}
-                aria-label={collapsed ? item.label : undefined}
-                title={collapsed ? item.label : undefined}
-                className={`flex min-h-10 flex-1 items-center rounded-lg text-sm font-medium transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"} ${active ? "bg-primary/25 text-secondary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-              >
-                <item.icon
-                  aria-hidden="true"
-                  className="size-4"
-                  weight={active ? "fill" : "regular"}
-                />
-                {!collapsed && item.label}
-              </Link>
+              {item.to === "/settings" ? (
+                <button
+                  type="button"
+                  onClick={onOpenSettings}
+                  aria-label={collapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
+                  className={className}
+                >
+                  <item.icon aria-hidden="true" className="size-4" />
+                  {!collapsed && item.label}
+                </button>
+              ) : (
+                <Link
+                  to={item.to}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={collapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
+                  className={className}
+                >
+                  <item.icon
+                    aria-hidden="true"
+                    className="size-4"
+                    weight={active ? "fill" : "regular"}
+                  />
+                  {!collapsed && item.label}
+                </Link>
+              )}
             </li>
           )
         })}
@@ -195,11 +218,13 @@ export function Sidebar({
   collapsed,
   onCollapsedChange,
   onSignOut,
+  onOpenSettings,
 }: {
   profile: AccessTokenProfile
   collapsed: boolean
   onCollapsedChange: () => void
   onSignOut: () => void
+  onOpenSettings?: () => void
 }) {
   const me = useQuery<{ me: { avatarUrl: string | null } }>(
     SIDEBAR_PROFILE_QUERY
@@ -260,6 +285,7 @@ export function Sidebar({
               seesManagementItem(profile, item)
             )}
             collapsed={collapsed}
+            onOpenSettings={onOpenSettings}
           />
         )}
       </div>
@@ -282,7 +308,7 @@ export function Sidebar({
               </p>
             </div>
           )}
-          <ProfileMenu onSignOut={onSignOut} />
+          <ProfileMenu onSignOut={onSignOut} onOpenSettings={onOpenSettings} />
         </div>
       </div>
     </aside>

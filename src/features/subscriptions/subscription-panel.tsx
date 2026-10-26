@@ -3,8 +3,8 @@ import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import * as Yup from "yup"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -95,6 +95,13 @@ const statusLabel: Record<string, string> = {
   CANCELLED: "Cancelled",
 }
 
+function statusTone(status: string | undefined) {
+  if (status === "ACTIVE") return "success" as const
+  if (status === "PAST_DUE") return "warning" as const
+  if (status === "PENDING") return "info" as const
+  return "neutral" as const
+}
+
 function intervalLabel(interval: string) {
   if (interval === "quarterly") return "quarter"
   if (interval === "annually") return "year"
@@ -110,7 +117,14 @@ function formatWhen(value: string | null) {
   })
 }
 
-export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
+export function SubscriptionPanel({
+  canManage,
+  embedded = false,
+}: {
+  canManage: boolean
+  /** When true, omit the settings-card chrome so the settings shell supplies it. */
+  embedded?: boolean
+}) {
   const confirmed = useRef(false)
   const [notice, setNotice] = useState<string | null>(null)
   const { data, loading, error, refetch } =
@@ -146,14 +160,18 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
   }, [canManage, confirmPayment, refetch])
 
   return (
-    <section className="mt-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-      <h2 className="text-lg font-semibold tracking-[-0.025em]">
-        Subscription
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Ovaal is billed through Paystack. This is the plan on the restaurant,
-        the last payment, and the next due date.
-      </p>
+    <section className={embedded ? "min-w-0" : "mt-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6"}>
+      {!embedded && (
+        <>
+          <h2 className="text-lg font-semibold tracking-[-0.025em]">
+            Subscription
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ovaal is billed through Paystack. This is the plan on the restaurant,
+            the last payment, and the next due date.
+          </p>
+        </>
+      )}
       {loading && <LoadingState className="mt-5" label="subscription" />}
       {error && (
         <ErrorState
@@ -168,52 +186,50 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
         </p>
       )}
       {!loading && !error && (
-        <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <dt className="text-xs font-medium text-muted-foreground">
-              Status
-            </dt>
-            <dd className="mt-1">
-              <Badge
-                variant={
-                  subscription?.status === "ACTIVE" ? "secondary" : "outline"
-                }
-              >
+        <div className="border-b border-dashed border-border/70 py-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground">
+                Current plan
+              </p>
+              <p className="mt-1 text-lg font-semibold tracking-[-0.025em]">
+                {subscription?.plan.name ?? "Not subscribed"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
                 {subscription
-                  ? (statusLabel[subscription.status] ?? subscription.status)
-                  : "Not subscribed"}
-              </Badge>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium text-muted-foreground">Plan</dt>
-            <dd className="mt-1 text-sm font-medium">
+                  ? `${formatMoney(subscription.plan.amount)} / ${intervalLabel(subscription.plan.interval)}`
+                  : "Choose a plan below to start billing."}
+              </p>
+            </div>
+            <StatusBadge tone={statusTone(subscription?.status)}>
               {subscription
-                ? `${subscription.plan.name} · ${formatMoney(subscription.plan.amount)} / ${intervalLabel(subscription.plan.interval)}`
-                : "—"}
-            </dd>
+                ? (statusLabel[subscription.status] ?? subscription.status)
+                : "None"}
+            </StatusBadge>
           </div>
-          <div>
-            <dt className="text-xs font-medium text-muted-foreground">
-              Last paid
-            </dt>
-            <dd className="mt-1 text-sm font-medium">
-              {formatWhen(subscription?.lastPaidAt ?? null)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium text-muted-foreground">
-              Next payment due
-            </dt>
-            <dd className="mt-1 text-sm font-medium">
-              {formatWhen(subscription?.nextPaymentAt ?? null)}
-            </dd>
-          </div>
-        </dl>
+          <dl className="mt-5 grid grid-cols-2 gap-4">
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">
+                Last paid
+              </dt>
+              <dd className="mt-1 text-sm font-medium tabular-nums">
+                {formatWhen(subscription?.lastPaidAt ?? null)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">
+                Next payment
+              </dt>
+              <dd className="mt-1 text-sm font-medium tabular-nums">
+                {formatWhen(subscription?.nextPaymentAt ?? null)}
+              </dd>
+            </div>
+          </dl>
+        </div>
       )}
       {canManage && !error && plans.length > 0 && (
         <Form
-          className="mt-6 grid gap-4 border-t border-border/70 pt-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          className="py-6"
           initialValues={{
             planId: subscription?.plan.id ?? plans[0].id,
             email: subscription?.billingEmail ?? "",
@@ -239,45 +255,74 @@ export function SubscriptionPanel({ canManage }: { canManage: boolean }) {
         >
           {(formik) => (
             <>
-              <Field data-invalid={Boolean(fieldError(formik, "planId"))}>
-                <FieldLabel htmlFor="subscription-plan">Plan</FieldLabel>
-                <select
-                  id="subscription-plan"
-                  name="planId"
-                  value={formik.values.planId}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  {plans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name} · {formatMoney(plan.amount)} /{" "}
-                      {intervalLabel(plan.interval)}
-                    </option>
-                  ))}
-                </select>
+              <fieldset>
+                <legend className="text-sm font-medium">Choose a plan</legend>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Paystack charges this amount on the billing email below.
+                </p>
+                <div className="mt-3 grid gap-2">
+                  {plans.map((plan) => {
+                    const selected = formik.values.planId === plan.id
+                    return (
+                      <label
+                        key={plan.id}
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors ${selected ? "border-secondary bg-secondary/5" : "border-border/70 hover:bg-muted/40"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="planId"
+                          value={plan.id}
+                          checked={selected}
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          className="mt-1 size-4 accent-secondary"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium">
+                            {plan.name}
+                          </span>
+                          {plan.description && (
+                            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                              {plan.description}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-right text-sm font-medium tabular-nums">
+                          {formatMoney(plan.amount)}
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            / {intervalLabel(plan.interval)}
+                          </span>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
                 <FieldError>{fieldError(formik, "planId")}</FieldError>
-              </Field>
-              <Field data-invalid={Boolean(fieldError(formik, "email"))}>
+              </fieldset>
+              <Field
+                className="mt-5"
+                data-invalid={Boolean(fieldError(formik, "email"))}
+              >
                 <FieldLabel htmlFor="billing-email">Billing email</FieldLabel>
                 <Input
                   id="billing-email"
                   name="email"
                   type="email"
+                  autoComplete="email"
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
+                  placeholder="owner@restaurant.com"
                 />
                 <FieldError>{fieldError(formik, "email")}</FieldError>
               </Field>
-              <Button type="submit" disabled={starting}>
-                {starting ? "Opening Paystack…" : "Pay with Paystack"}
-              </Button>
+              <div className="mt-5 flex justify-end">
+                <Button type="submit" disabled={starting}>
+                  {starting ? "Opening Paystack…" : "Pay with Paystack"}
+                </Button>
+              </div>
               {typeof formik.status === "string" && (
-                <p
-                  className="text-sm text-destructive sm:col-span-3"
-                  role="alert"
-                >
+                <p className="mt-3 text-sm text-destructive" role="alert">
                   {formik.status}
                 </p>
               )}

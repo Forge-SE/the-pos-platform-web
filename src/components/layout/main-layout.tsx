@@ -11,8 +11,11 @@ import { useUrlState } from "@/lib/url-state"
 
 import { MobileHeader } from "@/components/layout/mobile-header"
 import { NotificationButton } from "@/components/layout/notification-button"
+import { StationAlarm } from "@/features/orders/station-alarm"
 import { ShiftBanner } from "@/components/layout/shift-banner"
+import { OfflineSync } from "@/features/offline/offline-sync"
 import { Sidebar } from "@/components/layout/sidebar"
+import { RestaurantBranding } from "@/features/branding/restaurant-branding"
 import { ErrorState } from "@/components/content-state"
 import { clearAuthSession, getAccessTokenProfile } from "@/lib/auth-token"
 import {
@@ -29,9 +32,35 @@ const ONBOARDING_QUERY = gql`
 export function MainLayout() {
   const navigate = useNavigate()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [settingsParam, setSettingsParam] = useUrlState("settings")
+  const [settingsDismissed, setSettingsDismissed] = useState(false)
   const profile = getAccessTokenProfile()
   const [fullscreenParam] = useUrlState("fullscreen")
   const pathname = useLocation({ select: (location) => location.pathname })
+  const [desk] = useUrlState("desk")
+  const cashierCounter =
+    profile?.role === "CASHIER" &&
+    pathname === "/orders" &&
+    desk !== "status" &&
+    desk !== "history"
+  const canOpenSettings =
+    profile?.role === "OWNER" || profile?.role === "MANAGER"
+  const settingsSection =
+    settingsParam === "subscription" || settingsParam === "payouts"
+      ? settingsParam
+      : "restaurant"
+  const settingsOpen =
+    canOpenSettings &&
+    !settingsDismissed &&
+    (pathname === "/settings" ||
+      settingsParam === "restaurant" ||
+      settingsParam === "subscription" ||
+      settingsParam === "payouts")
+
+  useEffect(() => {
+    setSettingsDismissed(false)
+  }, [pathname])
+
   const fullscreen =
     (profile?.role === "CASHIER" ||
       profile?.role === "KITCHEN" ||
@@ -85,6 +114,7 @@ export function MainLayout() {
   if (
     (pathname === "/settings" ||
       pathname === "/performance" ||
+      pathname === "/customers" ||
       pathname === "/taxes" ||
       pathname === "/discounts") &&
     profile.role !== "MANAGER" &&
@@ -104,10 +134,29 @@ export function MainLayout() {
     navigate({ to: "/", replace: true })
   }
 
+  function openSettings() {
+    setSettingsDismissed(false)
+    setSettingsParam(
+      pathname === "/settings" &&
+        new URLSearchParams(window.location.search).has("reference")
+        ? "subscription"
+        : "restaurant"
+    )
+  }
+
+  function closeSettings() {
+    setSettingsParam(null)
+    if (pathname === "/settings") {
+      setSettingsDismissed(true)
+      navigate({ to: "/overview", replace: true })
+    }
+  }
+
   return (
     <div className="flex min-h-svh flex-col bg-sidebar lg:h-dvh lg:overflow-hidden">
       <div className={fullscreen ? "hidden" : "contents"}>
         <ShiftBanner />
+        <OfflineSync />
       </div>
       <main
         className={
@@ -122,6 +171,7 @@ export function MainLayout() {
             collapsed={sidebarCollapsed}
             onCollapsedChange={() => setSidebarCollapsed((value) => !value)}
             onSignOut={signOut}
+            onOpenSettings={canOpenSettings ? openSettings : undefined}
           />
         </div>
 
@@ -129,26 +179,53 @@ export function MainLayout() {
           className={
             fullscreen
               ? "min-h-0 flex-1 overflow-hidden bg-card text-card-foreground"
-              : "relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto"
+              : "pos-workspace relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto"
           }
         >
           <div className={fullscreen ? "hidden" : "contents"}>
-            <MobileHeader profile={profile} onSignOut={signOut} />
+            <MobileHeader
+              profile={profile}
+              onSignOut={signOut}
+              onOpenSettings={canOpenSettings ? openSettings : undefined}
+              showNotifications={!cashierCounter}
+            />
           </div>
-          <div
-            className={
-              fullscreen
-                ? "hidden"
-                : "pointer-events-none absolute top-8 right-8 z-30 hidden lg:block"
-            }
-          >
-            <div className="pointer-events-auto">
-              <NotificationButton />
+          {!cashierCounter && (
+            <div
+              className={
+                fullscreen
+                  ? "hidden"
+                  : "pointer-events-none absolute top-8 right-8 z-30 hidden lg:block"
+              }
+            >
+              <div className="pointer-events-auto">
+                <NotificationButton />
+              </div>
             </div>
-          </div>
+          )}
+          {!cashierCounter && <StationAlarm fullscreen={fullscreen} />}
           <Outlet />
         </section>
       </main>
+      {settingsOpen && (
+        <RestaurantBranding
+          open
+          section={
+            settingsParam === "subscription" ||
+            settingsParam === "payouts" ||
+            settingsParam === "restaurant"
+              ? settingsParam
+              : pathname === "/settings" &&
+                  new URLSearchParams(window.location.search).has("reference")
+                ? "subscription"
+                : settingsSection
+          }
+          onSectionChange={setSettingsParam}
+          onOpenChange={(next) => {
+            if (!next) closeSettings()
+          }}
+        />
+      )}
     </div>
   )
 }

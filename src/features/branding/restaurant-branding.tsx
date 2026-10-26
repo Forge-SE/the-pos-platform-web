@@ -1,18 +1,27 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import {
   CheckCircleIcon,
+  CreditCardIcon,
   ImageIcon,
   SpinnerGapIcon,
+  StorefrontIcon,
+  WalletIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react"
 
-import { SectionPage } from "@/components/layout/section-page"
+import {
+  SettingRow,
+  SettingsBody,
+  SettingsDialog,
+  SettingsHeader,
+} from "@/components/settings/settings-layout"
 import { MomoAccounts } from "@/features/payouts/momo-accounts"
 import { PaystackSettings } from "@/features/payouts/paystack-settings"
 import { SubscriptionPanel } from "@/features/subscriptions/subscription-panel"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { LoadingState } from "@/components/loading-state"
 import { validateImageFile } from "@/features/menu/model"
 import { uploadImageToCloudinary } from "@/lib/cloudinary"
@@ -29,6 +38,7 @@ const RESTAURANT_QUERY = gql`
       currency
       timezone
       logoUrl
+      digestEmail
     }
   }
 `
@@ -42,7 +52,23 @@ const COMPLETE_LOGO_UPLOAD = gql`
   }
 `
 
+const UPDATE_DIGEST_EMAIL = gql`
+  mutation UpdateDigestEmail($email: String!) {
+    updateDigestEmail(email: $email) {
+      id
+      digestEmail
+    }
+  }
+`
+
 type LogoStatus = "idle" | "uploading" | "verifying" | "done" | "error"
+type SettingsSection = "restaurant" | "subscription" | "payouts"
+
+const sections = [
+  { id: "restaurant", label: "Restaurant", icon: StorefrontIcon },
+  { id: "subscription", label: "Subscription", icon: CreditCardIcon },
+  { id: "payouts", label: "Payouts", icon: WalletIcon },
+] as const
 
 interface RestaurantData {
   restaurant: {
@@ -53,10 +79,21 @@ interface RestaurantData {
     currency: string
     timezone: string
     logoUrl: string | null
+    digestEmail: string | null
   }
 }
 
-export function RestaurantBranding() {
+export function RestaurantBranding({
+  open,
+  section,
+  onOpenChange,
+  onSectionChange,
+}: {
+  open: boolean
+  section: SettingsSection
+  onOpenChange: (open: boolean) => void
+  onSectionChange: (section: SettingsSection) => void
+}) {
   const profile = getAccessTokenProfile()
   const canManage = hasPermission(profile, "SETTINGS_MANAGE")
   const { data, loading, error, refetch } =
@@ -99,128 +136,216 @@ export function RestaurantBranding() {
   }
 
   const restaurant = data?.restaurant
+  const [digestEmail, setDigestEmail] = useState("")
+  const [digestNote, setDigestNote] = useState<string | null>(null)
+  const [saveDigest, { loading: savingDigest }] = useMutation(UPDATE_DIGEST_EMAIL)
+  useEffect(() => {
+    setDigestEmail(restaurant?.digestEmail ?? "")
+  }, [restaurant?.digestEmail])
+
+  const uploading = status === "uploading" || status === "verifying"
 
   return (
-    <SectionPage
-      title="Settings"
-      description="Manage branding, subscriptions and payment settlement."
+    <SettingsDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      label="Restaurant settings"
+      items={sections}
+      section={section}
+      onSectionChange={(id) => onSectionChange(id as SettingsSection)}
     >
-      <div className="mt-8 grid gap-6 xl:grid-cols-2">
-        <section className="content-region rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-          <h2 className="text-lg font-semibold tracking-[-0.025em]">
-            Restaurant branding
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The logo appears on receipts, the sign-in screen, and the sidebar.
-          </p>
-          {error ? (
-            <div className="mt-6 rounded-lg bg-destructive/5 p-5 text-sm text-destructive">
-              Could not load restaurant details.
-              <div className="mt-3">
-                <Button
-                  className="mt-3"
-                  variant="outline"
-                  onClick={() => refetch()}
-                >
-                  Try again
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted text-muted-foreground">
-                {restaurant?.logoUrl ? (
-                  <img
-                    src={restaurant.logoUrl}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <ImageIcon className="size-6" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                {loading ? (
-                  <LoadingState
-                    className="min-h-20 flex-row gap-2 py-2"
-                    label="restaurant"
-                  />
-                ) : (
-                  <p className="truncate text-sm font-semibold">
-                    {restaurant?.name ?? "Restaurant"}
-                  </p>
-                )}
-                {restaurant && (
-                  <p className="text-xs text-muted-foreground">
-                    {restaurant.slug} · {restaurant.code} ·{" "}
-                    {restaurant.currency}
-                  </p>
-                )}
-                <div className="mt-3">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="sr-only"
-                    disabled={
-                      !canManage ||
-                      status === "uploading" ||
-                      status === "verifying"
-                    }
-                    onChange={(event) => {
-                      const file = event.target.files?.[0]
-                      if (file) void uploadLogo(file)
-                      event.currentTarget.value = ""
-                    }}
-                  />
-                  {canManage ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => fileRef.current?.click()}
-                      disabled={
-                        status === "uploading" || status === "verifying"
-                      }
-                    >
-                      {status === "uploading" || status === "verifying" ? (
-                        <SpinnerGapIcon
-                          data-icon="inline-start"
-                          className="animate-spin"
-                        />
-                      ) : (
-                        <ImageIcon data-icon="inline-start" />
-                      )}
-                      {status === "uploading"
-                        ? "Uploading…"
-                        : status === "verifying"
-                          ? "Verifying…"
-                          : "Upload logo"}
+        {section === "restaurant" && (
+          <>
+            <SettingsHeader
+              title="Restaurant"
+              description="The logo appears on receipts, the sign-in screen, and the sidebar."
+            />
+            <SettingsBody>
+              {error ? (
+                <div className="py-6 text-sm text-destructive">
+                  Could not load restaurant details.
+                  <div className="mt-3">
+                    <Button variant="outline" onClick={() => refetch()}>
+                      Try again
                     </Button>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Only managers and owners can change branding.
+                  </div>
+                </div>
+              ) : loading ? (
+                <LoadingState className="py-8" label="restaurant" />
+              ) : (
+                <>
+                  <SettingRow
+                    title="Logo"
+                    description="JPEG, PNG, or WebP. Shown wherever the restaurant is identified."
+                  >
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-muted-foreground">
+                        {restaurant?.logoUrl ? (
+                          <img
+                            src={restaurant.logoUrl}
+                            alt=""
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="size-5" />
+                        )}
+                      </div>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        disabled={!canManage || uploading}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0]
+                          if (file) void uploadLogo(file)
+                          event.currentTarget.value = ""
+                        }}
+                      />
+                      {canManage ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileRef.current?.click()}
+                          disabled={uploading}
+                        >
+                          {uploading ? (
+                            <SpinnerGapIcon
+                              data-icon="inline-start"
+                              className="animate-spin"
+                            />
+                          ) : null}
+                          {status === "uploading"
+                            ? "Uploading…"
+                            : status === "verifying"
+                              ? "Verifying…"
+                              : "Change"}
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Only managers and owners can change branding.
+                        </p>
+                      )}
+                    </div>
+                  </SettingRow>
+                  {status === "done" && (
+                    <p className="flex items-center gap-1.5 pb-2 text-xs text-secondary">
+                      <CheckCircleIcon className="size-3.5" weight="fill" />
+                      Logo verified and live.
                     </p>
                   )}
-                </div>
-                {status === "done" && (
-                  <p className="mt-2 flex items-center gap-1.5 text-xs text-secondary">
-                    <CheckCircleIcon className="size-3.5" weight="fill" />
-                    Logo verified and live.
-                  </p>
-                )}
-                {status === "error" && message && (
-                  <p className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
-                    <WarningCircleIcon className="size-3.5" weight="fill" />
-                    {message}
-                  </p>
-                )}
+                  {status === "error" && message && (
+                    <p className="flex items-center gap-1.5 pb-2 text-xs text-destructive">
+                      <WarningCircleIcon className="size-3.5" weight="fill" />
+                      {message}
+                    </p>
+                  )}
+                  <SettingRow
+                    title="Name"
+                    description="The name staff and guests see for this restaurant."
+                  >
+                    <span className="text-sm font-medium">
+                      {restaurant?.name ?? "Restaurant"}
+                    </span>
+                  </SettingRow>
+                  <SettingRow
+                    title="Sign-in code"
+                    description="Staff enter this code before choosing their name."
+                  >
+                    <span className="text-sm font-medium">
+                      {restaurant?.code ?? "—"}
+                    </span>
+                  </SettingRow>
+                  <SettingRow
+                    title="Currency and timezone"
+                    description="Prices are stored in pesewas and dated in the restaurant timezone."
+                  >
+                    <span className="text-sm font-medium">
+                      {restaurant
+                        ? `${restaurant.currency} · ${restaurant.timezone}`
+                        : "—"}
+                    </span>
+                  </SettingRow>
+                  {profile?.role === "OWNER" && (
+                    <SettingRow
+                      title="Sales digest email"
+                      description="Yesterday's rollup is emailed here each morning after 05:15."
+                    >
+                      <div className="w-full">
+                      <form
+                        className="flex w-full max-w-sm gap-2"
+                        onSubmit={(event) => {
+                          event.preventDefault()
+                          setDigestNote(null)
+                          void saveDigest({ variables: { email: digestEmail } })
+                            .then(() => setDigestNote("Digest email saved."))
+                            .catch((error: unknown) =>
+                              setDigestNote(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Could not save the digest email."
+                              )
+                            )
+                        }}
+                      >
+                        <Input
+                          type="email"
+                          required
+                          value={digestEmail}
+                          onChange={(event) => setDigestEmail(event.target.value)}
+                          placeholder="owner@restaurant.com"
+                          aria-label="Sales digest email"
+                        />
+                        <Button type="submit" disabled={savingDigest}>
+                          {savingDigest ? "Saving…" : "Save"}
+                        </Button>
+                      </form>
+                      {digestNote && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {digestNote}
+                        </p>
+                      )}
+                      </div>
+                    </SettingRow>
+                  )}
+                </>
+              )}
+            </SettingsBody>
+          </>
+        )}
+        {section === "subscription" && (
+          <>
+            <SettingsHeader
+              title="Subscription"
+              description="Ovaal is billed through Paystack. This is the plan on the restaurant, the last payment, and the next due date."
+            />
+            <SettingsBody>
+              <SubscriptionPanel canManage={canManage} embedded />
+            </SettingsBody>
+          </>
+        )}
+        {section === "payouts" && (
+          <>
+            <SettingsHeader
+              title="Payouts"
+              description="Mobile money contacts, and the Paystack account MoMo collections settle into."
+            />
+            <SettingsBody>
+              <div className="border-b border-dashed border-border/70 py-6">
+                <h3 className="text-sm font-medium">Mobile money contacts</h3>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Saved numbers across MTN, AirtelTigo and Telecel.
+                </p>
+                <MomoAccounts embedded />
               </div>
-            </div>
-          )}
-        </section>
-      </div>
-      <SubscriptionPanel canManage={canManage} />
-      {profile?.role === "OWNER" && <PaystackSettings />}
-      <MomoAccounts />
-    </SectionPage>
+              {profile?.role === "OWNER" && (
+                <div className="py-6">
+                  <PaystackSettings embedded />
+                </div>
+              )}
+            </SettingsBody>
+          </>
+        )}
+    </SettingsDialog>
   )
 }

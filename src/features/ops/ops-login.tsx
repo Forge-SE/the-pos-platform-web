@@ -68,7 +68,7 @@ export function OpsLogin() {
           Internal
         </p>
         <h1 className="mt-2 text-2xl font-medium tracking-[-0.025em]">
-          Platform admin
+          Operations platform
         </h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Restricted area. Activity here is logged.

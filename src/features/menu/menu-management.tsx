@@ -489,14 +489,14 @@ export function MenuManagement() {
                                 </Button>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs text-muted-foreground">
-                                    {item.active ? "On sale" : "Not on sale"}
+                                    {item.available ? "On sale" : "86"}
                                   </span>
                                   <Switch
-                                    checked={item.active}
-                                    onCheckedChange={(active) =>
-                                      void toggleAvailability(item, active)
+                                    checked={item.available}
+                                    onCheckedChange={(available) =>
+                                      void toggleAvailability(item, available)
                                     }
-                                    aria-label={`${item.active ? "Make" : "Mark"} ${item.name} ${item.active ? "unavailable" : "available"}`}
+                                    aria-label={`${item.available ? "Mark" : "Return"} ${item.name} ${item.available ? "unavailable" : "to the counter"}`}
                                   />
                                 </div>
                               </div>

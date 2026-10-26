@@ -21,6 +21,7 @@ import type {
   StaffRosterData,
 } from "@/features/performance/model"
 import { AnalyticsCards } from "@/features/performance/analytics"
+import { AccountantExport } from "@/features/performance/accountant-export"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
@@ -148,7 +149,15 @@ export function Performance() {
             )
           })}
         </div>
-        <DateRangePicker value={range} onChange={handleRangeChange} />
+        <div className="flex flex-wrap items-center gap-2">
+          <DateRangePicker value={range} onChange={handleRangeChange} />
+          {canSeeSales && range.from && (
+            <AccountantExport
+              from={format(range.from, "yyyy-MM-dd")}
+              to={format(range.to ?? range.from, "yyyy-MM-dd")}
+            />
+          )}
+        </div>
       </div>
       {error ? (
         <ErrorState title="Could not load performance data" onRetry={refetch} />

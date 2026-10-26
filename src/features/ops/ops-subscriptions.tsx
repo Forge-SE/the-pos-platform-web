@@ -2,6 +2,7 @@ import { useState } from "react"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { PencilSimpleIcon, PlusIcon } from "@phosphor-icons/react"
+import { Link, useNavigate } from "@tanstack/react-router"
 import * as Yup from "yup"
 
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +13,13 @@ import { DataTable } from "@/components/ui/data-table"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { OpsModal } from "@/features/ops/ops-overlays"
@@ -39,21 +47,6 @@ const PLANS_QUERY = gql`
       interval
       paystackPlanCode
       active
-    }
-    platformRestaurantSubscriptions {
-      id
-      restaurantId
-      restaurantName
-      status
-      billingEmail
-      lastPaidAt
-      nextPaymentAt
-      plan {
-        id
-        name
-        amount
-        interval
-      }
     }
   }
 `
@@ -105,16 +98,6 @@ interface Plan {
   active: boolean
 }
 
-interface RestaurantSubscriptionRow {
-  id: string
-  restaurantId: string
-  restaurantName: string
-  status: string
-  lastPaidAt: string | null
-  nextPaymentAt: string | null
-  plan: { id: string; name: string; amount: number; interval: string }
-}
-
 const planSchema = Yup.object({
   name: Yup.string()
     .trim()
@@ -135,22 +118,12 @@ function pesewasToCedis(amount: number) {
   return (amount / 100).toFixed(2)
 }
 
-function formatWhen(value: string | null) {
-  if (!value) return "—"
-  return new Date(value).toLocaleDateString("en-GH", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
-}
-
 export function OpsSubscriptions() {
+  const navigate = useNavigate()
   const [editing, setEditing] = useState<Plan | null | "new">(null)
-  const [assigning, setAssigning] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const { data, loading, error, refetch } = useQuery<{
     platformSubscriptionPlans: Plan[]
-    platformRestaurantSubscriptions: RestaurantSubscriptionRow[]
   }>(PLANS_QUERY, { context: opsAuthContext() })
   useOpsAuthError(error)
   const [createPlan, { loading: creating }] = useMutation(CREATE_PLAN, {
@@ -160,27 +133,14 @@ export function OpsSubscriptions() {
     context: opsAuthContext(),
   })
   const plans = data?.platformSubscriptionPlans ?? []
-  const subscriptions = data?.platformRestaurantSubscriptions ?? []
   const [planSearch, setPlanSearch] = useUrlState("planSearch")
-  const [subscriptionSearch, setSubscriptionSearch] =
-    useUrlState("subscriptionSearch")
   const planPaging = useTablePagination("plans")
-  const subscriptionPaging = useTablePagination("subscriptions")
   const filteredPlans = plans.filter((plan) =>
     plan.name.toLowerCase().includes((planSearch ?? "").toLowerCase().trim())
-  )
-  const filteredSubscriptions = subscriptions.filter((row) =>
-    `${row.restaurantName} ${row.plan.name} ${row.status}`
-      .toLowerCase()
-      .includes((subscriptionSearch ?? "").toLowerCase().trim())
   )
   const visiblePlans = filteredPlans.slice(
     planPaging.pageIndex * planPaging.pageSize,
     (planPaging.pageIndex + 1) * planPaging.pageSize
-  )
-  const visibleSubscriptions = filteredSubscriptions.slice(
-    subscriptionPaging.pageIndex * subscriptionPaging.pageSize,
-    (subscriptionPaging.pageIndex + 1) * subscriptionPaging.pageSize
   )
   const saving = creating || updating
 
@@ -188,7 +148,7 @@ export function OpsSubscriptions() {
     <>
       <OpsHeader
         title="Subscriptions"
-        description="Set Paystack pricing tiers and assign a plan to a restaurant."
+        description="Manage pricing tiers. Open a tier to see payments, renewals, and restaurants on the plan."
       >
         <Button
           onClick={() => {
@@ -200,7 +160,7 @@ export function OpsSubscriptions() {
           Add tier
         </Button>
       </OpsHeader>
-      <section className="content-region mx-4 mb-6 overflow-hidden rounded-md bg-card lg:mx-8">
+      <section className="content-region mx-5 mb-8 flex min-h-[calc(100svh-11rem)] min-w-0 flex-1 flex-col overflow-hidden bg-card lg:mx-8">
         <h2 className="border-b border-border/70 px-4 py-3 text-sm font-semibold">
           Tiers
         </h2>
@@ -282,9 +242,27 @@ export function OpsSubscriptions() {
             )}
             {!error &&
               visiblePlans.map((plan) => (
-                <tr key={plan.id} className="border-t border-border/70">
+                <tr
+                  key={plan.id}
+                  className="cursor-pointer border-t border-border/70 hover:bg-muted/40"
+                  onClick={() =>
+                    void navigate({
+                      to: "/ops/subscriptions/$tierId",
+                      params: { tierId: plan.id },
+                      search: { tab: "analytics" },
+                    })
+                  }
+                >
                   <td className="px-4 py-3">
-                    <span className="block font-medium">{plan.name}</span>
+                    <Link
+                      to="/ops/subscriptions/$tierId"
+                      params={{ tierId: plan.id }}
+                      search={{ tab: "analytics" }}
+                      className="block font-medium hover:underline"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {plan.name}
+                    </Link>
                     {plan.description && (
                       <span className="text-xs text-muted-foreground">
                         {plan.description}
@@ -305,126 +283,30 @@ export function OpsSubscriptions() {
                   <td className="px-4 py-3 text-right">
                     <Button
                       variant="ghost"
+                      size="sm"
+                      render={
+                        <Link
+                          to="/ops/subscriptions/$tierId"
+                          params={{ tierId: plan.id }}
+                          search={{ tab: "analytics" }}
+                        />
+                      }
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      View tier
+                    </Button>
+                    <Button
+                      variant="ghost"
                       size="icon-sm"
                       aria-label={`Edit ${plan.name}`}
-                      onClick={() => {
+                      onClick={(event) => {
+                        event.stopPropagation()
                         setFormError(null)
                         setEditing(plan)
                       }}
                     >
                       <PencilSimpleIcon />
                     </Button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </DataTable>
-      </section>
-
-      <section className="content-region mx-4 mb-8 overflow-hidden rounded-md bg-card lg:mx-8">
-        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
-          <h2 className="text-sm font-semibold">Restaurant subscriptions</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAssigning(true)}
-            disabled={plans.length === 0}
-          >
-            Assign plan
-          </Button>
-        </div>
-        <DataTable
-          ariaLabel="Restaurant subscriptions"
-          rows={visibleSubscriptions}
-          search={{
-            value: subscriptionSearch ?? "",
-            onChange: (value) => {
-              setSubscriptionSearch(value || null)
-              subscriptionPaging.resetPage()
-            },
-            placeholder: "Search subscriptions",
-          }}
-          onRefresh={() => void refetch()}
-          isLoading={loading}
-          pagination={{
-            ...subscriptionPaging,
-            totalCount: filteredSubscriptions.length,
-          }}
-        >
-          <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            <tr>
-              <th className="px-4 py-3 font-medium">Restaurant</th>
-              <th className="px-4 py-3 font-medium">Plan</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Last paid</th>
-              <th className="px-4 py-3 font-medium">Next due</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!loading &&
-              !error &&
-              visibleSubscriptions.length === 0 &&
-              subscriptions.length > 0 && (
-                <tr>
-                  <td colSpan={5}>
-                    <EmptyState
-                      title="No subscriptions match your search."
-                      description="Try another restaurant or plan."
-                    />
-                  </td>
-                </tr>
-              )}
-            {error && (
-              <tr>
-                <td colSpan={5}>
-                  <ErrorState
-                    title="Couldn’t load subscriptions."
-                    onRetry={refetch}
-                  />
-                </td>
-              </tr>
-            )}
-            {!loading && !error && subscriptions.length === 0 && (
-              <tr>
-                <td colSpan={5}>
-                  <EmptyState
-                    title="No restaurant is on a plan yet."
-                    description={
-                      plans.length
-                        ? "Assign a pricing tier to a restaurant."
-                        : "Add a pricing tier first, then assign it to a restaurant."
-                    }
-                    action={
-                      <Button
-                        size="lg"
-                        onClick={() => {
-                          if (plans.length) setAssigning(true)
-                          else {
-                            setFormError(null)
-                            setEditing("new")
-                          }
-                        }}
-                      >
-                        {plans.length ? "Assign plan" : "Add tier"}
-                      </Button>
-                    }
-                  />
-                </td>
-              </tr>
-            )}
-            {!error &&
-              visibleSubscriptions.map((row) => (
-                <tr key={row.id} className="border-t border-border/70">
-                  <td className="px-4 py-3 font-medium">
-                    {row.restaurantName}
-                  </td>
-                  <td className="px-4 py-3">{row.plan.name}</td>
-                  <td className="px-4 py-3">{row.status}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatWhen(row.lastPaidAt)}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatWhen(row.nextPaymentAt)}
                   </td>
                 </tr>
               ))}
@@ -537,17 +419,21 @@ export function OpsSubscriptions() {
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="plan-interval">Interval</FieldLabel>
-                    <select
-                      id="plan-interval"
-                      name="interval"
+                    <Select
                       value={formik.values.interval}
-                      onChange={formik.handleChange}
-                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      onValueChange={(value) =>
+                        void formik.setFieldValue("interval", value)
+                      }
                     >
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="annually">Annually</option>
-                    </select>
+                      <SelectTrigger id="plan-interval" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="annually">Annually</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </Field>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
@@ -564,34 +450,25 @@ export function OpsSubscriptions() {
           </Form>
         </OpsModal>
       )}
-
-      {assigning && (
-        <AssignSubscription
-          plans={plans.filter((plan) => plan.active)}
-          onClose={() => setAssigning(false)}
-          onSaved={async () => {
-            setAssigning(false)
-            await refetch()
-          }}
-        />
-      )}
     </>
   )
 }
 
-function AssignSubscription({
+export function AssignSubscription({
   plans,
+  fixedPlanId,
   onClose,
   onSaved,
 }: {
-  plans: Plan[]
+  plans: Array<Pick<Plan, "id" | "name" | "amount">>
+  fixedPlanId?: string
   onClose: () => void
   onSaved: () => Promise<void>
 }) {
   const [search, setSearch] = useState("")
   const [restaurantId, setRestaurantId] = useState("")
-  const [planId, setPlanId] = useState(plans[0]?.id ?? "")
-  const [status, setStatus] = useState("ACTIVE")
+  const [planId, setPlanId] = useState(fixedPlanId ?? plans[0]?.id)
+  const [status, setStatus] = useState("PENDING")
   const [confirming, setConfirming] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const {
@@ -699,42 +576,56 @@ function AssignSubscription({
                 }
               />
             )}
-          <select
-            aria-label="Restaurant"
-            value={restaurantId}
-            onChange={(event) => setRestaurantId(event.target.value)}
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          <Select
+            value={restaurantId || null}
+            onValueChange={(value) => setRestaurantId(value ?? "")}
           >
-            <option value="">Choose restaurant</option>
-            {restaurants.map((restaurant) => (
-              <option key={restaurant.id} value={restaurant.id}>
-                {restaurant.name}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Plan"
-            value={planId}
-            onChange={(event) => setPlanId(event.target.value)}
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          >
-            {plans.map((plan) => (
-              <option key={plan.id} value={plan.id}>
-                {plan.name} · {formatMoney(plan.amount)}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Status"
+            <SelectTrigger aria-label="Restaurant" className="w-full">
+              <SelectValue placeholder="Choose restaurant" />
+            </SelectTrigger>
+            <SelectContent>
+              {restaurants.map((restaurant) => (
+                <SelectItem key={restaurant.id} value={restaurant.id}>
+                  {restaurant.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {fixedPlanId ? (
+            <p className="rounded-md bg-muted/40 px-3 py-2.5 text-sm font-medium">
+              {plans[0]?.name} · {formatMoney(plans[0]?.amount ?? 0)}
+            </p>
+          ) : (
+            <Select
+              value={planId || null}
+              onValueChange={(value) => setPlanId(value ?? "")}
+            >
+              <SelectTrigger aria-label="Plan" className="w-full">
+                <SelectValue placeholder="Choose plan" />
+              </SelectTrigger>
+              <SelectContent>
+                {plans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id}>
+                    {plan.name} · {formatMoney(plan.amount)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Select
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            onValueChange={(value) => setStatus(value ?? "PENDING")}
           >
-            <option value="ACTIVE">Active</option>
-            <option value="PENDING">Pending</option>
-            <option value="PAST_DUE">Past due</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
+            <SelectTrigger aria-label="Status" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="PAST_DUE">Past due</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
       {formError && (

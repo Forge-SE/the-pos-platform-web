@@ -26,8 +26,10 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Button } from "@/components/ui/button"
+import { MetricCard } from "@/components/ui/metric-card"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import type { AccessTokenProfile } from "@/lib/auth-token"
+import { SalesDigestCard } from "@/features/insights/sales-digest"
 import { hasPermission } from "@/lib/permissions"
 
 const ACTIVE_ORDER_FIELDS = gql`
@@ -426,6 +428,7 @@ export function Overview() {
           )}
         </div>
       </header>
+      <SalesDigestCard />
 
       {shiftActionError && (
         <p className="mt-3 text-right text-xs text-destructive" role="alert">
@@ -454,7 +457,7 @@ export function Overview() {
       >
         {canSeeSales && (
           <>
-            <QuickStat
+            <MetricCard
               icon={WalletIcon}
               label="Today's net revenue"
               value={
@@ -463,7 +466,7 @@ export function Overview() {
                   : formatMoney(salesData?.salesToday.totalSales ?? 0)
               }
             />
-            <QuickStat
+            <MetricCard
               icon={ReceiptIcon}
               label="Today's orders"
               value={
@@ -474,19 +477,19 @@ export function Overview() {
             />
           </>
         )}
-        <QuickStat
+        <MetricCard
           icon={ReceiptIcon}
           label="Active orders"
           value={loading ? "—" : String(orders.length)}
         />
         {!canSeeSales && (
           <>
-            <QuickStat
+            <MetricCard
               icon={ForkKnifeIcon}
               label="In preparation"
               value={loading ? "—" : String(orderCounts.preparing)}
             />
-            <QuickStat
+            <MetricCard
               icon={UsersThreeIcon}
               label="Ready to serve"
               value={loading ? "—" : String(orderCounts.ready)}
@@ -768,29 +771,5 @@ function StatePanel({
       error={variant === "error"}
       className={className}
     />
-  )
-}
-
-function QuickStat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: Icon
-  label: string
-  value: string
-}) {
-  return (
-    <article className="flex min-h-32 min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card p-5">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-secondary">
-          <Icon aria-hidden="true" className="size-[18px]" />
-        </span>
-      </div>
-      <p className="mt-5 truncate text-2xl font-semibold tracking-[-0.03em] tabular-nums sm:text-3xl">
-        {value}
-      </p>
-    </article>
   )
 }

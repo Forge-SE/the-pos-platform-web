@@ -1,10 +1,18 @@
-import { useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
+import { format, isValid, parseISO } from "date-fns"
+import {
+  CoinsIcon,
+  CreditCardIcon,
+  ReceiptIcon,
+  WalletIcon,
+} from "@phosphor-icons/react"
 
-import { Input } from "@/components/ui/input"
+import { DateRangePicker } from "@/components/date-range-picker"
+import type { DateRange } from "@/components/date-range-picker"
 import { DataTable } from "@/components/ui/data-table"
+import { MetricCard } from "@/components/ui/metric-card"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import {
   Select,
@@ -80,12 +88,25 @@ const METRICS_QUERY = gql`
 const statuses = ["NEW", "PREPARING", "READY", "COMPLETED", "CANCELLED"]
 
 export function OpsMetrics() {
-  const [from, setFrom] = useState("")
-  const [to, setTo] = useState("")
-  const [region, setRegion] = useState("")
-  const [category, setCategory] = useState("")
-  const [status, setStatus] = useState("")
-  const [diningType, setDiningType] = useState("")
+  const [from, setFrom] = useUrlState("metricsFrom")
+  const [to, setTo] = useUrlState("metricsTo")
+  const [region, setRegion] = useUrlState("metricsRegion")
+  const [category, setCategory] = useUrlState("metricsCategory")
+  const [status, setStatus] = useUrlState("metricsStatus")
+  const [diningType, setDiningType] = useUrlState("metricsOrderType")
+  const parsedFrom = from ? parseISO(from) : null
+  const parsedTo = to ? parseISO(to) : null
+  const range: DateRange | undefined =
+    parsedFrom && isValid(parsedFrom)
+      ? {
+          from: parsedFrom,
+          to: parsedTo && isValid(parsedTo) ? parsedTo : parsedFrom,
+        }
+      : undefined
+  function changeRange(next: DateRange | undefined) {
+    setFrom(next?.from ? format(next.from, "yyyy-MM-dd") : null)
+    setTo(next?.from ? format(next.to ?? next.from, "yyyy-MM-dd") : null)
+  }
   const { data, loading, error, refetch } = useQuery<{
     platformMetricOptions: { regions: string[]; categories: string[] }
     platformOrderMetrics: {
@@ -119,12 +140,12 @@ export function OpsMetrics() {
     }
   }>(METRICS_QUERY, {
     variables: {
-      from: from || null,
-      to: to || null,
-      region: region || null,
-      category: category || null,
-      status: status || null,
-      diningType: diningType || null,
+      from,
+      to,
+      region,
+      category,
+      status,
+      diningType,
     },
     context: opsAuthContext(),
   })
@@ -139,45 +160,37 @@ export function OpsMetrics() {
         description="Orders, order revenue, and Paystack subscription payments. Date and region apply to both. Category, status, and order type apply to orders."
       />
       <section className="content-region mx-4 mb-8 space-y-4 lg:mx-8">
-        <div className="grid gap-3 rounded-xl border border-border/70 bg-card p-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Filter label="From">
-            <Input
-              type="date"
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-            />
-          </Filter>
-          <Filter label="To">
-            <Input
-              type="date"
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-            />
-          </Filter>
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 xl:flex-nowrap">
+          <div className="min-w-0 shrink-0 space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Date range
+            </p>
+            <DateRangePicker value={range} onChange={changeRange} />
+          </div>
           <Choice
             label="Region"
-            value={region}
+            value={region ?? ""}
             onChange={setRegion}
             options={options?.regions ?? []}
             placeholder="All regions"
           />
           <Choice
             label="Category"
-            value={category}
+            value={category ?? ""}
             onChange={setCategory}
             options={options?.categories ?? []}
             placeholder="All categories"
           />
           <Choice
             label="Status"
-            value={status}
+            value={status ?? ""}
             onChange={setStatus}
             options={statuses}
             placeholder="All statuses"
           />
           <Choice
             label="Order type"
-            value={diningType}
+            value={diningType ?? ""}
             onChange={setDiningType}
             options={["DINE_IN", "TAKEAWAY", "DELIVERY"]}
             labels={{
@@ -194,21 +207,25 @@ export function OpsMetrics() {
         ) : (
           <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat
+              <MetricCard
+                icon={ReceiptIcon}
                 label="Orders"
                 value={loading ? "—" : String(metrics?.orderCount ?? 0)}
               />
-              <Stat
+              <MetricCard
+                icon={WalletIcon}
                 label="Order revenue"
                 value={loading ? "—" : formatMoney(metrics?.revenue ?? 0)}
               />
-              <Stat
+              <MetricCard
+                icon={CreditCardIcon}
                 label="Subscription payments"
                 value={
                   loading ? "—" : String(metrics?.subscriptionPaymentCount ?? 0)
                 }
               />
-              <Stat
+              <MetricCard
+                icon={CoinsIcon}
                 label="Subscription revenue"
                 value={
                   loading ? "—" : formatMoney(metrics?.subscriptionRevenue ?? 0)
@@ -291,7 +308,7 @@ export function OpsMetrics() {
 
 function Filter({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block text-xs font-medium text-muted-foreground">
+    <label className="min-w-[9rem] flex-1 text-xs font-medium text-muted-foreground sm:max-xl:basis-[calc(50%-0.375rem)]">
       {label}
       <div className="mt-1.5">{children}</div>
     </label>
@@ -332,17 +349,6 @@ function Choice({
         </SelectContent>
       </Select>
     </Filter>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border/70 bg-card px-5 py-4">
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">{value}</p>
-    </div>
   )
 }
 

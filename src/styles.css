@@ -173,6 +173,11 @@
   --sidebar-ring: oklch(0.86 0.16 125);
 }
 
+/* Text accents need a lighter value than filled secondary controls in dark mode. */
+.dark .text-secondary {
+  color: var(--primary);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -282,8 +287,8 @@
 
 /* Room for the constant notification bell in the content heading. */
 @media (min-width: 64rem) {
-  .content-page > :first-child {
-    padding-right: 3.5rem;
+  .pos-workspace .content-page > :first-child {
+    padding-right: 6.5rem;
   }
 }
 

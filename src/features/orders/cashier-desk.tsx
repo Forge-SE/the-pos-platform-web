@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { NotificationButton } from "@/components/layout/notification-button"
 import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Input } from "@/components/ui/input"
@@ -28,9 +29,17 @@ import {
   mutationMessage,
 } from "@/features/menu/model"
 import { CURRENT_SHIFT_QUERY } from "@/features/shifts/current-shift"
+import { getAccessTokenProfile } from "@/lib/auth-token"
+import {
+  deviceId,
+  enqueueOrder,
+  readMenuCache,
+  writeMenuCache,
+} from "@/features/offline/queue"
 import { normalizeGhanaPhone } from "@/features/payouts/phone"
 import { useUrlState } from "@/lib/url-state"
 import { CashierLiveOrders } from "./cashier-live-orders"
+import { StationAlarm } from "./station-alarm"
 import { ReceiptDialog } from "./receipt-dialog"
 
 interface ModifierOption {
@@ -56,6 +65,7 @@ interface CounterItem {
   description: string | null
   price: number
   preparationTimeMinutes: number | null
+  available?: boolean
   imageUrl: string | null
   modifierGroups: ModifierGroup[]
 }
@@ -95,6 +105,7 @@ const MENU_QUERY = gql`
       description
       price
       preparationTimeMinutes
+      available
       imageUrl
       modifierGroups {
         id
@@ -202,6 +213,12 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
   const fullscreen = fullscreenParam === "1"
   const ownsFullscreen = useRef(false)
   const { data, loading, error, refetch } = useQuery<CounterMenu>(MENU_QUERY)
+  const [online, setOnline] = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine
+  )
+  const [cachedMenu, setCachedMenu] = useState<CounterMenu | null>(() =>
+    readMenuCache<CounterMenu>()
+  )
   const { data: shiftData } = useQuery<{
     currentShift: { id: string } | null
   }>(CURRENT_SHIFT_QUERY, {
@@ -222,7 +239,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
   const [customTip, setCustomTip] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [contactPhone, setContactPhone] = useState("")
+  const [smsConsent, setSmsConsent] = useState(false)
   const [deliveryAddress, setDeliveryAddress] = useState("")
+  const [deliveryFee, setDeliveryFee] = useState("")
+  const [tender, setTender] = useState("")
   const [discountCode, setDiscountCode] = useState("")
   const [appliedDiscountCode, setAppliedDiscountCode] = useState("")
   const [payMethod, setPayMethod] = useState<"CASH" | "MOMO">("MOMO")
@@ -231,6 +251,25 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
   const [formError, setFormError] = useState<string | null>(null)
   const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null)
   const [receiptOpen, setReceiptOpen] = useState(false)
+
+  useEffect(() => {
+    function syncConnection() {
+      setOnline(navigator.onLine)
+    }
+    window.addEventListener("online", syncConnection)
+    window.addEventListener("offline", syncConnection)
+    return () => {
+      window.removeEventListener("online", syncConnection)
+      window.removeEventListener("offline", syncConnection)
+    }
+  }, [])
+  useEffect(() => {
+    if (data) {
+      writeMenuCache(data)
+      setCachedMenu(data)
+    }
+  }, [data])
+  const menuSource = data ?? (online ? null : cachedMenu)
 
   useEffect(() => {
     const syncFullscreen = () => {
@@ -283,18 +322,18 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
     }
   }
 
-  const categories = data?.menuCategories ?? []
+  const categories = menuSource?.menuCategories ?? []
   const items = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return (data?.menuItems ?? []).filter((item) => {
+    return (menuSource?.menuItems ?? []).filter((item) => {
       const inCategory = categoryId === "all" || item.categoryId === categoryId
       const matches =
         !query ||
         item.name.toLowerCase().includes(query) ||
         (item.description ?? "").toLowerCase().includes(query)
-      return inCategory && matches
+      return inCategory && matches && item.available !== false
     })
-  }, [categoryId, data?.menuItems, search])
+  }, [categoryId, menuSource?.menuItems, search])
 
   const subtotal = lines.reduce(
     (sum, line) => sum + line.unitPrice * line.quantity,
@@ -323,7 +362,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
     fetchPolicy: "network-only",
   })
   const estimate = pricing.data?.pricingEstimate
-  const due = (estimate?.total ?? subtotal) + Math.max(tip, 0)
+  const deliveryFeePesewas =
+    diningType === "DELIVERY" ? (cedisToPesewas(deliveryFee) ?? 0) : 0
+  const due =
+    (estimate?.total ?? subtotal) + Math.max(tip, 0) + deliveryFeePesewas
   const shiftId = shiftData?.currentShift?.id ?? null
   const busy = creating || recording || charging
 
@@ -385,11 +427,27 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       setFormError("Enter a Ghana phone number, like 024 123 4567.")
       return
     }
+    if (guestPhone && !smsConsent) {
+      setFormError("Ask for consent before saving a customer phone number.")
+      return
+    }
     if (diningType === "DELIVERY" && !deliveryAddress.trim()) {
       setFormError("Enter the delivery address before placing this order.")
       return
     }
-    if (pricing.loading || pricing.error || !estimate) {
+    if (
+      diningType === "DELIVERY" &&
+      deliveryFee.trim() &&
+      cedisToPesewas(deliveryFee) === null
+    ) {
+      setFormError("Enter the delivery fee in cedis, like 10.00.")
+      return
+    }
+    if (tender.trim() && cedisToPesewas(tender) === null) {
+      setFormError("Enter the amount received in cedis, like 20.00.")
+      return
+    }
+    if (online && (pricing.loading || pricing.error || !estimate)) {
       setFormError(
         "Wait for pricing to load, or retry the tax and discount calculation."
       )
@@ -405,8 +463,77 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       )
       return
     }
+    if (!online && payMethod === "MOMO" && due > 0) {
+      setFormError(
+        "MoMo is unavailable while this till is offline. Take cash, and it will sync when the connection returns."
+      )
+      return
+    }
+    if (!online && appliedDiscountCode) {
+      setFormError(
+        "Discount codes need a connection. Remove the code or wait until the till is back online."
+      )
+      return
+    }
     const notes =
       [customerName.trim(), guestPhone].filter(Boolean).join(" · ") || null
+    if (!online) {
+      const profile = getAccessTokenProfile()
+      if (!profile) {
+        setFormError("Sign in again before queueing an offline order.")
+        return
+      }
+      const idempotencyKey = crypto.randomUUID()
+      const createdOfflineAt = new Date().toISOString()
+      const amount = tender.trim() ? (cedisToPesewas(tender) ?? due) : due
+      enqueueOrder({
+        idempotencyKey,
+        paymentKey: crypto.randomUUID(),
+        userId: profile.sub,
+        deviceId: deviceId(),
+        createdOfflineAt,
+        shiftId,
+        amount: Math.max(amount, 0),
+        status: "queued",
+        input: {
+          idempotencyKey,
+          shiftId,
+          diningType,
+          channel: "counter",
+          deliveryAddress:
+            diningType === "DELIVERY" ? deliveryAddress.trim() : null,
+          deliveryFee: diningType === "DELIVERY" ? deliveryFeePesewas : 0,
+          customerName: customerName.trim() || null,
+          customerPhone: guestPhone,
+          customerConsent: guestPhone ? true : null,
+          tip,
+          notes,
+          deviceId: deviceId(),
+          createdOfflineAt,
+          items: lines.map((line) => ({
+            menuItemId: line.item.id,
+            quantity: line.quantity,
+            modifierOptionIds: line.optionIds,
+            notes: line.notes || null,
+          })),
+        },
+      })
+      toast({
+        title: `Cash order ${idempotencyKey.slice(-6).toUpperCase()} is queued`,
+        description:
+          "It stays on this device until the connection returns, then syncs once.",
+        status: "success",
+      })
+      setLines([])
+      setCustomerName("")
+      setContactPhone("")
+      setSmsConsent(false)
+      setDeliveryAddress("")
+      setDeliveryFee("")
+      setTender("")
+      setBagOpen(false)
+      return
+    }
     try {
       const created = await createOrder({
         variables: {
@@ -414,8 +541,13 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             idempotencyKey: crypto.randomUUID(),
             shiftId,
             diningType,
+            channel: "counter",
             deliveryAddress:
               diningType === "DELIVERY" ? deliveryAddress.trim() : null,
+            deliveryFee: diningType === "DELIVERY" ? deliveryFeePesewas : 0,
+            customerName: customerName.trim() || null,
+            customerPhone: guestPhone,
+            customerConsent: guestPhone ? true : null,
             discountCode: appliedDiscountCode || null,
             tip,
             notes,
@@ -433,6 +565,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           { createOrder?: { id: string; total: number } } | undefined
       )?.createOrder
       if (!order) throw new Error("The order was not created.")
+      const tendered = tender.trim() ? cedisToPesewas(tender) : order.total
       if (order.total === 0) {
         toast({
           title: "No payment due",
@@ -441,6 +574,8 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         })
         setReceiptOrderId(order.id)
         setReceiptOpen(true)
+      } else if (!tendered || tendered <= 0) {
+        throw new Error("Enter the amount received.")
       } else if (payMethod === "CASH") {
         const recorded = await recordPayment({
           variables: {
@@ -448,7 +583,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
               idempotencyKey: crypto.randomUUID(),
               orderId: order.id,
               method: "CASH",
-              amount: order.total,
+              amount: tendered,
               receiptChannel: "PRINT",
             },
           },
@@ -475,6 +610,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
               orderId: order.id,
               phone: wallet,
               provider: network,
+              amount: tendered,
               receiptChannel: "SMS",
             },
           },
@@ -536,7 +672,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             : "content-region flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]"
         }
       >
-        <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:pt-8 lg:pr-20 lg:pl-8">
+        <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
           <div className="min-w-0">
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
               Counter
@@ -545,8 +681,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
               Build the bag, then take cash or send a MoMo prompt.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {!fullscreen && switcher}
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button onClick={() => setBagOpen(true)} className="shrink-0">
               <ShoppingBagIcon aria-hidden="true" data-icon="inline-start" />
               Bag
@@ -568,18 +703,23 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
                 <ArrowsOutIcon aria-hidden="true" />
               )}
             </Button>
+            <StationAlarm inline />
+            <NotificationButton />
           </div>
         </header>
 
         <div className="content-region min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-          <Input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search the menu"
-            aria-label="Search the menu"
-            className="max-w-sm"
-          />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search the menu"
+              aria-label="Search the menu"
+              className="w-full sm:max-w-sm"
+            />
+            {!fullscreen && switcher}
+          </div>
           <div
             aria-label="Menu categories"
             className="mt-4 flex gap-3 overflow-x-auto p-1 pb-3"
@@ -736,6 +876,12 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           onCustomerName={setCustomerName}
           contactPhone={contactPhone}
           onContactPhone={setContactPhone}
+          smsConsent={smsConsent}
+          onSmsConsent={setSmsConsent}
+          deliveryFee={deliveryFee}
+          onDeliveryFee={setDeliveryFee}
+          tender={tender}
+          onTender={setTender}
           deliveryAddress={deliveryAddress}
           onDeliveryAddress={setDeliveryAddress}
           discountCode={discountCode}
@@ -745,6 +891,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             setAppliedDiscountCode(discountCode.trim().toUpperCase())
           }
           payMethod={payMethod}
+          offline={!online}
           onPayMethod={setPayMethod}
           network={network}
           onNetwork={setNetwork}
@@ -1048,6 +1195,12 @@ function BagDrawer(props: {
   onCustomerName: (value: string) => void
   contactPhone: string
   onContactPhone: (value: string) => void
+  smsConsent: boolean
+  onSmsConsent: (value: boolean) => void
+  deliveryFee: string
+  onDeliveryFee: (value: string) => void
+  tender: string
+  onTender: (value: string) => void
   deliveryAddress: string
   onDeliveryAddress: (value: string) => void
   discountCode: string
@@ -1055,6 +1208,7 @@ function BagDrawer(props: {
   appliedDiscountCode: string
   onApplyDiscount: () => void
   payMethod: "CASH" | "MOMO"
+  offline: boolean
   onPayMethod: (value: "CASH" | "MOMO") => void
   network: (typeof networks)[number]["id"]
   onNetwork: (value: (typeof networks)[number]["id"]) => void
@@ -1100,7 +1254,7 @@ function BagDrawer(props: {
               </Dialog.Close>
             </div>
           </div>
-          <div className="content-region min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+          <div className="content-region min-h-0 flex-1 overflow-y-auto px-5 py-2 [&>section]:border-t [&>section]:border-dotted [&>section]:border-border [&>section]:py-6">
             {props.lines.length === 0 ? (
               <EmptyState
                 title="Your bag is empty."
@@ -1116,7 +1270,7 @@ function BagDrawer(props: {
                 }
               />
             ) : (
-              <ul className="space-y-3">
+              <ul className="space-y-3 py-5">
                 {props.lines.map((line) => (
                   <li
                     key={line.key}
@@ -1200,7 +1354,7 @@ function BagDrawer(props: {
               </div>
             </section>
 
-            <section className="rounded-xl border border-border/70 p-3">
+            <section>
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Kitchen tip</h2>
                 <span className="text-sm font-semibold text-secondary tabular-nums">
@@ -1237,7 +1391,7 @@ function BagDrawer(props: {
               />
             </section>
 
-            <section className="space-y-2">
+            <section className="space-y-3">
               <h2 className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                 Customer and payment
               </h2>
@@ -1253,6 +1407,32 @@ function BagDrawer(props: {
                 placeholder="Contact phone"
                 aria-label="Contact phone"
                 inputMode="tel"
+              />
+              <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={props.smsConsent}
+                  onChange={(event) => props.onSmsConsent(event.target.checked)}
+                />
+                Customer agrees to receive order and receipt messages on this
+                number.
+              </label>
+              {props.diningType === "DELIVERY" && (
+                <Input
+                  value={props.deliveryFee}
+                  onChange={(event) => props.onDeliveryFee(event.target.value)}
+                  placeholder="Delivery fee in cedis"
+                  aria-label="Delivery fee in cedis"
+                  inputMode="decimal"
+                />
+              )}
+              <Input
+                value={props.tender}
+                onChange={(event) => props.onTender(event.target.value)}
+                placeholder="Amount received, leave blank for the full total"
+                aria-label="Amount received in cedis"
+                inputMode="decimal"
               />
               {props.diningType === "DELIVERY" && (
                 <Input
@@ -1289,12 +1469,13 @@ function BagDrawer(props: {
                   {props.appliedDiscountCode} applied successfully.
                 </p>
               )}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 pt-3">
                 <button
                   type="button"
                   aria-pressed={props.payMethod === "MOMO"}
+                  disabled={props.offline}
                   onClick={() => props.onPayMethod("MOMO")}
-                  className={`h-11 rounded-xl text-sm font-semibold ${props.payMethod === "MOMO" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                  className={`h-11 rounded-xl text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${props.payMethod === "MOMO" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
                 >
                   Mobile Money
                 </button>
@@ -1307,6 +1488,12 @@ function BagDrawer(props: {
                   Cash / counter
                 </button>
               </div>
+              {props.offline && (
+                <p className="text-xs text-muted-foreground">
+                  MoMo stays off while this till is offline. Cash is saved on
+                  this device and sent once, when the connection returns.
+                </p>
+              )}
               {props.payMethod === "MOMO" && (
                 <div className="space-y-2 rounded-xl bg-muted/50 p-3">
                   <p className="text-xs font-medium text-muted-foreground">

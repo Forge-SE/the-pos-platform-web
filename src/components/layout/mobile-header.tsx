@@ -13,9 +13,13 @@ import type { AccessTokenProfile } from "@/lib/auth-token"
 export function MobileHeader({
   profile,
   onSignOut,
+  onOpenSettings,
+  showNotifications = true,
 }: {
   profile: AccessTokenProfile
   onSignOut: () => void
+  onOpenSettings?: () => void
+  showNotifications?: boolean
 }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -39,8 +43,8 @@ export function MobileHeader({
           <span className="hidden text-sm text-muted-foreground sm:inline">
             {profile.name}
           </span>
-          <NotificationButton />
-          <ProfileMenu onSignOut={onSignOut} />
+          {showNotifications && <NotificationButton />}
+          <ProfileMenu onSignOut={onSignOut} onOpenSettings={onOpenSettings} />
         </div>
       </div>
       <nav
@@ -49,16 +53,30 @@ export function MobileHeader({
       >
         {links.map((item) => {
           const active = pathname === item.to
+          const className = `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
+            active
+              ? "bg-primary/25 text-secondary"
+              : "bg-muted text-muted-foreground"
+          }`
+          if (item.to === "/settings") {
+            return (
+              <button
+                key={item.to}
+                type="button"
+                onClick={onOpenSettings}
+                className={className}
+              >
+                <item.icon aria-hidden="true" className="size-4" />
+                {item.label}
+              </button>
+            )
+          }
           return (
             <Link
               key={item.to}
               to={item.to}
               aria-current={active ? "page" : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
-                active
-                  ? "bg-primary/25 text-secondary"
-                  : "bg-muted text-muted-foreground"
-              }`}
+              className={className}
             >
               <item.icon
                 aria-hidden="true"
