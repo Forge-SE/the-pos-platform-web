@@ -66,7 +66,9 @@ export function NotificationButton() {
     NOTIFICATIONS_QUERY,
     { pollInterval: 20_000 }
   )
-  const { data: raised } = useSubscription<{ notificationRaised: Notice }>(RAISED)
+  const { data: raised } = useSubscription<{ notificationRaised: Notice }>(
+    RAISED
+  )
   const [markRead] = useMutation(MARK_READ)
   const notices = data?.notifications ?? []
 

@@ -67,32 +67,32 @@ function SettingsNav({
 }) {
   return (
     <aside className="shrink-0 border-b border-border/70 p-3 sm:w-60 sm:border-r sm:border-b-0 sm:p-4">
-        <p className="mb-3 px-3 pt-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {label}
-        </p>
-        <nav
-          aria-label={label}
-          className="flex gap-1 overflow-x-auto sm:flex-col"
-        >
-          {items.map((item) => {
-            const active = section === item.id
-            return (
-              <button
-                key={item.id}
-                type="button"
-                aria-current={active ? "page" : undefined}
-                onClick={() => onSectionChange(item.id)}
-                className={`flex min-h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-left text-sm outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-muted font-medium text-foreground" : "text-muted-foreground"}`}
-              >
-                <item.icon
-                  aria-hidden
-                  className={`size-4 ${active ? "text-primary" : ""}`}
-                />
-                {item.label}
-              </button>
-            )
-          })}
-        </nav>
+      <p className="mb-3 px-3 pt-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </p>
+      <nav
+        aria-label={label}
+        className="flex gap-1 overflow-x-auto sm:flex-col"
+      >
+        {items.map((item) => {
+          const active = section === item.id
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-current={active ? "page" : undefined}
+              onClick={() => onSectionChange(item.id)}
+              className={`flex min-h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-left text-sm outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-muted font-medium text-foreground" : "text-muted-foreground"}`}
+            >
+              <item.icon
+                aria-hidden
+                className={`size-4 ${active ? "text-primary" : ""}`}
+              />
+              {item.label}
+            </button>
+          )
+        })}
+      </nav>
     </aside>
   )
 }

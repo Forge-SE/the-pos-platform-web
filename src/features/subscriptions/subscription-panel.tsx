@@ -160,15 +160,21 @@ export function SubscriptionPanel({
   }, [canManage, confirmPayment, refetch])
 
   return (
-    <section className={embedded ? "min-w-0" : "mt-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6"}>
+    <section
+      className={
+        embedded
+          ? "min-w-0"
+          : "mt-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6"
+      }
+    >
       {!embedded && (
         <>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
             Subscription
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ovaal is billed through Paystack. This is the plan on the restaurant,
-            the last payment, and the next due date.
+            Ovaal is billed through Paystack. This is the plan on the
+            restaurant, the last payment, and the next due date.
           </p>
         </>
       )}

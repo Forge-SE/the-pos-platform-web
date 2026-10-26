@@ -75,21 +75,21 @@ export function AccountantExport({ from, to }: { from: string; to: string }) {
         label: "Daily summary",
         detail: "Sales and collections by order business date",
       },
-    {
-      key: "ordersCsv",
+      {
+        key: "ordersCsv",
         label: "Order ledger",
         detail: "Order-level sales, tax, tips, payments, and refunds",
-    },
-    {
-      key: "itemsCsv",
-      label: "Sale items",
-      detail: "Saved item names, quantities, prices, and captured unit costs",
-    },
-    {
-      key: "taxesCsv",
-      label: "Tax lines",
-      detail: "Tax names, rates, and original amounts on each order",
-    },
+      },
+      {
+        key: "itemsCsv",
+        label: "Sale items",
+        detail: "Saved item names, quantities, prices, and captured unit costs",
+      },
+      {
+        key: "taxesCsv",
+        label: "Tax lines",
+        detail: "Tax names, rates, and original amounts on each order",
+      },
       {
         key: "paymentsCsv",
         label: "Payments",

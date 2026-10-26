@@ -132,7 +132,8 @@ export function OfflineSync() {
           ) {
             updateQueued(item.idempotencyKey, {
               status: "conflict",
-              error: "This offline ticket conflicts with an order already saved.",
+              error:
+                "This offline ticket conflicts with an order already saved.",
             })
             continue
           }

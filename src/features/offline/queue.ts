@@ -46,7 +46,10 @@ export function enqueueOrder(item: QueuedOrder) {
   writeQueue(items)
 }
 
-export function updateQueued(idempotencyKey: string, patch: Partial<QueuedOrder>) {
+export function updateQueued(
+  idempotencyKey: string,
+  patch: Partial<QueuedOrder>
+) {
   writeQueue(
     readQueue().map((item) =>
       item.idempotencyKey === idempotencyKey ? { ...item, ...patch } : item
@@ -55,7 +58,9 @@ export function updateQueued(idempotencyKey: string, patch: Partial<QueuedOrder>
 }
 
 export function removeQueued(idempotencyKey: string) {
-  writeQueue(readQueue().filter((item) => item.idempotencyKey !== idempotencyKey))
+  writeQueue(
+    readQueue().filter((item) => item.idempotencyKey !== idempotencyKey)
+  )
 }
 
 export function writeMenuCache(value: unknown) {
