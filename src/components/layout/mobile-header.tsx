@@ -6,6 +6,7 @@ import {
   seesManagementItem,
 } from "@/components/layout/sidebar"
 import { NotificationButton } from "@/components/layout/notification-button"
+import { useLanguage } from "@/components/language-provider"
 import { OvaalMark } from "@/components/ovaal-mark"
 import { ProfileMenu } from "@/components/layout/profile-menu"
 import type { AccessTokenProfile } from "@/lib/auth-token"
@@ -14,13 +15,16 @@ export function MobileHeader({
   profile,
   onSignOut,
   onOpenSettings,
+  onOpenPreferences,
   showNotifications = true,
 }: {
   profile: AccessTokenProfile
   onSignOut: () => void
   onOpenSettings?: () => void
+  onOpenPreferences?: () => void
   showNotifications?: boolean
 }) {
+  const { t } = useLanguage()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
@@ -44,7 +48,11 @@ export function MobileHeader({
             {profile.name}
           </span>
           {showNotifications && <NotificationButton />}
-          <ProfileMenu onSignOut={onSignOut} onOpenSettings={onOpenSettings} />
+          <ProfileMenu
+            onSignOut={onSignOut}
+            onOpenSettings={onOpenSettings}
+            onOpenPreferences={onOpenPreferences}
+          />
         </div>
       </div>
       <nav
@@ -67,7 +75,7 @@ export function MobileHeader({
                 className={className}
               >
                 <item.icon aria-hidden="true" className="size-4" />
-                {item.label}
+                {t(item.label)}
               </button>
             )
           }
@@ -83,7 +91,7 @@ export function MobileHeader({
                 className="size-4"
                 weight={active ? "fill" : "regular"}
               />
-              {item.label}
+              {t(item.label)}
             </Link>
           )
         })}

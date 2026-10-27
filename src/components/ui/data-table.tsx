@@ -11,6 +11,7 @@ import {
   TableIcon,
 } from "@phosphor-icons/react"
 import { cn } from "cn"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Skeleton } from "./skeleton"
@@ -100,6 +101,7 @@ export function DataTable<TRow>({
   gridClassName = "grid-cols-1 gap-4 @xl/data-table:grid-cols-2 @4xl/data-table:grid-cols-3 @6xl/data-table:grid-cols-4",
   getRowProps,
 }: DataTableProps<TRow>) {
+  const { t, language } = useLanguage()
   const id = useId()
   const [localView, setLocalView] = useState<DataTableView>(
     layout.mode === "toggle" ? (layout.defaultView ?? "table") : "table"
@@ -170,7 +172,7 @@ export function DataTable<TRow>({
           {search && (
             <div className="relative w-full sm:w-72">
               <label htmlFor={`${id}-search`} className="sr-only">
-                {search.label ?? "Search"}
+                {t(search.label ?? "Search")}
               </label>
               <MagnifyingGlassIcon
                 aria-hidden
@@ -181,7 +183,7 @@ export function DataTable<TRow>({
                 type="search"
                 value={search.value}
                 onChange={(event) => search.onChange(event.target.value)}
-                placeholder={search.placeholder ?? "Search…"}
+                placeholder={t(search.placeholder ?? "Search…")}
                 className="pl-9"
               />
             </div>
@@ -205,9 +207,9 @@ export function DataTable<TRow>({
                     type="button"
                     variant={view === value ? "secondary" : "ghost"}
                     size="icon-sm"
-                    aria-label={label}
+                    aria-label={t(label)}
                     aria-pressed={view === value}
-                    title={label}
+                    title={t(label)}
                     onClick={() => changeView(value)}
                   >
                     <Icon aria-hidden />
@@ -220,8 +222,8 @@ export function DataTable<TRow>({
                 type="button"
                 variant="outline"
                 size="icon-sm"
-                aria-label={`Refresh ${ariaLabel}`}
-                title={`Refresh ${ariaLabel}`}
+                aria-label={`Refresh ${t(ariaLabel)}`}
+                title={`Refresh ${t(ariaLabel)}`}
                 disabled={isLoading || isFetching}
                 onClick={onRefresh}
               >
@@ -250,7 +252,9 @@ export function DataTable<TRow>({
             </div>
           ) : isLoading ? (
             <div role="status">
-              <span className="sr-only">Loading {ariaLabel}</span>
+              <span className="sr-only">
+                {t("Loading")} {t(ariaLabel)}
+              </span>
               <ul aria-hidden className={cn("grid", gridClassName)}>
                 {Array.from({ length: Math.min(pageSize, 6) }, (_, index) => (
                   <li
@@ -271,7 +275,7 @@ export function DataTable<TRow>({
               role="status"
               className="px-4 py-12 text-center text-muted-foreground"
             >
-              {emptyState}
+              {typeof emptyState === "string" ? t(emptyState) : emptyState}
             </div>
           ) : (
             <ul
@@ -306,7 +310,9 @@ export function DataTable<TRow>({
                       column.className
                     )}
                   >
-                    {column.header}
+                    {typeof column.header === "string"
+                      ? t(column.header)
+                      : column.header}
                   </th>
                 ))}
               </tr>
@@ -322,7 +328,7 @@ export function DataTable<TRow>({
                       >
                         {index === 0 && columnIndex === 0 && (
                           <span role="status" className="sr-only">
-                            Loading {ariaLabel}
+                            {t("Loading")} {t(ariaLabel)}
                           </span>
                         )}
                         <Skeleton aria-hidden className="h-5 w-full" />
@@ -340,7 +346,11 @@ export function DataTable<TRow>({
                       role={hasError ? undefined : "status"}
                       className="flex w-full items-center justify-center"
                     >
-                      {hasError ? errorState : emptyState}
+                      {hasError
+                        ? errorState
+                        : typeof emptyState === "string"
+                          ? t(emptyState)
+                          : emptyState}
                     </div>
                   </td>
                 </tr>
@@ -383,12 +393,16 @@ export function DataTable<TRow>({
             className="col-start-1 row-start-1 min-w-0 text-sm text-muted-foreground"
           >
             {hasError
-              ? "Unable to load results"
+              ? t("Unable to load results")
               : isLoading
-                ? "Loading results…"
+                ? t("Loading results…")
                 : pagination.totalCount === undefined
-                  ? `Page ${pageIndex + 1} · ${rows.length} results`
-                  : `Showing ${start} to ${rows.length === 0 ? 0 : end} out of ${totalCount}`}
+                  ? language === "fr"
+                    ? `Page ${pageIndex + 1} · ${rows.length} résultats`
+                    : `Page ${pageIndex + 1} · ${rows.length} results`
+                  : language === "fr"
+                    ? `Affichage de ${start} à ${rows.length === 0 ? 0 : end} sur ${totalCount}`
+                    : `Showing ${start} to ${rows.length === 0 ? 0 : end} out of ${totalCount}`}
           </p>
           <nav
             aria-label={`${ariaLabel} pagination`}
@@ -400,18 +414,22 @@ export function DataTable<TRow>({
                 type="button"
                 variant="outline"
                 className="h-8 w-full gap-1 px-2 shadow-none disabled:border-transparent disabled:bg-muted disabled:text-muted-foreground"
-                aria-label={label}
-                title={label}
+                aria-label={t(label)}
+                title={t(label)}
                 disabled={disabled || boundary}
                 onClick={() => pagination.onPageChange(page)}
               >
                 {label !== "Next page" && <Icon aria-hidden />}
                 {label === "Previous page" && (
-                  <span className="hidden @sm/data-table:inline">Previous</span>
+                  <span className="hidden @sm/data-table:inline">
+                    {t("Previous")}
+                  </span>
                 )}
                 {label === "Next page" && (
                   <>
-                    <span className="hidden @sm/data-table:inline">Next</span>
+                    <span className="hidden @sm/data-table:inline">
+                      {t("Next")}
+                    </span>
                     <Icon aria-hidden />
                   </>
                 )}
@@ -420,7 +438,7 @@ export function DataTable<TRow>({
           </nav>
           <div className="col-start-2 row-start-1 justify-self-end @4xl/data-table:col-start-3">
             <label htmlFor={`${id}-page-size`} className="sr-only">
-              Rows per page
+              {t("Rows per page")}
             </label>
             <Select
               value={String(pageSize)}

@@ -4,6 +4,7 @@ import { XIcon } from "@phosphor-icons/react"
 import type { Icon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 
 export function SettingsDialog({
   open,
@@ -22,6 +23,7 @@ export function SettingsDialog({
   onSectionChange: (id: string) => void
   children: ReactNode
 }) {
+  const { t } = useLanguage()
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -40,7 +42,7 @@ export function SettingsDialog({
                   variant="ghost"
                   size="icon"
                   className="absolute top-3 right-3 z-10 size-9"
-                  aria-label="Close settings"
+                  aria-label={t("Close settings")}
                 >
                   <XIcon aria-hidden />
                 </Button>
@@ -65,13 +67,14 @@ function SettingsNav({
   section: string
   onSectionChange: (id: string) => void
 }) {
+  const { t } = useLanguage()
   return (
     <aside className="shrink-0 border-b border-border/70 p-3 sm:w-60 sm:border-r sm:border-b-0 sm:p-4">
       <p className="mb-3 px-3 pt-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
+        {t(label)}
       </p>
       <nav
-        aria-label={label}
+        aria-label={t(label)}
         className="flex gap-1 overflow-x-auto sm:flex-col"
       >
         {items.map((item) => {
@@ -88,7 +91,7 @@ function SettingsNav({
                 aria-hidden
                 className={`size-4 ${active ? "text-primary" : ""}`}
               />
-              {item.label}
+              {t(item.label)}
             </button>
           )
         })}
@@ -106,12 +109,15 @@ export function SettingsHeader({
   description: string
   actions?: ReactNode
 }) {
+  const { t } = useLanguage()
   return (
     <header className="flex shrink-0 flex-wrap items-start justify-between gap-4 border-b border-border/70 py-5 pr-14 pl-5 sm:pl-6">
       <div className="min-w-0">
-        <Dialog.Title className="text-base font-semibold">{title}</Dialog.Title>
+        <Dialog.Title className="text-base font-semibold">
+          {t(title)}
+        </Dialog.Title>
         <Dialog.Description className="mt-1 text-sm leading-5 text-muted-foreground">
-          {description}
+          {t(description)}
         </Dialog.Description>
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -136,12 +142,13 @@ export function SettingRow({
   description: string
   children: ReactNode
 }) {
+  const { t } = useLanguage()
   return (
     <div className="grid items-center gap-4 border-b border-dashed border-border/70 py-6 last:border-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div>
-        <h3 className="text-sm font-medium">{title}</h3>
+        <h3 className="text-sm font-medium">{t(title)}</h3>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          {description}
+          {t(description)}
         </p>
       </div>
       <div className="flex min-w-0 items-center">{children}</div>

@@ -6,6 +6,7 @@ import { DateRangePicker, defaultPresets } from "@/components/date-range-picker"
 import type { DateRange } from "@/components/date-range-picker"
 import { SectionPage } from "@/components/layout/section-page"
 import { ErrorState } from "@/components/content-state"
+import { useLanguage } from "@/components/language-provider"
 import {
   HeroStats,
   PaymentSplitCard,
@@ -46,6 +47,7 @@ function isTab(value: string | null): value is PerfTab {
 }
 
 export function Performance() {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canSeeSales = hasPermission(profile, "REPORTS_VIEW")
   const tabs = TABS.filter(
@@ -124,7 +126,7 @@ export function Performance() {
       <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div
           role="tablist"
-          aria-label="Analytics categories"
+          aria-label={t("Analytics categories")}
           className={`grid gap-1 rounded-lg bg-muted/50 p-1 sm:max-w-md ${tabs.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}
         >
           {tabs.map((entry) => {
@@ -144,7 +146,7 @@ export function Performance() {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {entry.label}
+                {t(entry.label)}
               </button>
             )
           })}

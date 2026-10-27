@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { formatMoney } from "@/features/menu/model"
 import { hasPermission } from "@/lib/permissions"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { useLanguage } from "@/components/language-provider"
 
 const DIGEST_QUERY = gql`
   query SalesDigestCard {
@@ -42,6 +43,7 @@ const SEND_DIGEST = gql`
 `
 
 export function SalesDigestCard() {
+  const { t, language } = useLanguage()
   const profile = getAccessTokenProfile()
   const allowed = Boolean(profile && hasPermission(profile, "REPORTS_VIEW"))
   const { data, loading, refetch } = useQuery<{
@@ -85,16 +87,20 @@ export function SalesDigestCard() {
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-semibold tracking-[0.12em] uppercase opacity-70">
-            Sales digest
+            {t("Sales digest")}
           </p>
           <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] tabular-nums sm:text-2xl">
             {loading || !digest
-              ? "Preparing today's snapshot"
-              : `${formatMoney(digest.netSales)} net sales`}
+              ? t("Preparing today's snapshot")
+              : language === "fr"
+                ? `${formatMoney(digest.netSales)} de ventes nettes`
+                : `${formatMoney(digest.netSales)} net sales`}
           </h2>
           {digest && (
             <p className="mt-1 text-sm opacity-75">
-              {digest.orders} {digest.orders === 1 ? "order" : "orders"} today
+              {language === "fr"
+                ? `${digest.orders} commande${digest.orders === 1 ? "" : "s"} aujourd’hui`
+                : `${digest.orders} ${digest.orders === 1 ? "order" : "orders"} today`}
             </p>
           )}
         </div>
@@ -108,21 +114,23 @@ export function SalesDigestCard() {
           }}
           className="shrink-0 self-start sm:self-center"
         >
-          {sending ? "Sending…" : "Email yesterday's digest"}
+          {t(sending ? "Sending…" : "Email yesterday's digest")}
         </Button>
       </div>
       {sendError && (
         <p role="alert" className="relative mt-3 text-sm">
-          The digest could not be emailed. Please try again.
+          {t("The digest could not be emailed. Please try again.")}
         </p>
       )}
       {sent?.sendSalesDigest && (
         <p role="status" className="relative mt-3 text-sm opacity-80">
           {sent.sendSalesDigest.status === "sent"
-            ? "Digest emailed."
+            ? t("Digest emailed.")
             : sent.sendSalesDigest.status === "logged"
-              ? "Digest prepared; email delivery is not configured."
-              : "Digest email is unavailable. Check the recipient in settings."}
+              ? t("Digest prepared; email delivery is not configured.")
+              : t(
+                  "Digest email is unavailable. Check the recipient in settings."
+                )}
         </p>
       )}
     </section>

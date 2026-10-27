@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { StatusBadge } from "@/components/ui/status-badge"
+import { useLanguage } from "@/components/language-provider"
 import { useUrlState } from "@/lib/url-state"
 import { useTablePagination } from "@/lib/table-state"
 import { ReceiptDialog } from "./receipt-dialog"
@@ -157,6 +158,7 @@ function rangeBounds(range: DateRange | undefined) {
 }
 
 export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
+  const { t, locale } = useLanguage()
   const [receiptOrderId, setReceiptOrderId] = useUrlState("receipt")
   const [search, setSearch] = useUrlState("orderSearch")
   const [status, setStatus] = useUrlState("orderStatus")
@@ -238,16 +240,19 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
     <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:px-8 lg:py-8">
       <header>
         {switcher && <div className="mb-5">{switcher}</div>}
-        <h1 className="text-3xl font-semibold tracking-[-0.04em]">Orders</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.04em]">
+          {t("Orders")}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Every ticket from the counter. Open a row to see what was ordered and
-          how it was paid, or view its digital receipt.
+          {t(
+            "Every ticket from the counter. Open a row to see what was ordered and how it was paid, or view its digital receipt."
+          )}
         </p>
       </header>
 
       <section className="content-region mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
-          ariaLabel="Orders"
+          ariaLabel={t("Orders")}
           rows={visible}
           search={{
             value: search ?? "",
@@ -255,7 +260,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
               setSearch(value || null)
               paging.resetPage()
             },
-            placeholder: "Search tickets, meals, or notes",
+            placeholder: t("Search tickets, meals, or notes"),
           }}
           filters={
             <>
@@ -266,20 +271,23 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                   paging.resetPage()
                 }}
               >
-                <SelectTrigger className="w-40" aria-label="Filter by status">
+                <SelectTrigger
+                  className="w-40"
+                  aria-label={t("Filter by status")}
+                >
                   <SelectValue>
                     {(value) =>
                       typeof value === "string" && value in statusLabels
-                        ? statusLabels[value]
-                        : "All statuses"
+                        ? t(statusLabels[value])
+                        : t("All statuses")
                     }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All statuses</SelectItem>
+                  <SelectItem value="ALL">{t("All statuses")}</SelectItem>
                   {Object.entries(statusLabels).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
-                      {label}
+                      {t(label)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -297,17 +305,20 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                   paging.resetPage()
                 }}
               >
-                <SelectTrigger className="w-44" aria-label="Filter by creator">
+                <SelectTrigger
+                  className="w-44"
+                  aria-label={t("Filter by creator")}
+                >
                   <SelectValue>
                     {(value) =>
                       creators.data?.orderCreators.find(
                         (member) => member.id === value
-                      )?.name ?? "All staff"
+                      )?.name ?? t("All staff")
                     }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All staff</SelectItem>
+                  <SelectItem value="ALL">{t("All staff")}</SelectItem>
                   {(creators.data?.orderCreators ?? []).map((member) => (
                     <SelectItem key={member.id} value={member.id}>
                       {member.name}
@@ -328,28 +339,28 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
         >
           <thead className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             <tr>
-              <th className="px-4 py-3 font-medium">Ticket</th>
+              <th className="px-4 py-3 font-medium">{t("Ticket")}</th>
               <th className="hidden px-4 py-3 font-medium sm:table-cell">
-                Dining
+                {t("Dining")}
               </th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Total</th>
-              <th className="px-4 py-3 font-medium">Created at</th>
-              <th className="px-4 py-3 font-medium">Created by</th>
+              <th className="px-4 py-3 font-medium">{t("Status")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("Total")}</th>
+              <th className="px-4 py-3 font-medium">{t("Created at")}</th>
+              <th className="px-4 py-3 font-medium">{t("Created by")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan={6}>
-                  <LoadingState className="min-h-48" label="orders" />
+                  <LoadingState className="min-h-48" label={t("orders")} />
                 </td>
               </tr>
             ) : error ? (
               <tr>
                 <td colSpan={6}>
                   <ErrorState
-                    title="Orders could not be loaded."
+                    title={t("Orders could not be loaded.")}
                     onRetry={refetch}
                   />
                 </td>
@@ -360,15 +371,17 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                   <EmptyState
                     title={
                       paging.pageIndex > 0
-                        ? "No orders on this page."
+                        ? t("No orders on this page.")
                         : filtered
-                          ? "No orders match these filters."
-                          : "No orders yet."
+                          ? t("No orders match these filters.")
+                          : t("No orders yet.")
                     }
                     description={
                       filtered
-                        ? "Try another ticket, status, staff member, or date range."
-                        : "Tickets will appear here after they are placed."
+                        ? t(
+                            "Try another ticket, status, staff member, or date range."
+                          )
+                        : t("Tickets will appear here after they are placed.")
                     }
                     action={
                       paging.pageIndex > 0 ? (
@@ -377,7 +390,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                           size="lg"
                           onClick={() => paging.onPageChange(0)}
                         >
-                          View newest orders
+                          {t("View newest orders")}
                         </Button>
                       ) : (
                         <Button
@@ -385,7 +398,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                           size="lg"
                           onClick={() => void refetch().catch(() => {})}
                         >
-                          Check again
+                          {t("Check again")}
                         </Button>
                       )
                     }
@@ -409,18 +422,18 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                     </button>
                   </td>
                   <td className="hidden px-4 py-3 sm:table-cell">
-                    {diningLabel(order.diningType)}
+                    {t(diningLabel(order.diningType))}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge tone={orderStatusTone(order.status)}>
-                      {statusLabels[order.status] ?? order.status}
+                      {t(statusLabels[order.status] ?? order.status)}
                     </StatusBadge>
                   </td>
                   <td className="px-4 py-3 text-right font-medium tabular-nums">
                     {formatMoney(order.total)}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(order.createdAt).toLocaleString("en-GH", {
+                    {new Date(order.createdAt).toLocaleString(locale, {
                       timeZone: "Africa/Accra",
                       month: "short",
                       day: "numeric",
@@ -447,18 +460,18 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <Dialog.Title className="text-lg font-semibold tracking-[-0.03em]">
-                      Ticket {selected.id.slice(-6).toUpperCase()}
+                      {t("Ticket")} {selected.id.slice(-6).toUpperCase()}
                     </Dialog.Title>
                     <Dialog.Description className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                      {diningLabel(selected.diningType)} ·{" "}
+                      {t(diningLabel(selected.diningType))} ·{" "}
                       {selected.createdBy.name}
                       <StatusBadge tone={orderStatusTone(selected.status)}>
-                        {statusLabels[selected.status] ?? selected.status}
+                        {t(statusLabels[selected.status] ?? selected.status)}
                       </StatusBadge>
                     </Dialog.Description>
                   </div>
                   <Dialog.Close
-                    aria-label="Close order"
+                    aria-label={t("Close order")}
                     className="flex size-8 items-center justify-center rounded-full hover:bg-muted"
                   >
                     <XIcon aria-hidden="true" className="size-4" />
@@ -498,48 +511,48 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                 {selected.deliveryAddress && (
                   <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm">
                     <p className="text-xs font-medium text-muted-foreground">
-                      Delivery address
+                      {t("Delivery address")}
                     </p>
                     <p className="mt-1">{selected.deliveryAddress}</p>
                   </div>
                 )}
                 <dl className="mt-4 space-y-1 border-t border-border/70 pt-4 text-sm">
                   <Row
-                    label="Subtotal"
+                    label={t("Subtotal")}
                     value={formatMoney(selected.subtotal)}
                   />
                   {selected.discount > 0 && (
                     <Row
-                      label={selected.isComp ? "Comp" : "Discount"}
+                      label={t(selected.isComp ? "Comp" : "Discount")}
                       value={`−${formatMoney(selected.discount)}`}
                     />
                   )}
                   {selected.tip > 0 && (
                     <Row
-                      label="Kitchen tip"
+                      label={t("Kitchen tip")}
                       value={`+${formatMoney(selected.tip)}`}
                     />
                   )}
                   {selected.taxes.map((tax) => (
                     <Row
                       key={tax.name}
-                      label={`${tax.name}${tax.inclusive ? " (included)" : ""}`}
+                      label={`${tax.name}${tax.inclusive ? t(" (included)") : ""}`}
                       value={formatMoney(tax.amount)}
                     />
                   ))}
                   <Row
-                    label="Total"
+                    label={t("Total")}
                     value={formatMoney(selected.total)}
                     strong
                   />
                   <Row
-                    label="Payment"
+                    label={t("Payment")}
                     value={
                       selected.payment
-                        ? `${paymentLabels[selected.payment.method] ?? selected.payment.method} · ${formatMoney(selected.payment.amount)}`
+                        ? `${t(paymentLabels[selected.payment.method] ?? selected.payment.method)} · ${formatMoney(selected.payment.amount)}`
                         : selected.total === 0
-                          ? "No payment due"
-                          : "Unpaid"
+                          ? t("No payment due")
+                          : t("Unpaid")
                     }
                   />
                 </dl>
@@ -548,7 +561,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                     {selected.refunds.map((refund) => (
                       <Row
                         key={refund.id}
-                        label={`Refund · ${refund.reason}`}
+                        label={`${t("Refund")} · ${refund.reason}`}
                         value={formatMoney(refund.amount)}
                       />
                     ))}
@@ -572,7 +585,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                     setSelected(null)
                   }}
                 >
-                  View digital receipt
+                  {t("View digital receipt")}
                 </Button>
               </>
             )}

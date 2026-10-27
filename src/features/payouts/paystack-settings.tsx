@@ -2,6 +2,7 @@ import { useId, useState } from "react"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -131,6 +132,7 @@ const CONNECT_PAYSTACK_KEY = gql`
 `
 
 function OwnPaystackAccount() {
+  const { t } = useLanguage()
   const { data, loading, error, refetch } = useQuery<{
     restaurantPaystackKey: {
       connected: boolean
@@ -159,13 +161,15 @@ function OwnPaystackAccount() {
       )}
       {key?.connected && (
         <p className="text-sm">
-          Connected {key.domain} key ending {key.secretLast4}. Collections{" "}
-          {formatMoney(key.collectedPesewas)} of {formatMoney(key.capPesewas)} (
-          {ratio}%).
+          {t("Connected")} {key.domain} {t("key ending")} {key.secretLast4}.{" "}
+          {t("Collections")} {formatMoney(key.collectedPesewas)} {t("of")}{" "}
+          {formatMoney(key.capPesewas)} ({ratio}%).
         </p>
       )}
       <Field>
-        <FieldLabel htmlFor="paystack-secret">Paystack secret key</FieldLabel>
+        <FieldLabel htmlFor="paystack-secret">
+          {t("Paystack secret key")}
+        </FieldLabel>
         <Input
           id="paystack-secret"
           type="password"
@@ -188,19 +192,22 @@ function OwnPaystackAccount() {
           void connect({ variables: { secretKey: secret.trim() } })
             .then(async () => {
               setSecret("")
-              toast({ title: "Paystack account connected.", status: "success" })
+              toast({
+                title: t("Paystack account connected."),
+                status: "success",
+              })
               await refetch()
             })
             .catch((failure: unknown) => {
               setMessage(
                 failure instanceof Error
                   ? failure.message
-                  : "Could not connect that Paystack account"
+                  : t("Could not connect that Paystack account")
               )
             })
         }}
       >
-        {saving ? "Checking Paystack…" : "Connect account"}
+        {t(saving ? "Checking Paystack…" : "Connect account")}
       </Button>
     </div>
   )
@@ -214,6 +221,7 @@ export function PaystackSettings({
   /** When true, omit the settings-card chrome so the settings shell supplies it. */
   embedded?: boolean
 }) {
+  const { t } = useLanguage()
   const id = useId()
   const context = restaurantId ? opsAuthContext() : undefined
   const variables = { restaurantId }
@@ -267,10 +275,11 @@ export function PaystackSettings({
   if (embedded) {
     return (
       <section className="min-w-0">
-        <h3 className="text-sm font-medium">Paystack account</h3>
+        <h3 className="text-sm font-medium">{t("Paystack account")}</h3>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Mobile money is charged on this restaurant&apos;s own Paystack
-          account. Subaccounts are not used.
+          {t(
+            "Mobile money is charged on this restaurant's own Paystack account. Subaccounts are not used."
+          )}
         </p>
         <OwnPaystackAccount />
       </section>

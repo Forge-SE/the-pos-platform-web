@@ -19,6 +19,7 @@ import {
 import { toast } from "@/components/ui/toaster"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
+import { useLanguage } from "@/components/language-provider"
 import { InfoTooltip } from "@/components/info-tooltip"
 import { MenuDialog as InventoryDialog } from "@/features/menu/modals/menu-dialog"
 import { getAccessTokenProfile } from "@/lib/auth-token"
@@ -76,6 +77,7 @@ const message = (error: unknown) =>
   error instanceof Error ? error.message : "Could not save. Try again."
 
 export function InventoryManagement() {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canView = hasPermission(profile, "INVENTORY_VIEW")
   const canManage = hasPermission(profile, "INVENTORY_MANAGE")
@@ -97,17 +99,18 @@ export function InventoryManagement() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-[-0.025em]">
-            Inventory
+            {t("Inventory")}
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Track what came in, what was used, and what remains. Orders reserve
-            stock; preparation consumes it.
+            {t(
+              "Track what came in, what was used, and what remains. Orders reserve stock; preparation consumes it."
+            )}
           </p>
         </div>
         {canManage && items.length > 0 && (
           <Button onClick={() => setCreateOpen(true)}>
             <PlusIcon data-icon="inline-start" />
-            Add stock item
+            {t("Add stock item")}
           </Button>
         )}
       </header>
@@ -117,7 +120,7 @@ export function InventoryManagement() {
         className="mt-6 flex flex-1 flex-col lg:min-h-0"
       >
         <Tabs.List
-          aria-label="Inventory sections"
+          aria-label={t("Inventory sections")}
           className="mb-5 flex gap-6 overflow-x-auto border-b border-border/70"
         >
           {[
@@ -130,7 +133,7 @@ export function InventoryManagement() {
               value={entry.value}
               className="shrink-0 border-b-2 border-transparent px-1 py-3 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring data-active:border-secondary data-active:text-foreground"
             >
-              {entry.label}
+              {t(entry.label)}
             </Tabs.Tab>
           ))}
         </Tabs.List>
@@ -215,6 +218,7 @@ function StockCard({
   canManage: boolean
   onAction: (kind: "RECEIPT" | "WASTE" | "COUNT") => void
 }) {
+  const { t } = useLanguage()
   const total = Math.max(0, item.onHand)
   const availablePercent =
     total > 0 ? Math.min(100, Math.max(0, (item.available / total) * 100)) : 0
@@ -233,27 +237,30 @@ function StockCard({
               {item.name}
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Stock balance
+              {t("Stock balance")}
             </p>
           </div>
           <Badge variant={needsAttention ? "destructive" : "outline"}>
-            {item.countReviewRequired
-              ? "Count review required"
-              : item.available <= item.reorderLevel
-                ? "Low stock"
-                : "In stock"}
+            {t(
+              item.countReviewRequired
+                ? "Count review required"
+                : item.available <= item.reorderLevel
+                  ? "Low stock"
+                  : "In stock"
+            )}
           </Badge>
         </div>
 
         <div className="mt-6">
           <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            Available now
+            {t("Available now")}
           </p>
           <p className="mt-1 text-3xl font-semibold tracking-[-0.035em] tabular-nums">
             {displayQuantity(item.available, item.unit)}
           </p>
           <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-            of <span>{displayQuantity(item.onHand, item.unit)}</span> on hand
+            {t("of")} <span>{displayQuantity(item.onHand, item.unit)}</span>{" "}
+            {t("on hand")}
           </p>
         </div>
 
@@ -275,18 +282,18 @@ function StockCard({
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-2 tabular-nums">
               <span className="size-2 rounded-full bg-secondary" />
-              Available
+              {t("Available")}
             </span>
             <span className="inline-flex items-center gap-2 tabular-nums">
               <span className="size-2 rounded-full bg-primary" />
-              Reserved {displayQuantity(item.reserved, item.unit)}
+              {t("Reserved")} {displayQuantity(item.reserved, item.unit)}
             </span>
           </div>
         </div>
 
         <div className="mt-5 rounded-lg bg-muted/50 px-3.5 py-3">
           <div className="flex items-center justify-between gap-4 text-xs">
-            <span className="text-muted-foreground">Reorder point</span>
+            <span className="text-muted-foreground">{t("Reorder point")}</span>
             <span className="font-medium tabular-nums">
               {displayQuantity(item.reorderLevel, item.unit)}
             </span>
@@ -295,10 +302,10 @@ function StockCard({
             className={`mt-1.5 text-sm font-medium tabular-nums ${needsAttention ? "text-destructive" : "text-foreground"}`}
           >
             {item.countReviewRequired
-              ? "Physical count needs review"
+              ? t("Physical count needs review")
               : reorderDifference >= 0
-                ? `${displayQuantity(reorderDifference, item.unit)} above reorder point`
-                : `${displayQuantity(Math.abs(reorderDifference), item.unit)} below reorder point`}
+                ? `${displayQuantity(reorderDifference, item.unit)} ${t("above reorder point")}`
+                : `${displayQuantity(Math.abs(reorderDifference), item.unit)} ${t("below reorder point")}`}
           </p>
         </div>
       </div>
@@ -316,10 +323,10 @@ function StockCard({
               key={option.kind}
               size="sm"
               variant="outline"
-              aria-label={`${option.label} ${item.name}`}
+              aria-label={`${t(option.label)} ${item.name}`}
               onClick={() => onAction(option.kind)}
             >
-              {option.label}
+              {t(option.label)}
             </Button>
           ))}
         </div>
@@ -965,6 +972,7 @@ function RecipeEditor({
   )
 }
 function MovementLog() {
+  const { t, locale } = useLanguage()
   const paging = useTablePagination("movements", 25)
   const { data, loading, error, refetch } = useQuery<{
     inventoryHistory: { items: Movement[]; total: number }
@@ -991,7 +999,7 @@ function MovementLog() {
   return (
     <section className="content-region overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
       <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
-        <h2 className="text-sm font-semibold">Movement history</h2>
+        <h2 className="text-sm font-semibold">{t("Movement history")}</h2>
         <InfoTooltip label="About movement history">
           Append-only history. Negative count variance is a discrepancy to
           investigate, not proof of theft. Cancellation waste is already
@@ -1000,7 +1008,7 @@ function MovementLog() {
       </div>
       <div className="overflow-x-auto lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
-          ariaLabel="Inventory movement history"
+          ariaLabel={t("Inventory movement history")}
           rows={entries}
           onRefresh={() => void refetch()}
           isLoading={loading}
@@ -1017,7 +1025,7 @@ function MovementLog() {
                 "Reference / explanation",
               ].map((label) => (
                 <th scope="col" key={label} className={cell}>
-                  {label}
+                  {t(label)}
                 </th>
               ))}
             </tr>
@@ -1040,7 +1048,7 @@ function MovementLog() {
               >
                 <td className={cell}>
                   <span className="text-xs whitespace-nowrap">
-                    {new Date(entry.createdAt).toLocaleString()}
+                    {new Date(entry.createdAt).toLocaleString(locale)}
                   </span>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {entry.actorName ?? entry.actorId}

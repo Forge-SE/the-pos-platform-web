@@ -18,6 +18,7 @@ import {
 import { Link, useRouterState } from "@tanstack/react-router"
 
 import { ProfileMenu } from "@/components/layout/profile-menu"
+import { useLanguage } from "@/components/language-provider"
 import { OvaalMark } from "@/components/ovaal-mark"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -157,15 +158,16 @@ function NavigationSection({
   collapsed: boolean
   onOpenSettings?: () => void
 }) {
+  const { t } = useLanguage()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
 
   return (
-    <nav aria-label={label} className="mt-7 first:mt-8">
+    <nav aria-label={t(label)} className="mt-7 first:mt-8">
       {!collapsed && (
         <p className="px-2.5 text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-          {label}
+          {t(label)}
         </p>
       )}
       <ul className="mt-2 space-y-1">
@@ -182,19 +184,19 @@ function NavigationSection({
                 <button
                   type="button"
                   onClick={onOpenSettings}
-                  aria-label={collapsed ? item.label : undefined}
-                  title={collapsed ? item.label : undefined}
+                  aria-label={collapsed ? t(item.label) : undefined}
+                  title={collapsed ? t(item.label) : undefined}
                   className={className}
                 >
                   <item.icon aria-hidden="true" className="size-4" />
-                  {!collapsed && item.label}
+                  {!collapsed && t(item.label)}
                 </button>
               ) : (
                 <Link
                   to={item.to}
                   aria-current={active ? "page" : undefined}
-                  aria-label={collapsed ? item.label : undefined}
-                  title={collapsed ? item.label : undefined}
+                  aria-label={collapsed ? t(item.label) : undefined}
+                  title={collapsed ? t(item.label) : undefined}
                   className={className}
                 >
                   <item.icon
@@ -202,7 +204,7 @@ function NavigationSection({
                     className="size-4"
                     weight={active ? "fill" : "regular"}
                   />
-                  {!collapsed && item.label}
+                  {!collapsed && t(item.label)}
                 </Link>
               )}
             </li>
@@ -219,13 +221,16 @@ export function Sidebar({
   onCollapsedChange,
   onSignOut,
   onOpenSettings,
+  onOpenPreferences,
 }: {
   profile: AccessTokenProfile
   collapsed: boolean
   onCollapsedChange: () => void
   onSignOut: () => void
   onOpenSettings?: () => void
+  onOpenPreferences?: () => void
 }) {
+  const { t } = useLanguage()
   const me = useQuery<{ me: { avatarUrl: string | null } }>(
     SIDEBAR_PROFILE_QUERY
   )
@@ -249,7 +254,7 @@ export function Sidebar({
                 Ovaal
               </span>
               <span className="block truncate text-[10px] text-muted-foreground">
-                Point of Sale
+                {t("Point of Sale")}
               </span>
             </span>
           </Link>
@@ -258,9 +263,9 @@ export function Sidebar({
           variant="ghost"
           size="icon-sm"
           onClick={onCollapsedChange}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={t(collapsed ? "Expand sidebar" : "Collapse sidebar")}
           aria-expanded={!collapsed}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={t(collapsed ? "Expand sidebar" : "Collapse sidebar")}
           className="shrink-0"
         >
           <SidebarIcon
@@ -304,11 +309,15 @@ export function Sidebar({
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold">{profile.name}</p>
               <p className="text-[10px] text-muted-foreground">
-                {roleLabels[profile.role]}
+                {t(roleLabels[profile.role])}
               </p>
             </div>
           )}
-          <ProfileMenu onSignOut={onSignOut} onOpenSettings={onOpenSettings} />
+          <ProfileMenu
+            onSignOut={onSignOut}
+            onOpenSettings={onOpenSettings}
+            onOpenPreferences={onOpenPreferences}
+          />
         </div>
       </div>
     </aside>

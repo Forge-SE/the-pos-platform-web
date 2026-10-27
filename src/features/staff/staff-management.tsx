@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 import {
   Select,
   SelectContent,
@@ -30,6 +31,7 @@ type RoleFilter = "ALL" | StaffRole
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE"
 
 export function StaffManagement() {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canManage = hasPermission(profile, "STAFF_MANAGE")
   const { data, loading, error, refetch } = useQuery<StaffData>(STAFF_QUERY, {
@@ -83,16 +85,17 @@ export function StaffManagement() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            Staff
+            {t("Staff")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Add the people who use this till. Each person chooses a PIN the
-            first time they sign in.
+            {t(
+              "Add the people who use this till. Each person chooses a PIN the first time they sign in."
+            )}
           </p>
         </header>
         <Button onClick={() => setNewStaffParam("1")}>
           <PlusIcon data-icon="inline-start" />
-          Add new staff
+          {t("Add new staff")}
         </Button>
       </div>
 
@@ -114,7 +117,7 @@ export function StaffManagement() {
                 variant="default"
                 onClick={() => setNewStaffParam("1")}
               >
-                Add new staff
+                {t("Add new staff")}
               </Button>
             }
           />
@@ -143,15 +146,15 @@ export function StaffManagement() {
                     >
                       <SelectTrigger
                         className="w-36"
-                        aria-label="Filter by role"
+                        aria-label={t("Filter by role")}
                       >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">All roles</SelectItem>
+                        <SelectItem value="ALL">{t("All roles")}</SelectItem>
                         {Object.entries(roleLabels).map(([value, label]) => (
                           <SelectItem key={value} value={value}>
-                            {label}
+                            {t(label)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -165,14 +168,16 @@ export function StaffManagement() {
                     >
                       <SelectTrigger
                         className="w-36"
-                        aria-label="Filter by status"
+                        aria-label={t("Filter by status")}
                       >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">All statuses</SelectItem>
-                        <SelectItem value="ACTIVE">Active</SelectItem>
-                        <SelectItem value="INACTIVE">Inactive</SelectItem>
+                        <SelectItem value="ALL">{t("All statuses")}</SelectItem>
+                        <SelectItem value="ACTIVE">{t("Active")}</SelectItem>
+                        <SelectItem value="INACTIVE">
+                          {t("Inactive")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </>
@@ -184,19 +189,19 @@ export function StaffManagement() {
                 <thead>
                   <tr className="border-b border-border/60 bg-muted/30 text-xs tracking-[0.06em] text-muted-foreground uppercase">
                     <th scope="col" className="px-4 py-3 font-semibold">
-                      Name
+                      {t("Name")}
                     </th>
                     <th scope="col" className="px-4 py-3 font-semibold">
-                      Role
+                      {t("Role")}
                     </th>
                     <th scope="col" className="px-4 py-3 font-semibold">
-                      Status
+                      {t("Status")}
                     </th>
                     <th
                       scope="col"
                       className="px-4 py-3 text-right font-semibold"
                     >
-                      Actions
+                      {t("Actions")}
                     </th>
                   </tr>
                 </thead>
