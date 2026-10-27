@@ -12,6 +12,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
+import { useLanguage } from "@/components/language-provider"
 import { ShareBars } from "@/features/ops/ops-charts"
 import {
   diningLabel,
@@ -129,9 +130,9 @@ function bounds(range: DateRange | undefined) {
   return { from: from.toISOString(), to: to.toISOString() }
 }
 
-function formatWhen(value: string | null) {
+function formatWhen(value: string | null, locale = "en-GH") {
   if (!value) return "Still open"
-  return new Date(value).toLocaleString("en-GH", {
+  return new Date(value).toLocaleString(locale, {
     hour: "numeric",
     minute: "2-digit",
     month: "short",
@@ -141,6 +142,7 @@ function formatWhen(value: string | null) {
 }
 
 export function ShiftReview() {
+  const { t, locale } = useLanguage()
   const [rangeParam, setRangeParam] = useUrlState("range")
   const [fromParam, setFromParam] = useUrlState("from")
   const [toParam, setToParam] = useUrlState("to")
@@ -171,7 +173,7 @@ export function ShiftReview() {
   const shiftPaging = useTablePagination("shifts")
   const orderPaging = useTablePagination("shiftOrders")
   const filteredShifts = rows.filter((row) =>
-    `${row.id} ${row.status} ${formatWhen(row.openedAt)}`
+    `${row.id} ${row.status} ${formatWhen(row.openedAt, locale)}`
       .toLowerCase()
       .includes((shiftSearch ?? "").toLowerCase().trim())
   )
@@ -248,11 +250,15 @@ export function ShiftReview() {
         >
           <thead className="border-b border-border/70 bg-muted/40 text-xs tracking-[0.06em] text-muted-foreground uppercase">
             <tr>
-              <th className="px-4 py-3 font-medium">Opened</th>
-              <th className="px-4 py-3 font-medium">Closed</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Orders</th>
-              <th className="px-4 py-3 text-right font-medium">Revenue</th>
+              <th className="px-4 py-3 font-medium">{t("Opened")}</th>
+              <th className="px-4 py-3 font-medium">{t("Closed")}</th>
+              <th className="px-4 py-3 font-medium">{t("Status")}</th>
+              <th className="px-4 py-3 text-right font-medium">
+                {t("Orders")}
+              </th>
+              <th className="px-4 py-3 text-right font-medium">
+                {t("Revenue")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -295,7 +301,7 @@ export function ShiftReview() {
                           setToParam(null)
                         }}
                       >
-                        Reset date range
+                        {t("Reset date range")}
                       </Button>
                     }
                   />
@@ -314,13 +320,17 @@ export function ShiftReview() {
                     setTabParam("orders")
                   }}
                 >
-                  <td className="px-4 py-3">{formatWhen(row.openedAt)}</td>
-                  <td className="px-4 py-3">{formatWhen(row.closedAt)}</td>
+                  <td className="px-4 py-3">
+                    {formatWhen(row.openedAt, locale)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {t(formatWhen(row.closedAt, locale))}
+                  </td>
                   <td className="px-4 py-3">
                     <StatusBadge
                       tone={row.status === "OPEN" ? "success" : "neutral"}
                     >
-                      {row.status === "OPEN" ? "Open" : "Closed"}
+                      {t(row.status === "OPEN" ? "Open" : "Closed")}
                     </StatusBadge>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
@@ -347,12 +357,12 @@ export function ShiftReview() {
             <div className="flex shrink-0 items-start justify-between gap-4 border-b border-foreground/10 px-4 pt-4 pb-3 sm:px-5">
               <div>
                 <Dialog.Title className="text-lg font-semibold tracking-[-0.025em]">
-                  {detail ? formatWhen(detail.openedAt) : "Shift"}
+                  {detail ? formatWhen(detail.openedAt, locale) : t("Shift")}
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                   {detail
-                    ? `Started ${formatWhen(detail.openedAt)} · ${detail.closedAt ? `Ended ${formatWhen(detail.closedAt)}` : "Still open"}`
-                    : "Shift details"}
+                    ? `${t("Started")} ${formatWhen(detail.openedAt, locale)} · ${detail.closedAt ? `${t("Ended")} ${formatWhen(detail.closedAt, locale)}` : t("Still open")}`
+                    : t("Shift details")}
                 </Dialog.Description>
               </div>
               <Dialog.Close
@@ -360,7 +370,7 @@ export function ShiftReview() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Close dialog"
+                    aria-label={t("Close dialog")}
                   >
                     <XIcon />
                   </Button>
@@ -392,14 +402,20 @@ export function ShiftReview() {
               {!report.error && detail && (
                 <>
                   <dl className="grid gap-3 sm:grid-cols-4">
-                    <Stat label="Orders" value={String(detail.orderCount)} />
-                    <Stat label="Revenue" value={formatMoney(detail.revenue)} />
                     <Stat
-                      label="Average ticket"
+                      label={t("Orders")}
+                      value={String(detail.orderCount)}
+                    />
+                    <Stat
+                      label={t("Revenue")}
+                      value={formatMoney(detail.revenue)}
+                    />
+                    <Stat
+                      label={t("Average ticket")}
                       value={formatMoney(detail.averageTicket)}
                     />
                     <Stat
-                      label="Opening float"
+                      label={t("Opening float")}
                       value={formatMoney(detail.openingFloat)}
                     />
                   </dl>
@@ -425,14 +441,14 @@ export function ShiftReview() {
                             : "border-transparent text-muted-foreground"
                         }`}
                       >
-                        {label}
+                        {t(label)}
                       </button>
                     ))}
                   </div>
                   {tab === "orders" && (
                     <div className="content-region mt-4 overflow-x-auto">
                       <DataTable
-                        ariaLabel="Shift orders"
+                        ariaLabel={t("Shift orders")}
                         rows={visibleOrders}
                         search={{
                           value: orderSearch ?? "",
@@ -440,7 +456,7 @@ export function ShiftReview() {
                             setOrderSearch(value || null)
                             orderPaging.resetPage()
                           },
-                          placeholder: "Search shift orders",
+                          placeholder: t("Search shift orders"),
                         }}
                         pagination={{
                           ...orderPaging,
@@ -449,12 +465,20 @@ export function ShiftReview() {
                       >
                         <thead className="text-xs tracking-[0.06em] text-muted-foreground uppercase">
                           <tr>
-                            <th className="py-2 pr-3 font-medium">When</th>
-                            <th className="py-2 pr-3 font-medium">Dining</th>
-                            <th className="py-2 pr-3 font-medium">Status</th>
-                            <th className="py-2 pr-3 font-medium">Payment</th>
+                            <th className="py-2 pr-3 font-medium">
+                              {t("When")}
+                            </th>
+                            <th className="py-2 pr-3 font-medium">
+                              {t("Dining")}
+                            </th>
+                            <th className="py-2 pr-3 font-medium">
+                              {t("Status")}
+                            </th>
+                            <th className="py-2 pr-3 font-medium">
+                              {t("Payment")}
+                            </th>
                             <th className="py-2 text-right font-medium">
-                              Total
+                              {t("Total")}
                             </th>
                           </tr>
                         </thead>
@@ -486,20 +510,22 @@ export function ShiftReview() {
                               className="border-t border-border/50"
                             >
                               <td className="py-2.5 pr-3">
-                                {formatWhen(order.createdAt)}
+                                {formatWhen(order.createdAt, locale)}
                               </td>
                               <td className="py-2.5 pr-3">
-                                {diningLabel(order.diningType)}
+                                {t(diningLabel(order.diningType))}
                               </td>
                               <td className="py-2.5 pr-3">
                                 <StatusBadge
                                   tone={orderStatusTone(order.status)}
                                 >
-                                  {statusLabels[order.status] ?? order.status}
+                                  {t(
+                                    statusLabels[order.status] ?? order.status
+                                  )}
                                 </StatusBadge>
                               </td>
                               <td className="py-2.5 pr-3">
-                                {order.paid ? "Paid" : "Unpaid"}
+                                {t(order.paid ? "Paid" : "Unpaid")}
                               </td>
                               <td className="py-2.5 text-right tabular-nums">
                                 {formatMoney(order.total)}
@@ -513,20 +539,20 @@ export function ShiftReview() {
                   {tab === "revenue" && (
                     <div className="mt-4 grid gap-4 lg:grid-cols-2">
                       <ShareBars
-                        title="By payment method"
+                        title={t("By payment method")}
                         countLabel="payments"
-                        valueLabel="Revenue"
+                        valueLabel={t("Revenue")}
                         rows={detail.byMethod.map((slice) => ({
-                          label: methodLabels[slice.label] ?? slice.label,
+                          label: t(methodLabels[slice.label] ?? slice.label),
                           orderCount: slice.count,
                           revenue: slice.amount,
                         }))}
                       />
                       <ShareBars
-                        title="By dining"
-                        valueLabel="Revenue"
+                        title={t("By dining")}
+                        valueLabel={t("Revenue")}
                         rows={detail.byDining.map((slice) => ({
-                          label: diningLabel(slice.label),
+                          label: t(diningLabel(slice.label)),
                           orderCount: slice.count,
                           revenue: slice.amount,
                         }))}

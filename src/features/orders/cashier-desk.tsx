@@ -16,6 +16,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { NotificationButton } from "@/components/layout/notification-button"
+import { useLanguage } from "@/components/language-provider"
 import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Input } from "@/components/ui/input"
@@ -209,6 +210,7 @@ function groupMode(group: ModifierGroup): "radio" | "cards" | "chips" {
 }
 
 export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
+  const { t } = useLanguage()
   const [fullscreenParam, setFullscreenParam] = useUrlState("fullscreen")
   const fullscreen = fullscreenParam === "1"
   const ownsFullscreen = useRef(false)
@@ -675,16 +677,16 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
           <div className="min-w-0">
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-              Counter
+              {t("Counter")}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Build the bag, then take cash or send a MoMo prompt.
+              {t("Build the bag, then take cash or send a MoMo prompt.")}
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Button onClick={() => setBagOpen(true)} className="shrink-0">
               <ShoppingBagIcon aria-hidden="true" data-icon="inline-start" />
-              Bag
+              {t("Bag")}
               <span className="tabular-nums">
                 {lines.reduce((sum, line) => sum + line.quantity, 0)}
               </span>

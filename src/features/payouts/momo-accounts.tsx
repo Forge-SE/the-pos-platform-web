@@ -4,6 +4,7 @@ import { DeviceMobileIcon, TrashIcon } from "@phosphor-icons/react"
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -51,6 +52,7 @@ export function MomoAccounts({
   /** When true, omit the settings-card chrome so onboarding can supply its own. */
   embedded?: boolean
 }) {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canManage = hasPermission(profile, "SETTINGS_MANAGE")
   const { data, loading, error, refetch } = useQuery<MomoData>(
@@ -113,7 +115,7 @@ export function MomoAccounts({
 
   const body = !canManage ? (
     <p className="mt-4 text-sm text-muted-foreground">
-      Only managers and owners can edit payout numbers.
+      {t("Only managers and owners can edit payout numbers.")}
     </p>
   ) : error ? (
     <ErrorState
@@ -135,7 +137,7 @@ export function MomoAccounts({
           return (
             <>
               <fieldset>
-                <legend className="text-sm font-medium">Network</legend>
+                <legend className="text-sm font-medium">{t("Network")}</legend>
                 <div className="mt-2 grid gap-2 sm:grid-cols-3">
                   {MOMO_PROVIDERS.map((value) => {
                     const selected = formik.values.provider === value
@@ -160,7 +162,7 @@ export function MomoAccounts({
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field data-invalid={Boolean(nameError)}>
                   <FieldLabel htmlFor="momo-account-name">
-                    Account name
+                    {t("Account name")}
                   </FieldLabel>
                   <Input
                     id="momo-account-name"
@@ -175,7 +177,9 @@ export function MomoAccounts({
                   <FieldError>{nameError}</FieldError>
                 </Field>
                 <Field data-invalid={Boolean(phoneError)}>
-                  <FieldLabel htmlFor="momo-phone">Mobile number</FieldLabel>
+                  <FieldLabel htmlFor="momo-phone">
+                    {t("Mobile number")}
+                  </FieldLabel>
                   <Input
                     id="momo-phone"
                     name="phone"
@@ -192,7 +196,7 @@ export function MomoAccounts({
               </div>
               {formError && <FieldError>{formError}</FieldError>}
               <Button type="submit" disabled={addState.loading || loading}>
-                {addState.loading ? "Saving…" : "Add number"}
+                {t(addState.loading ? "Saving…" : "Add number")}
               </Button>
             </>
           )
@@ -217,7 +221,7 @@ export function MomoAccounts({
                     document.getElementById("momo-account-name")?.focus()
                   }
                 >
-                  Add number
+                  {t("Add number")}
                 </Button>
               }
             />
@@ -263,11 +267,12 @@ export function MomoAccounts({
         </span>
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
-            Mobile money contacts
+            {t("Mobile money contacts")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Saved mobile money contacts across MTN, AirtelTigo and Telecel.
-            Configure the payment destination in Paystack settlement.
+            {t(
+              "Saved mobile money contacts across MTN, AirtelTigo and Telecel. Configure the payment destination in Paystack settlement."
+            )}
           </p>
         </div>
       </div>

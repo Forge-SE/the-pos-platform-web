@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { useLanguage } from "@/components/language-provider"
 
 export function SectionPage({
   title,
@@ -11,15 +12,16 @@ export function SectionPage({
   children?: ReactNode
   fillHeight?: boolean
 }) {
+  const { t } = useLanguage()
   return (
     <div
       className={`content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8 ${fillHeight ? "lg:flex lg:h-full lg:min-h-0 lg:flex-col" : ""}`}
     >
       <header>
         <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-          {title}
+          {t(title)}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t(description)}</p>
       </header>
       {children}
     </div>

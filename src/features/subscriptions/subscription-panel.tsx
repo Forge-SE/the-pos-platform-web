@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import * as Yup from "yup"
 
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { LoadingState } from "@/components/loading-state"
@@ -108,9 +109,9 @@ function intervalLabel(interval: string) {
   return "month"
 }
 
-function formatWhen(value: string | null) {
+function formatWhen(value: string | null, locale = "en-GH") {
   if (!value) return "—"
-  return new Date(value).toLocaleDateString("en-GH", {
+  return new Date(value).toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -125,6 +126,7 @@ export function SubscriptionPanel({
   /** When true, omit the settings-card chrome so the settings shell supplies it. */
   embedded?: boolean
 }) {
+  const { t, locale } = useLanguage()
   const confirmed = useRef(false)
   const [notice, setNotice] = useState<string | null>(null)
   const { data, loading, error, refetch } =
@@ -170,11 +172,12 @@ export function SubscriptionPanel({
       {!embedded && (
         <>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
-            Subscription
+            {t("Subscription")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ovaal is billed through Paystack. This is the plan on the
-            restaurant, the last payment, and the next due date.
+            {t(
+              "Ovaal is billed through Paystack. This is the plan on the restaurant, the last payment, and the next due date."
+            )}
           </p>
         </>
       )}
@@ -188,7 +191,7 @@ export function SubscriptionPanel({
       )}
       {notice && (
         <p className="mt-4 text-sm text-secondary" role="status">
-          {notice}
+          {t(notice)}
         </p>
       )}
       {!loading && !error && (
@@ -196,15 +199,15 @@ export function SubscriptionPanel({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground">
-                Current plan
+                {t("Current plan")}
               </p>
               <p className="mt-1 text-lg font-semibold tracking-[-0.025em]">
-                {subscription?.plan.name ?? "Not subscribed"}
+                {subscription?.plan.name ?? t("Not subscribed")}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {subscription
-                  ? `${formatMoney(subscription.plan.amount)} / ${intervalLabel(subscription.plan.interval)}`
-                  : "Choose a plan below to start billing."}
+                  ? `${formatMoney(subscription.plan.amount)} / ${t(intervalLabel(subscription.plan.interval))}`
+                  : t("Choose a plan below to start billing.")}
               </p>
             </div>
             <StatusBadge tone={statusTone(subscription?.status)}>
@@ -216,18 +219,18 @@ export function SubscriptionPanel({
           <dl className="mt-5 grid grid-cols-2 gap-4">
             <div>
               <dt className="text-xs font-medium text-muted-foreground">
-                Last paid
+                {t("Last paid")}
               </dt>
               <dd className="mt-1 text-sm font-medium tabular-nums">
-                {formatWhen(subscription?.lastPaidAt ?? null)}
+                {formatWhen(subscription?.lastPaidAt ?? null, locale)}
               </dd>
             </div>
             <div>
               <dt className="text-xs font-medium text-muted-foreground">
-                Next payment
+                {t("Next payment")}
               </dt>
               <dd className="mt-1 text-sm font-medium tabular-nums">
-                {formatWhen(subscription?.nextPaymentAt ?? null)}
+                {formatWhen(subscription?.nextPaymentAt ?? null, locale)}
               </dd>
             </div>
           </dl>
@@ -262,9 +265,13 @@ export function SubscriptionPanel({
           {(formik) => (
             <>
               <fieldset>
-                <legend className="text-sm font-medium">Choose a plan</legend>
+                <legend className="text-sm font-medium">
+                  {t("Choose a plan")}
+                </legend>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Paystack charges this amount on the billing email below.
+                  {t(
+                    "Paystack charges this amount on the billing email below."
+                  )}
                 </p>
                 <div className="mt-3 grid gap-2">
                   {plans.map((plan) => {
@@ -296,7 +303,7 @@ export function SubscriptionPanel({
                         <span className="shrink-0 text-right text-sm font-medium tabular-nums">
                           {formatMoney(plan.amount)}
                           <span className="block text-xs font-normal text-muted-foreground">
-                            / {intervalLabel(plan.interval)}
+                            / {t(intervalLabel(plan.interval))}
                           </span>
                         </span>
                       </label>
@@ -309,7 +316,9 @@ export function SubscriptionPanel({
                 className="mt-5"
                 data-invalid={Boolean(fieldError(formik, "email"))}
               >
-                <FieldLabel htmlFor="billing-email">Billing email</FieldLabel>
+                <FieldLabel htmlFor="billing-email">
+                  {t("Billing email")}
+                </FieldLabel>
                 <Input
                   id="billing-email"
                   name="email"
@@ -324,7 +333,7 @@ export function SubscriptionPanel({
               </Field>
               <div className="mt-5 flex justify-end">
                 <Button type="submit" disabled={starting}>
-                  {starting ? "Opening Paystack…" : "Pay with Paystack"}
+                  {t(starting ? "Opening Paystack…" : "Pay with Paystack")}
                 </Button>
               </div>
               {typeof formik.status === "string" && (

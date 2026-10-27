@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import {
   CheckCircleIcon,
   CreditCardIcon,
+  GlobeIcon,
   ImageIcon,
   SpinnerGapIcon,
   StorefrontIcon,
@@ -27,6 +28,8 @@ import { validateImageFile } from "@/features/menu/model"
 import { uploadImageToCloudinary } from "@/lib/cloudinary"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
+import { LanguageSetting } from "@/components/settings/language-setting"
+import { useLanguage } from "@/components/language-provider"
 
 const RESTAURANT_QUERY = gql`
   query RestaurantBranding {
@@ -62,12 +65,13 @@ const UPDATE_DIGEST_EMAIL = gql`
 `
 
 type LogoStatus = "idle" | "uploading" | "verifying" | "done" | "error"
-type SettingsSection = "restaurant" | "subscription" | "payouts"
+type SettingsSection = "restaurant" | "subscription" | "payouts" | "preferences"
 
 const sections = [
   { id: "restaurant", label: "Restaurant", icon: StorefrontIcon },
   { id: "subscription", label: "Subscription", icon: CreditCardIcon },
   { id: "payouts", label: "Payouts", icon: WalletIcon },
+  { id: "preferences", label: "Preferences", icon: GlobeIcon },
 ] as const
 
 interface RestaurantData {
@@ -94,10 +98,15 @@ export function RestaurantBranding({
   onOpenChange: (open: boolean) => void
   onSectionChange: (section: SettingsSection) => void
 }) {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canManage = hasPermission(profile, "SETTINGS_MANAGE")
-  const { data, loading, error, refetch } =
-    useQuery<RestaurantData>(RESTAURANT_QUERY)
+  const canOpenRestaurantSettings =
+    profile?.role === "OWNER" || profile?.role === "MANAGER"
+  const { data, loading, error, refetch } = useQuery<RestaurantData>(
+    RESTAURANT_QUERY,
+    { skip: section === "preferences" }
+  )
   const [completeUpload] = useMutation(COMPLETE_LOGO_UPLOAD)
   const [status, setStatus] = useState<LogoStatus>("idle")
   const [message, setMessage] = useState<string | null>(null)
@@ -111,7 +120,7 @@ export function RestaurantBranding({
       setMessage(
         validationError instanceof Error
           ? validationError.message
-          : "Use JPEG, PNG, or WebP."
+          : t("Use JPEG, PNG, or WebP.")
       )
       return
     }
@@ -130,7 +139,7 @@ export function RestaurantBranding({
       setMessage(
         uploadError instanceof Error
           ? uploadError.message
-          : "Could not upload logo."
+          : t("Could not upload logo.")
       )
     }
   }
@@ -150,11 +159,31 @@ export function RestaurantBranding({
     <SettingsDialog
       open={open}
       onOpenChange={onOpenChange}
-      label="Restaurant settings"
-      items={sections}
+      label={canOpenRestaurantSettings ? "Restaurant settings" : "Settings"}
+      items={
+        canOpenRestaurantSettings
+          ? sections
+          : sections.filter((item) => item.id === "preferences")
+      }
       section={section}
       onSectionChange={(id) => onSectionChange(id as SettingsSection)}
     >
+      {section === "preferences" && (
+        <>
+          <SettingsHeader
+            title="Preferences"
+            description="Choose how the workspace appears for you on this device."
+          />
+          <SettingsBody>
+            <SettingRow
+              title="Language"
+              description="Choose the language for menus and workspace controls."
+            >
+              <LanguageSetting />
+            </SettingRow>
+          </SettingsBody>
+        </>
+      )}
       {section === "restaurant" && (
         <>
           <SettingsHeader
@@ -164,10 +193,10 @@ export function RestaurantBranding({
           <SettingsBody>
             {error ? (
               <div className="py-6 text-sm text-destructive">
-                Could not load restaurant details.
+                {t("Could not load restaurant details.")}
                 <div className="mt-3">
                   <Button variant="outline" onClick={() => refetch()}>
-                    Try again
+                    {t("Try again")}
                   </Button>
                 </div>
               </div>
@@ -216,15 +245,17 @@ export function RestaurantBranding({
                             className="animate-spin"
                           />
                         ) : null}
-                        {status === "uploading"
-                          ? "Uploading…"
-                          : status === "verifying"
-                            ? "Verifying…"
-                            : "Change"}
+                        {t(
+                          status === "uploading"
+                            ? "Uploading…"
+                            : status === "verifying"
+                              ? "Verifying…"
+                              : "Change"
+                        )}
                       </Button>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        Only managers and owners can change branding.
+                        {t("Only managers and owners can change branding.")}
                       </p>
                     )}
                   </div>
@@ -232,7 +263,7 @@ export function RestaurantBranding({
                 {status === "done" && (
                   <p className="flex items-center gap-1.5 pb-2 text-xs text-secondary">
                     <CheckCircleIcon className="size-3.5" weight="fill" />
-                    Logo verified and live.
+                    {t("Logo verified and live.")}
                   </p>
                 )}
                 {status === "error" && message && (
@@ -279,12 +310,12 @@ export function RestaurantBranding({
                           event.preventDefault()
                           setDigestNote(null)
                           void saveDigest({ variables: { email: digestEmail } })
-                            .then(() => setDigestNote("Digest email saved."))
+                            .then(() => setDigestNote(t("Digest email saved.")))
                             .catch((failure: unknown) =>
                               setDigestNote(
                                 failure instanceof Error
                                   ? failure.message
-                                  : "Could not save the digest email."
+                                  : t("Could not save the digest email.")
                               )
                             )
                         }}
@@ -297,10 +328,10 @@ export function RestaurantBranding({
                             setDigestEmail(event.target.value)
                           }
                           placeholder="owner@restaurant.com"
-                          aria-label="Sales digest email"
+                          aria-label={t("Sales digest email")}
                         />
                         <Button type="submit" disabled={savingDigest}>
-                          {savingDigest ? "Saving…" : "Save"}
+                          {t(savingDigest ? "Saving…" : "Save")}
                         </Button>
                       </form>
                       {digestNote && (
@@ -335,9 +366,11 @@ export function RestaurantBranding({
           />
           <SettingsBody>
             <div className="border-b border-dashed border-border/70 py-6">
-              <h3 className="text-sm font-medium">Mobile money contacts</h3>
+              <h3 className="text-sm font-medium">
+                {t("Mobile money contacts")}
+              </h3>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Saved numbers across MTN, AirtelTigo and Telecel.
+                {t("Saved numbers across MTN, AirtelTigo and Telecel.")}
               </p>
               <MomoAccounts embedded />
             </div>

@@ -50,12 +50,13 @@ export function MainLayout() {
       ? settingsParam
       : "restaurant"
   const settingsOpen =
-    canOpenSettings &&
     !settingsDismissed &&
-    (pathname === "/settings" ||
-      settingsParam === "restaurant" ||
-      settingsParam === "subscription" ||
-      settingsParam === "payouts")
+    (settingsParam === "preferences" ||
+      (canOpenSettings &&
+        (pathname === "/settings" ||
+          settingsParam === "restaurant" ||
+          settingsParam === "subscription" ||
+          settingsParam === "payouts")))
 
   useEffect(() => {
     setSettingsDismissed(false)
@@ -144,6 +145,11 @@ export function MainLayout() {
     )
   }
 
+  function openPreferences() {
+    setSettingsDismissed(false)
+    setSettingsParam("preferences")
+  }
+
   function closeSettings() {
     setSettingsParam(null)
     if (pathname === "/settings") {
@@ -172,6 +178,7 @@ export function MainLayout() {
             onCollapsedChange={() => setSidebarCollapsed((value) => !value)}
             onSignOut={signOut}
             onOpenSettings={canOpenSettings ? openSettings : undefined}
+            onOpenPreferences={openPreferences}
           />
         </div>
 
@@ -187,6 +194,7 @@ export function MainLayout() {
               profile={profile}
               onSignOut={signOut}
               onOpenSettings={canOpenSettings ? openSettings : undefined}
+              onOpenPreferences={openPreferences}
               showNotifications={!cashierCounter}
             />
           </div>
@@ -213,7 +221,8 @@ export function MainLayout() {
           section={
             settingsParam === "subscription" ||
             settingsParam === "payouts" ||
-            settingsParam === "restaurant"
+            settingsParam === "restaurant" ||
+            settingsParam === "preferences"
               ? settingsParam
               : pathname === "/settings" &&
                   new URLSearchParams(window.location.search).has("reference")

@@ -16,6 +16,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import { OvaalMark } from "@/components/ovaal-mark"
 import { OpsAccountMenu } from "@/features/ops/ops-account-menu"
 import { OpsNotifications } from "@/features/ops/ops-notifications"
+import { useLanguage } from "@/components/language-provider"
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
 import { clearOpsToken, opsAuthContext } from "@/lib/ops-token"
 
@@ -84,14 +85,15 @@ export function OpsHeader({
   description: string
   children?: ReactNode
 }) {
+  const { t } = useLanguage()
   return (
     <header className="flex min-h-[104px] w-full min-w-0 flex-col gap-4 px-5 py-6 md:flex-row md:items-center md:justify-between lg:px-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-[-0.035em] lg:text-3xl">
-          {title}
+          {t(title)}
         </h1>
         <p className="max-w-xl text-sm leading-6 text-muted-foreground">
-          {description}
+          {t(description)}
         </p>
       </div>
       {children ? (
@@ -102,6 +104,7 @@ export function OpsHeader({
 }
 
 export function OpsShell({ children }: { children: ReactNode }) {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const client = useApolloClient()
   const { data: meData, error: meError } = useQuery<{
@@ -128,16 +131,28 @@ export function OpsShell({ children }: { children: ReactNode }) {
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
           <OvaalMark />
           <span className="border-l border-sidebar-border pl-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-            Platform
+            {t("Platform")}
           </span>
         </div>
         <nav
           className="flex min-h-0 flex-1 [scrollbar-width:none] flex-col gap-3 overflow-y-auto px-3 py-5 [&::-webkit-scrollbar]:hidden [&>div]:shrink-0"
           aria-label="Platform"
         >
-          <NavGroup label="Directory" pathname={pathname} section="directory" />
-          <NavGroup label="Insights" pathname={pathname} section="insights" />
-          <NavGroup label="Records" pathname={pathname} section="records" />
+          <NavGroup
+            label={t("Directory")}
+            pathname={pathname}
+            section="directory"
+          />
+          <NavGroup
+            label={t("Insights")}
+            pathname={pathname}
+            section="insights"
+          />
+          <NavGroup
+            label={t("Records")}
+            pathname={pathname}
+            section="records"
+          />
         </nav>
         <div className="shrink-0 border-t border-sidebar-border p-3">
           <OpsAccountMenu
@@ -151,11 +166,11 @@ export function OpsShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-card">
         <div className="hidden h-16 shrink-0 items-center gap-3 border-b border-border/70 px-8 text-sm lg:flex">
-          <span className="text-muted-foreground">Platform</span>
+          <span className="text-muted-foreground">{t("Platform")}</span>
           <span aria-hidden="true" className="text-muted-foreground/50">
             /
           </span>
-          <span className="font-medium">{currentPage}</span>
+          <span className="font-medium">{t(currentPage)}</span>
           <div className="ml-auto">
             <OpsNotifications />
           </div>
@@ -229,6 +244,7 @@ function NavLink({
   pathname: string
   compact?: boolean
 }) {
+  const { t } = useLanguage()
   const active =
     link.to === "/ops"
       ? pathname === "/ops" ||
@@ -242,14 +258,14 @@ function NavLink({
     <Link
       to={link.to}
       aria-current={active ? "page" : undefined}
-      aria-label={compact ? link.label : undefined}
-      title={compact ? link.label : undefined}
+      aria-label={compact ? t(link.label) : undefined}
+      title={compact ? t(link.label) : undefined}
       className={`flex min-h-10 items-center gap-3 rounded-md text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring ${
         compact ? "px-2 py-1.5" : "px-3 py-2"
       } ${active ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground" : "text-muted-foreground"}`}
     >
       <Icon className="size-4 shrink-0" weight={active ? "fill" : "regular"} />
-      {compact ? null : link.label}
+      {compact ? null : t(link.label)}
     </Link>
   )
 }

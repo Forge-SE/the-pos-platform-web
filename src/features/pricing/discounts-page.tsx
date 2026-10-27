@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 import { toast } from "@/components/ui/toaster"
 import { mutationMessage } from "@/features/menu/model"
 import { CreateDiscountModal } from "@/features/pricing/modals/create-discount-modal"
@@ -23,6 +24,7 @@ import { useUrlState } from "@/lib/url-state"
 import { useTablePagination } from "@/lib/table-state"
 
 export function DiscountsPage() {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canManage = profile?.role === "MANAGER" || profile?.role === "OWNER"
   const { data, loading, error, refetch } = useQuery<{
@@ -50,15 +52,17 @@ export function DiscountsPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            Discounts
+            {t("Discounts")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Create a draft, reveal the ticket, then activate it for the cashier.
+            {t(
+              "Create a draft, reveal the ticket, then activate it for the cashier."
+            )}
           </p>
         </header>
         <Button onClick={() => setNewDiscount("1")}>
           <PlusIcon data-icon="inline-start" />
-          Create discount
+          {t("Create discount")}
         </Button>
       </div>
 
@@ -74,7 +78,7 @@ export function DiscountsPage() {
             description="Create a discount to print the first ticket."
             action={
               <Button size="lg" onClick={() => setNewDiscount("1")}>
-                Create discount
+                {t("Create discount")}
               </Button>
             }
           />
@@ -98,28 +102,28 @@ export function DiscountsPage() {
               <thead>
                 <tr className="border-b border-border/60 bg-muted/30 text-xs tracking-[0.06em] text-muted-foreground uppercase">
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Name
+                    {t("Name")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Schedule
+                    {t("Schedule")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Value
+                    {t("Value")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Code
+                    {t("Code")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Uses
+                    {t("Uses")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Status
+                    {t("Status")}
                   </th>
                   <th
                     scope="col"
                     className="px-4 py-3 text-right font-semibold"
                   >
-                    Actions
+                    {t("Actions")}
                   </th>
                 </tr>
               </thead>

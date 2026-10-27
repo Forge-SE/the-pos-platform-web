@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Popover } from "@base-ui/react/popover"
 import { format, isSameDay, subDays, subMonths } from "date-fns"
+import { fr } from "date-fns/locale"
 import {
   CalendarBlankIcon,
   CaretLeftIcon,
@@ -14,6 +15,7 @@ import type { DateRange } from "react-day-picker"
 import "react-day-picker/style.css"
 
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 
 export type { DateRange }
 
@@ -62,10 +64,12 @@ export function defaultPresets(): RangePreset[] {
   ]
 }
 
-export function formatRange(range: DateRange | undefined) {
+export function formatRange(range: DateRange | undefined, language = "en") {
   if (!range?.from) return null
-  const from = format(range.from, "LLL dd, y")
-  return range.to ? `${from} - ${format(range.to, "LLL dd, y")}` : from
+  const options = language === "fr" ? { locale: fr } : undefined
+  const pattern = language === "fr" ? "d LLL y" : "LLL dd, y"
+  const from = format(range.from, pattern, options)
+  return range.to ? `${from} - ${format(range.to, pattern, options)}` : from
 }
 
 function rangesEqual(a: DateRange | undefined, b: DateRange | undefined) {
@@ -120,6 +124,7 @@ export function DateRangePicker({
   presets?: RangePreset[]
   label?: string
 }) {
+  const { t, language } = useLanguage()
   const [open, setOpen] = React.useState(false)
   const [draft, setDraft] = React.useState<DateRange | undefined>(value)
   const [month, setMonth] = React.useState<Date | undefined>(value?.from)
@@ -145,7 +150,8 @@ export function DateRangePicker({
     setOpen(false)
   }
 
-  const display = formatRange(value)
+  const display = formatRange(value, language)
+  const accessibleLabel = t(label)
 
   return (
     <div className="flex items-center gap-2">
@@ -154,11 +160,11 @@ export function DateRangePicker({
           render={
             <Button
               variant="outline"
-              aria-label={label}
-              title={display ?? label}
+              aria-label={accessibleLabel}
+              title={display ?? accessibleLabel}
             >
               <CalendarBlankIcon data-icon="inline-start" />
-              {display ?? "Select a range"}
+              {display ?? t("Select a range")}
             </Button>
           }
         />
@@ -179,7 +185,7 @@ export function DateRangePicker({
                         active={rangesEqual(draft, preset.dateRange)}
                         onClick={() => setDraft(preset.dateRange)}
                       >
-                        {preset.label}
+                        {t(preset.label)}
                       </PresetButton>
                     ))}
                   </div>
@@ -187,6 +193,7 @@ export function DateRangePicker({
                 <div className="min-w-0 flex-1 p-4">
                   <DayPicker
                     mode="range"
+                    locale={language === "fr" ? fr : undefined}
                     month={month}
                     onMonthChange={setMonth}
                     selected={draft}
@@ -230,7 +237,7 @@ export function DateRangePicker({
               </div>
               <div className="flex flex-col gap-3 border-t border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs font-medium" aria-live="polite">
-                  {formatRange(draft) ?? "Select a range"}
+                  {formatRange(draft, language) ?? t("Select a range")}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -238,10 +245,10 @@ export function DateRangePicker({
                     size="sm"
                     onClick={() => handleOpenChange(false)}
                   >
-                    Cancel
+                    {t("Cancel")}
                   </Button>
                   <Button size="sm" onClick={apply} disabled={!draft?.from}>
-                    Apply
+                    {t("Apply")}
                   </Button>
                 </div>
               </div>
@@ -253,8 +260,8 @@ export function DateRangePicker({
         <Button
           variant="outline"
           size="icon-sm"
-          aria-label="Clear date filter"
-          title="Clear date filter"
+          aria-label={t("Clear date filter")}
+          title={t("Clear date filter")}
           onClick={() => onChange(undefined)}
         >
           <XIcon />

@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Badge } from "@/components/ui/badge"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
@@ -56,6 +57,7 @@ import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
 
 export function MenuManagement() {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canManage = hasPermission(profile, "MENU_MANAGE")
   const { data, loading, error, refetch } = useQuery<MenuManagementData>(
@@ -176,10 +178,10 @@ export function MenuManagement() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            Menu
+            {t("Menu")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Build categories, items, modifier choices, and availability.
+            {t("Build categories, items, modifier choices, and availability.")}
           </p>
         </header>
         <div className="flex flex-wrap items-center gap-2">

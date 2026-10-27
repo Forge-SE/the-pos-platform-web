@@ -5,6 +5,7 @@ import { Popover } from "@base-ui/react/popover"
 import { BellIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 
 type Notice = {
   id: string
@@ -50,17 +51,19 @@ const RAISED = gql`
   }
 `
 
-function when(value: string) {
+function when(value: string, locale: string) {
   const then = new Date(value).getTime()
   const minutes = Math.max(1, Math.round((Date.now() - then) / 60_000))
-  if (minutes < 60) return `${minutes} min ago`
+  const relative = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
+  if (minutes < 60) return relative.format(-minutes, "minute")
   const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`
+  if (hours < 24) return relative.format(-hours, "hour")
   const days = Math.round(hours / 24)
-  return `${days} day${days === 1 ? "" : "s"} ago`
+  return relative.format(-days, "day")
 }
 
 export function NotificationButton() {
+  const { t, locale } = useLanguage()
   const [tab, setTab] = useState<"all" | "inbox" | "archived">("all")
   const { data, refetch } = useQuery<{ notifications: Notice[] }>(
     NOTIFICATIONS_QUERY,
@@ -90,7 +93,7 @@ export function NotificationButton() {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Notifications"
+            aria-label={t("Notifications")}
             className="relative text-muted-foreground data-popup-open:bg-muted data-popup-open:text-foreground"
           />
         }
@@ -109,7 +112,9 @@ export function NotificationButton() {
         >
           <Popover.Popup className="w-[min(28rem,calc(100vw-2.25rem))] origin-[var(--transform-origin)] overflow-hidden rounded-2xl bg-popover text-popover-foreground shadow-[0_0_0_1px_oklch(0_0_0/0.08),0_12px_32px_oklch(0.18_0.03_150/0.14)] outline-none">
             <div className="flex h-14 items-center justify-between px-5">
-              <span className="text-sm font-semibold">Notifications</span>
+              <span className="text-sm font-semibold">
+                {t("Notifications")}
+              </span>
               <Button
                 variant="link"
                 size="sm"
@@ -118,7 +123,7 @@ export function NotificationButton() {
                   void markRead().then(() => refetch())
                 }}
               >
-                Mark all as read
+                {t("Mark all as read")}
               </Button>
             </div>
             <div className="flex gap-2 px-5 pb-3">
@@ -135,15 +140,16 @@ export function NotificationButton() {
                   onClick={() => setTab(value)}
                   className={`rounded-full px-3 py-1 text-xs font-medium ${tab === value ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               ))}
             </div>
             <div className="max-h-96 overflow-y-auto border-t border-border/70">
               {visible.length === 0 ? (
                 <p className="px-5 py-8 text-sm text-muted-foreground">
-                  Nothing in this tab. Low stock, large voids, cash variance,
-                  payment failures, and offline conflicts show up here.
+                  {t(
+                    "Nothing in this tab. Low stock, large voids, cash variance, payment failures, and offline conflicts show up here."
+                  )}
                 </p>
               ) : (
                 visible.map((notice) => (
@@ -155,7 +161,7 @@ export function NotificationButton() {
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">{notice.title}</p>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {when(notice.createdAt)}
+                        {when(notice.createdAt, locale)}
                       </span>
                     </div>
                     <p className="mt-1 text-sm leading-5 text-muted-foreground">

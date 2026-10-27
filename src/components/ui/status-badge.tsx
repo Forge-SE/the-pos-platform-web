@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { cn } from "cn"
+import { useLanguage } from "@/components/language-provider"
 
 const tones = {
   success: "bg-success text-success-foreground",
@@ -21,6 +22,7 @@ export function StatusBadge({
   tone?: StatusTone
   className?: string
 }) {
+  const { t } = useLanguage()
   return (
     <span
       data-slot="status-badge"
@@ -31,7 +33,7 @@ export function StatusBadge({
       )}
     >
       <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
-      {children}
+      {typeof children === "string" ? t(children) : children}
     </span>
   )
 }

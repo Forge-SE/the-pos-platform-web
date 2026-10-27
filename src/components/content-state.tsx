@@ -3,20 +3,13 @@ import type { ReactNode } from "react"
 import { cn } from "cn"
 import { TrayIcon, WarningCircleIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 
 export function ContentState({
   icon,
   title,
   description,
-  action = (
-    <Button
-      variant="outline"
-      size="lg"
-      onClick={() => window.location.reload()}
-    >
-      Check again
-    </Button>
-  ),
+  action,
   error = false,
   className,
 }: {
@@ -27,6 +20,19 @@ export function ContentState({
   error?: boolean
   className?: string
 }) {
+  const { t } = useLanguage()
+  const resolvedAction =
+    action === undefined ? (
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={() => window.location.reload()}
+      >
+        {t("Check again")}
+      </Button>
+    ) : (
+      action
+    )
   return (
     <div
       data-content-state={error ? "error" : "empty"}
@@ -48,14 +54,16 @@ export function ContentState({
         {icon ?? (error ? <WarningCircleIcon /> : <TrayIcon />)}
       </span>
       <p className="max-w-sm text-base font-semibold text-balance text-foreground">
-        {title}
+        {t(title)}
       </p>
       {description && (
         <p className="mt-2 max-w-sm text-sm leading-6 text-pretty text-muted-foreground">
-          {description}
+          {t(description)}
         </p>
       )}
-      {action && <div className="mt-6 flex justify-center">{action}</div>}
+      {resolvedAction && (
+        <div className="mt-6 flex justify-center">{resolvedAction}</div>
+      )}
     </div>
   )
 }
@@ -73,6 +81,7 @@ export function ErrorState({
 }: Omit<Parameters<typeof ContentState>[0], "error" | "action"> & {
   onRetry: () => unknown
 }) {
+  const { t } = useLanguage()
   const [retrying, setRetrying] = useState(false)
   async function retry() {
     if (retrying) return
@@ -97,7 +106,7 @@ export function ErrorState({
           disabled={retrying}
           onClick={() => void retry()}
         >
-          {retrying ? "Trying again…" : "Try again"}
+          {t(retrying ? "Trying again…" : "Try again")}
         </Button>
       }
     />

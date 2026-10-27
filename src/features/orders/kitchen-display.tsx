@@ -20,6 +20,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
+import { useLanguage } from "@/components/language-provider"
 import { MealPreparationTime } from "@/components/meal-preparation-time"
 import { EmptyState, ErrorState } from "@/components/content-state"
 import { diningLabel } from "@/features/orders/labels"
@@ -284,6 +285,7 @@ export function KitchenDisplay({
   readOnly?: boolean
   switcher?: ReactNode
 } = {}) {
+  const { t } = useLanguage()
   const [view, setView] = useState<ViewMode>("board")
   const [search, setSearch] = useState("")
   const [fullscreenParam, setFullscreenParam] = useUrlState("fullscreen")
@@ -513,15 +515,17 @@ export function KitchenDisplay({
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-50 motion-reduce:animate-none" />
               <span className="relative inline-flex size-2 rounded-full bg-emerald-600" />
             </span>
-            {readOnly ? "Live orders" : "Live kitchen"}
+            {t(readOnly ? "Live orders" : "Live kitchen")}
           </div>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            {readOnly ? "Order status" : "Kitchen display"}
+            {t(readOnly ? "Order status" : "Kitchen display")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            {readOnly
-              ? "See each ticket move from new, to preparing, to ready."
-              : "Track incoming orders in real time and move every ticket through a clear, one-way cooking flow."}
+            {t(
+              readOnly
+                ? "See each ticket move from new, to preparing, to ready."
+                : "Track incoming orders in real time and move every ticket through a clear, one-way cooking flow."
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

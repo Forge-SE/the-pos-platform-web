@@ -2,21 +2,26 @@ import { Menu } from "@base-ui/react/menu"
 import {
   DotsThreeCircleIcon,
   GearIcon,
+  GlobeIcon,
   MoonIcon,
   SignOutIcon,
   SunIcon,
 } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/components/theme-provider"
+import { useLanguage } from "@/components/language-provider"
 
 export function ProfileMenu({
   onSignOut,
   onOpenSettings,
+  onOpenPreferences,
 }: {
   onSignOut: () => void
   onOpenSettings?: () => void
+  onOpenPreferences?: () => void
 }) {
   const { theme, setTheme } = useTheme()
+  const { t } = useLanguage()
   const menuItemClass =
     "flex min-h-9 cursor-default items-center gap-2 rounded-md px-2.5 text-xs font-medium outline-none select-none data-highlighted:bg-muted data-highlighted:text-foreground"
 
@@ -27,8 +32,8 @@ export function ProfileMenu({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Open profile menu"
-            title="Profile actions"
+            aria-label={t("Open profile menu")}
+            title={t("Profile actions")}
           />
         }
       >
@@ -45,7 +50,13 @@ export function ProfileMenu({
             {onOpenSettings && (
               <Menu.Item className={menuItemClass} onClick={onOpenSettings}>
                 <GearIcon aria-hidden="true" className="size-4" />
-                Settings
+                {t("Settings")}
+              </Menu.Item>
+            )}
+            {!onOpenSettings && onOpenPreferences && (
+              <Menu.Item className={menuItemClass} onClick={onOpenPreferences}>
+                <GlobeIcon aria-hidden="true" className="size-4" />
+                {t("Preferences")}
               </Menu.Item>
             )}
             <Menu.Item
@@ -57,14 +68,14 @@ export function ProfileMenu({
               ) : (
                 <MoonIcon aria-hidden="true" className="size-4" />
               )}
-              {theme === "dark" ? "Light mode" : "Dark mode"}
+              {t(theme === "dark" ? "Light mode" : "Dark mode")}
             </Menu.Item>
             <Menu.Item
               className={`${menuItemClass} text-destructive data-highlighted:bg-destructive/10 data-highlighted:text-destructive`}
               onClick={onSignOut}
             >
               <SignOutIcon aria-hidden="true" className="size-4" />
-              Log out
+              {t("Log out")}
             </Menu.Item>
           </Menu.Popup>
         </Menu.Positioner>

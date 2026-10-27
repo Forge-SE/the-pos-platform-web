@@ -30,6 +30,7 @@ import { MetricCard } from "@/components/ui/metric-card"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import type { AccessTokenProfile } from "@/lib/auth-token"
 import { SalesDigestCard } from "@/features/insights/sales-digest"
+import { useLanguage } from "@/components/language-provider"
 import { hasPermission } from "@/lib/permissions"
 
 const ACTIVE_ORDER_FIELDS = gql`
@@ -194,12 +195,13 @@ const paymentLabels: Record<
   TRANSFER: "Transfer",
 }
 
-function elapsedLabel(createdAt: string) {
+function elapsedLabel(createdAt: string, language: "en" | "fr") {
   const minutes = Math.max(
     0,
     Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000)
   )
-  if (minutes < 1) return "Just now"
+  if (minutes < 1) return language === "fr" ? "À l’instant" : "Just now"
+  if (language === "fr") return `Il y a ${minutes} min`
   if (minutes === 1) return "1 min ago"
   return `${minutes} min ago`
 }
@@ -212,6 +214,7 @@ function greeting() {
 }
 
 export function Overview() {
+  const { t, locale, language } = useLanguage()
   const [search, setSearch] = useState("")
   const [shiftActionError, setShiftActionError] = useState<string | null>(null)
   const [retrying, setRetrying] = useState(false)
@@ -360,7 +363,9 @@ export function Overview() {
       })
       await refetch()
     } catch {
-      setShiftActionError("The shift could not be started. Please try again.")
+      setShiftActionError(
+        t("The shift could not be started. Please try again.")
+      )
     }
   }
 
@@ -380,17 +385,17 @@ export function Overview() {
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">
-            {new Intl.DateTimeFormat("en", {
+            {new Intl.DateTimeFormat(locale, {
               weekday: "long",
               day: "numeric",
               month: "long",
             }).format(new Date())}
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            {greeting()}, {profile.name.split(" ")[0]}
+            {t(greeting())}, {profile.name.split(" ")[0]}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Here&apos;s what&apos;s happening in your restaurant right now.
+            {t("Here's what's happening in your restaurant right now.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -401,7 +406,7 @@ export function Overview() {
             />
             <input
               type="search"
-              placeholder="Search orders"
+              placeholder={t("Search orders")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="h-10 w-52 rounded-md border border-input bg-muted/40 pr-3 pl-9 text-sm transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/20"
@@ -418,12 +423,12 @@ export function Overview() {
               ) : (
                 <ReceiptIcon aria-hidden="true" data-icon="inline-start" />
               )}
-              {openingShift ? "Starting shift…" : "Start shift"}
+              {t(openingShift ? "Starting shift…" : "Start shift")}
             </Button>
           ) : (
             <Button nativeButton={false} render={<Link to="/orders" />}>
               <ReceiptIcon aria-hidden="true" data-icon="inline-start" />
-              View orders
+              {t("View orders")}
             </Button>
           )}
         </div>
@@ -442,24 +447,30 @@ export function Overview() {
           className="mt-5 flex items-center justify-between gap-4 rounded-lg border border-border/70 bg-card px-4 py-3 transition-colors hover:bg-muted/40"
         >
           <span>
-            <span className="block text-sm font-semibold">Shift is open</span>
+            <span className="block text-sm font-semibold">
+              {t("Shift is open")}
+            </span>
             <span className="mt-0.5 block text-xs text-muted-foreground">
-              {`Opened ${new Date(shift.openedAt).toLocaleTimeString("en-GH", { hour: "numeric", minute: "2-digit" })} · float ${formatMoney(shift.openingFloat)}`}
+              {language === "fr"
+                ? `Ouvert à ${new Date(shift.openedAt).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" })} · fonds ${formatMoney(shift.openingFloat)}`
+                : `Opened ${new Date(shift.openedAt).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" })} · float ${formatMoney(shift.openingFloat)}`}
             </span>
           </span>
-          <span className="text-sm font-medium text-secondary">Manage</span>
+          <span className="text-sm font-medium text-secondary">
+            {t("Manage")}
+          </span>
         </Link>
       )}
 
       <section
-        aria-label="Today at a glance"
+        aria-label={t("Today at a glance")}
         className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
       >
         {canSeeSales && (
           <>
             <MetricCard
               icon={WalletIcon}
-              label="Today's net revenue"
+              label={t("Today's net revenue")}
               value={
                 salesLoading
                   ? "—"
@@ -468,7 +479,7 @@ export function Overview() {
             />
             <MetricCard
               icon={ReceiptIcon}
-              label="Today's orders"
+              label={t("Today's orders")}
               value={
                 salesLoading
                   ? "—"
@@ -479,19 +490,19 @@ export function Overview() {
         )}
         <MetricCard
           icon={ReceiptIcon}
-          label="Active orders"
+          label={t("Active orders")}
           value={loading ? "—" : String(orders.length)}
         />
         {!canSeeSales && (
           <>
             <MetricCard
               icon={ForkKnifeIcon}
-              label="In preparation"
+              label={t("In preparation")}
               value={loading ? "—" : String(orderCounts.preparing)}
             />
             <MetricCard
               icon={UsersThreeIcon}
-              label="Ready to serve"
+              label={t("Ready to serve")}
               value={loading ? "—" : String(orderCounts.ready)}
             />
           </>
@@ -525,7 +536,7 @@ export function Overview() {
                   data-icon="inline-start"
                 />
               )}
-              {retrying ? "Retrying…" : "Try again"}
+              {t(retrying ? "Retrying…" : "Try again")}
             </Button>
           }
         />
@@ -566,19 +577,20 @@ function ActiveOrders({
   searching: boolean
   onClearSearch: () => void
 }) {
+  const { t, language, locale } = useLanguage()
   return (
     <section className="flex flex-col rounded-lg border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
-            Active orders
+            {t("Active orders")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Live progress from counter to kitchen.
+            {t("Live progress from counter to kitchen.")}
           </p>
         </div>
         <Badge variant="outline" className="tabular-nums">
-          {orders.length} live
+          {orders.length} {t("live")}
         </Badge>
       </div>
       {loading ? (
@@ -587,16 +599,16 @@ function ActiveOrders({
         <StatePanel
           className="mt-5"
           icon={ReceiptIcon}
-          title={searching ? "No matching orders" : "No active orders"}
+          title={t(searching ? "No matching orders" : "No active orders")}
           description={
             searching
-              ? "Try a different order number or item name."
-              : "New orders will appear here as soon as service begins."
+              ? t("Try a different order number or item name.")
+              : t("New orders will appear here as soon as service begins.")
           }
           action={
             searching ? (
               <Button variant="outline" size="lg" onClick={onClearSearch}>
-                Clear search
+                {t("Clear search")}
               </Button>
             ) : undefined
           }
@@ -606,13 +618,13 @@ function ActiveOrders({
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="sticky top-0 bg-card text-xs tracking-[0.06em] text-muted-foreground uppercase">
               <tr className="border-b border-border/70">
-                <th className="py-2 pr-3 font-medium">Ticket</th>
-                <th className="py-2 pr-3 font-medium">Opened</th>
-                <th className="py-2 pr-3 font-medium">Dining</th>
-                <th className="py-2 pr-3 font-medium">Items</th>
-                <th className="py-2 pr-3 font-medium">Status</th>
-                <th className="py-2 pr-3 font-medium">Payment</th>
-                <th className="py-2 text-right font-medium">Total</th>
+                <th className="py-2 pr-3 font-medium">{t("Ticket")}</th>
+                <th className="py-2 pr-3 font-medium">{t("Opened")}</th>
+                <th className="py-2 pr-3 font-medium">{t("Dining")}</th>
+                <th className="py-2 pr-3 font-medium">{t("Items")}</th>
+                <th className="py-2 pr-3 font-medium">{t("Status")}</th>
+                <th className="py-2 pr-3 font-medium">{t("Payment")}</th>
+                <th className="py-2 text-right font-medium">{t("Total")}</th>
               </tr>
             </thead>
             <tbody>
@@ -626,17 +638,17 @@ function ActiveOrders({
                   </td>
                   <td className="py-3 pr-3 whitespace-nowrap">
                     <span className="block">
-                      {new Date(order.createdAt).toLocaleTimeString([], {
+                      {new Date(order.createdAt).toLocaleTimeString(locale, {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {elapsedLabel(order.createdAt)}
+                      {elapsedLabel(order.createdAt, language)}
                     </span>
                   </td>
                   <td className="py-3 pr-3 whitespace-nowrap">
-                    {diningLabel(order.diningType)}
+                    {t(diningLabel(order.diningType))}
                   </td>
                   <td className="py-3 pr-3">
                     <ul className="space-y-2">
@@ -665,22 +677,22 @@ function ActiveOrders({
                     </ul>
                     {order.notes && (
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Note: {order.notes}
+                        {t("Note")}: {order.notes}
                       </p>
                     )}
                   </td>
                   <td className="py-3 pr-3">
                     <StatusBadge tone={orderStatusTone(order.status)}>
-                      {statusLabels[order.status] ?? order.status}
+                      {t(statusLabels[order.status] ?? order.status)}
                     </StatusBadge>
                   </td>
                   <td className="py-3 pr-3 whitespace-nowrap">
                     {order.payment
-                      ? paymentLabels[order.payment.method]
-                      : "Unpaid"}
+                      ? t(paymentLabels[order.payment.method])
+                      : t("Unpaid")}
                     {order.tip > 0 && (
                       <span className="mt-0.5 block text-xs text-muted-foreground">
-                        Tip {formatMoney(order.tip)}
+                        {t("Tip")} {formatMoney(order.tip)}
                       </span>
                     )}
                   </td>
@@ -708,15 +720,16 @@ function PaymentMix({
   error: boolean
   onRetry: () => unknown
 }) {
+  const { t } = useLanguage()
   return (
     <section className="content-region rounded-lg border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.025em]">
-            Sales by payment method
+            {t("Sales by payment method")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            How today&apos;s settled sales were collected.
+            {t("How today's settled sales were collected.")}
           </p>
         </div>
         <span className="flex size-9 items-center justify-center rounded-md bg-primary/15 text-secondary">

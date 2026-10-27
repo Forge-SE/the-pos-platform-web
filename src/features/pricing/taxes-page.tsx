@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { DataTable } from "@/components/ui/data-table"
 import { ContentState } from "@/components/content-state"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/components/language-provider"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "@/components/ui/toaster"
 import { mutationMessage } from "@/features/menu/model"
@@ -22,6 +23,7 @@ import { useUrlState } from "@/lib/url-state"
 import { useTablePagination } from "@/lib/table-state"
 
 export function TaxesPage() {
+  const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canManage = profile?.role === "MANAGER" || profile?.role === "OWNER"
   const { data, loading, error, refetch } = useQuery<{
@@ -47,11 +49,12 @@ export function TaxesPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <header>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
-            Taxes
+            {t("Taxes")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Choose your business profile. Tax is calculated automatically on new
-            orders.
+            {t(
+              "Choose your business profile. Tax is calculated automatically on new orders."
+            )}
           </p>
         </header>
       </div>
@@ -65,7 +68,7 @@ export function TaxesPage() {
       </section>
       <details className="mt-6">
         <summary className="cursor-pointer py-3 text-sm font-semibold">
-          Manage custom tax rates
+          {t("Manage custom tax rates")}
         </summary>
         <p className="mb-4 text-xs text-muted-foreground">
           These rates apply only when Other / custom is the saved profile. Each
@@ -78,7 +81,7 @@ export function TaxesPage() {
             onClick={() => setNewTax("1")}
           >
             <PlusIcon data-icon="inline-start" />
-            Create tax
+            {t("Create tax")}
           </Button>
         )}
         <section>
@@ -94,7 +97,7 @@ export function TaxesPage() {
                   size="lg"
                   onClick={() => void refetch().catch(() => {})}
                 >
-                  Try again
+                  {t("Try again")}
                 </Button>
               }
             />
@@ -106,7 +109,7 @@ export function TaxesPage() {
               action={
                 <Button size="lg" onClick={() => setNewTax("1")}>
                   <PlusIcon data-icon="inline-start" />
-                  Create tax
+                  {t("Create tax")}
                 </Button>
               }
             />
@@ -130,22 +133,22 @@ export function TaxesPage() {
                 <thead>
                   <tr className="border-b border-border/60 bg-muted/30 text-xs tracking-[0.06em] text-muted-foreground uppercase">
                     <th scope="col" className="px-4 py-3 font-semibold">
-                      Name
+                      {t("Name")}
                     </th>
                     <th scope="col" className="px-4 py-3 font-semibold">
-                      Rate
+                      {t("Rate")}
                     </th>
                     <th scope="col" className="px-4 py-3 font-semibold">
-                      Applied
+                      {t("Applied")}
                     </th>
                     <th scope="col" className="px-4 py-3 font-semibold">
-                      Status
+                      {t("Status")}
                     </th>
                     <th
                       scope="col"
                       className="px-4 py-3 text-right font-semibold"
                     >
-                      Active
+                      {t("Active")}
                     </th>
                   </tr>
                 </thead>

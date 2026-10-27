@@ -1,4 +1,5 @@
 import { OvaalMark } from "@/components/ovaal-mark"
+import { useLanguage } from "@/components/language-provider"
 
 export function LoadingState({
   label,
@@ -7,6 +8,7 @@ export function LoadingState({
   label: string
   className?: string
 }) {
+  const { language } = useLanguage()
   return (
     <div
       role="status"
@@ -18,7 +20,7 @@ export function LoadingState({
         <OvaalMark elevated={false} />
       </span>
       <span className="text-sm font-medium text-muted-foreground">
-        Loading {label}…
+        {language === "fr" ? "Chargement…" : `Loading ${label}…`}
       </span>
     </div>
   )
