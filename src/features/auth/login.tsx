@@ -363,7 +363,7 @@ export function Login() {
   return (
     <main className="mobile-entry-page place-items-left relative grid min-h-svh bg-[url('/auth.jpg')] bg-cover bg-center px-4 py-8 sm:px-6">
       <div aria-hidden="true" className="absolute inset-0 bg-black/60" />
-      <section className="relative flex min-h-[560px] w-full max-w-lg flex-col rounded-xl bg-card p-5 text-card-foreground sm:p-8">
+      <section className="relative flex min-h-[560px] w-full max-w-lg min-w-0 flex-col rounded-xl bg-card p-5 text-card-foreground sm:p-8">
         <div className="flex justify-end">
           <a
             href="mailto:support@ovaal.app"
@@ -372,7 +372,7 @@ export function Login() {
             Contact support
           </a>
         </div>
-        <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="flex min-w-0 flex-1 flex-col items-center justify-center py-6 sm:py-0">
           <OvaalMark />
 
           {signedInUser ? (
@@ -385,7 +385,7 @@ export function Login() {
               onReset={resetLogin}
             />
           ) : (
-            <div className="w-full">
+            <div className="w-full min-w-0">
               <header className="mt-7 text-center">
                 <h1 className="text-2xl font-medium tracking-[-0.025em]">
                   {heading}
@@ -631,7 +631,7 @@ export function Login() {
           .
         </p>
       </section>
-      <div className="absolute right-6 bottom-6 left-6 z-10 flex items-end justify-between gap-6 sm:right-10 sm:bottom-8 sm:left-auto sm:max-w-sm sm:flex-col sm:items-end sm:gap-3 sm:text-right">
+      <div className="relative z-10 flex justify-center pt-4 sm:absolute sm:right-10 sm:bottom-8 sm:left-auto sm:max-w-sm sm:flex-col sm:items-end sm:gap-3 sm:pt-0 sm:text-right">
         <RotatingTagline />
         <p className="flex shrink-0 items-center gap-1 text-xs text-white/70">
           <CopyrightIcon aria-hidden="true" className="size-3.5" />
@@ -677,7 +677,7 @@ function RotatingTagline() {
     <p
       key={index}
       aria-live="polite"
-      className="animate-tagline-reveal font-heading text-xl leading-tight font-medium text-white drop-shadow-md sm:text-2xl"
+      className="hidden animate-tagline-reveal font-heading text-xl leading-tight font-medium text-white drop-shadow-md sm:block sm:text-2xl"
     >
       {tagline.lead}{" "}
       <span
