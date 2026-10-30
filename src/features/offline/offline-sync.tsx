@@ -15,6 +15,7 @@ const CREATE_ORDER = gql`
   mutation SyncOfflineOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
       id
+      ticketNumber
       total
     }
   }

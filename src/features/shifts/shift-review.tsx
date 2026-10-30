@@ -53,6 +53,7 @@ const SHIFT_REPORT_QUERY = gql`
       averageTicket
       orders {
         id
+        ticketNumber
         createdAt
         diningType
         status
@@ -103,6 +104,7 @@ interface ShiftReport {
   averageTicket: number
   orders: Array<{
     id: string
+    ticketNumber: string
     createdAt: string
     diningType: string
     status: string
@@ -182,7 +184,7 @@ export function ShiftReview() {
     (shiftPaging.pageIndex + 1) * shiftPaging.pageSize
   )
   const filteredOrders = (detail?.orders ?? []).filter((order) =>
-    `${order.id} ${order.status} ${order.diningType}`
+    `${order.ticketNumber} ${order.id} ${order.status} ${order.diningType}`
       .toLowerCase()
       .includes((orderSearch ?? "").toLowerCase().trim())
   )
@@ -466,6 +468,9 @@ export function ShiftReview() {
                         <thead className="text-xs tracking-[0.06em] text-muted-foreground uppercase">
                           <tr>
                             <th className="py-2 pr-3 font-medium">
+                              {t("Ticket")}
+                            </th>
+                            <th className="py-2 pr-3 font-medium">
                               {t("When")}
                             </th>
                             <th className="py-2 pr-3 font-medium">
@@ -486,7 +491,7 @@ export function ShiftReview() {
                           {visibleOrders.length === 0 &&
                             detail.orders.length > 0 && (
                               <tr>
-                                <td colSpan={5}>
+                                <td colSpan={6}>
                                   <EmptyState
                                     title="No orders match your search."
                                     description="Try another ticket or status."
@@ -496,7 +501,7 @@ export function ShiftReview() {
                             )}
                           {detail.orders.length === 0 && (
                             <tr>
-                              <td colSpan={5}>
+                              <td colSpan={6}>
                                 <EmptyState
                                   title="No orders on this shift."
                                   description="This shift has no recorded orders."
@@ -509,6 +514,9 @@ export function ShiftReview() {
                               key={order.id}
                               className="border-t border-border/50"
                             >
+                              <td className="py-2.5 pr-3 font-medium">
+                                {order.ticketNumber}
+                              </td>
                               <td className="py-2.5 pr-3">
                                 {formatWhen(order.createdAt, locale)}
                               </td>

@@ -434,7 +434,7 @@ export function Login() {
                             autoComplete="organization"
                             autoCapitalize="characters"
                             spellCheck={false}
-                            placeholder="e.g. RR0093"
+                            placeholder="e.g. R0001"
                             aria-invalid={Boolean(codeError)}
                             aria-describedby="restaurant-id-error"
                             autoFocus
@@ -457,7 +457,7 @@ export function Login() {
                               className="pointer-events-none absolute right-0 bottom-full z-10 mb-2 w-60 rounded-md border bg-popover p-2.5 text-xs leading-5 text-popover-foreground opacity-0 shadow-md transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
                             >
                               Ask your manager for your restaurant code. It
-                              looks like AB1234 and was shared when your
+                              looks like R0001 and was shared when your
                               restaurant was set up.
                             </div>
                           </div>

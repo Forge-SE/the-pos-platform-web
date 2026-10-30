@@ -50,6 +50,7 @@ interface OrderItem {
 
 interface KitchenOrder {
   id: string
+  ticketNumber: string
   status: OrderStatus
   diningType: "DINE_IN" | "TAKEAWAY" | "DELIVERY"
   notes: string | null
@@ -83,6 +84,7 @@ interface UpdateStatusVariables {
 const ORDER_FIELDS = gql`
   fragment KitchenOrderFields on Order {
     id
+    ticketNumber
     status
     diningType
     notes
@@ -194,10 +196,6 @@ const actionIcon: Record<ActiveStatus, typeof CookingPotIcon> = {
 
 function isActive(status: OrderStatus): status is ActiveStatus {
   return status === "NEW" || status === "PREPARING" || status === "READY"
-}
-
-function ticketNumber(id: string) {
-  return `OB-${id.replaceAll("-", "").slice(-4).toUpperCase()}`
 }
 
 function elapsedMinutes(createdAt: string, now: number) {
@@ -417,7 +415,7 @@ export function KitchenDisplay({
         .filter(
           (order) =>
             !query ||
-            ticketNumber(order.id).toLowerCase().includes(query) ||
+            order.ticketNumber.toLowerCase().includes(query) ||
             order.items.some((item) =>
               item.name.toLowerCase().includes(query)
             ) ||
@@ -820,7 +818,7 @@ function OrderCard({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-base font-semibold tracking-[0.01em] tabular-nums">
-              {ticketNumber(order.id)}
+              {order.ticketNumber}
             </p>
             <StatusPill status={order.status} />
           </div>
@@ -1002,7 +1000,7 @@ function TableView({
               >
                 <td className="px-4 py-4">
                   <p className="font-semibold tabular-nums">
-                    {ticketNumber(order.id)}
+                    {order.ticketNumber}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {diningLabel(order.diningType)}

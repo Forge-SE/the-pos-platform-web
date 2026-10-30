@@ -145,6 +145,7 @@ const CREATE_ORDER = gql`
   mutation CreateCounterOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
       id
+      ticketNumber
       total
     }
   }
@@ -521,7 +522,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         },
       })
       toast({
-        title: `Cash order ${idempotencyKey.slice(-6).toUpperCase()} is queued`,
+        title: "Cash order is queued for sync",
         description:
           "It stays on this device until the connection returns, then syncs once.",
         status: "success",
@@ -564,7 +565,10 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
       })
       const order = (
         created.data as
-          { createOrder?: { id: string; total: number } } | undefined
+          | {
+              createOrder?: { id: string; ticketNumber: string; total: number }
+            }
+          | undefined
       )?.createOrder
       if (!order) throw new Error("The order was not created.")
       const tendered = tender.trim() ? cedisToPesewas(tender) : order.total
@@ -591,7 +595,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           },
         })
         toast({
-          title: `Cash order ${order.id.slice(-6).toUpperCase()} is in`,
+          title: `Cash order ${order.ticketNumber} is in`,
           description:
             (
               recorded.data as
@@ -631,7 +635,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             | undefined
         )?.initiateMomoPayment
         toast({
-          title: `Order ${order.id.slice(-6).toUpperCase()} placed`,
+          title: `Order ${order.ticketNumber} placed`,
           description:
             (attempt?.status === "SUCCESS" &&
             attempt.receiptDeliveryStatus === "FAILED"

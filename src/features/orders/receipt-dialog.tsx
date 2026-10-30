@@ -32,6 +32,7 @@ const RECEIPT_QUERY = gql`
         restaurantLogoUrl
         currency
         orderId
+        ticketNumber
         diningType
         deliveryAddress
         createdAt
