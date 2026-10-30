@@ -110,7 +110,7 @@ export function NotificationButton() {
           sideOffset={12}
           className="z-50 outline-none"
         >
-          <Popover.Popup className="w-[min(28rem,calc(100vw-2.25rem))] origin-[var(--transform-origin)] overflow-hidden rounded-2xl bg-popover text-popover-foreground shadow-[0_0_0_1px_oklch(0_0_0/0.08),0_12px_32px_oklch(0.18_0.03_150/0.14)] outline-none">
+          <Popover.Popup className="mobile-notification-panel w-[min(28rem,calc(100vw-2.25rem))] origin-[var(--transform-origin)] overflow-hidden rounded-2xl bg-popover text-popover-foreground shadow-[0_0_0_1px_oklch(0_0_0/0.08),0_12px_32px_oklch(0.18_0.03_150/0.14)] outline-none">
             <div className="flex h-14 items-center justify-between px-5">
               <span className="text-sm font-semibold">
                 {t("Notifications")}

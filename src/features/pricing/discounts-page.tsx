@@ -86,6 +86,15 @@ export function DiscountsPage() {
           <div className="overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
             <DataTable
               ariaLabel="Discounts"
+              mobileFieldRoles={[
+                "identity",
+                "meta",
+                "amount",
+                "detail",
+                "detail",
+                "status",
+                "actions",
+              ]}
               rows={visible}
               search={{
                 value: search ?? "",

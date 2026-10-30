@@ -126,6 +126,7 @@ export function StaffManagement() {
             <div className="mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
               <DataTable
                 ariaLabel="Staff"
+                mobileFieldRoles={["identity", "meta", "status", "actions"]}
                 rows={pageItems}
                 search={{
                   value: search ?? "",

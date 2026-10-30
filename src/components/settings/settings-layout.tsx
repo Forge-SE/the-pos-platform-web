@@ -1,10 +1,15 @@
+import { createContext, useContext } from "react"
+import { useMediaQuery } from "@/lib/use-media-query"
+import { MobileTabs } from "@/components/mobile/mobile-tabs"
+import { ArrowLeftIcon, XIcon } from "@phosphor-icons/react"
 import type { ReactNode } from "react"
 import { Dialog } from "@base-ui/react/dialog"
-import { XIcon } from "@phosphor-icons/react"
 import type { Icon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/components/language-provider"
+
+const PagePresentation = createContext(false)
 
 export function SettingsDialog({
   open,
@@ -24,6 +29,35 @@ export function SettingsDialog({
   children: ReactNode
 }) {
   const { t } = useLanguage()
+  const compact = useMediaQuery("(max-width: 1023px)")
+  if (compact)
+    return open ? (
+      <PagePresentation.Provider value={true}>
+        <section
+          className="mobile-settings-page px-4 pb-6"
+          aria-label={t(label)}
+        >
+          <div className="py-3">
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => onOpenChange(false)}
+            >
+              <ArrowLeftIcon aria-hidden />
+              {t("Back")}
+            </Button>
+          </div>
+          <MobileTabs
+            items={items}
+            value={section}
+            onChange={onSectionChange}
+            label={label}
+          />
+          {children}
+        </section>
+      </PagePresentation.Provider>
+    ) : null
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -110,6 +144,15 @@ export function SettingsHeader({
   actions?: ReactNode
 }) {
   const { t } = useLanguage()
+  const page = useContext(PagePresentation)
+  if (page)
+    return (
+      <header className="py-5">
+        <h2 className="text-xl font-semibold">{t(title)}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t(description)}</p>
+        {actions}
+      </header>
+    )
   return (
     <header className="flex shrink-0 flex-wrap items-start justify-between gap-4 border-b border-border/70 py-5 pr-14 pl-5 sm:pl-6">
       <div className="min-w-0">
@@ -126,6 +169,8 @@ export function SettingsHeader({
 }
 
 export function SettingsBody({ children }: { children: ReactNode }) {
+  const page = useContext(PagePresentation)
+  if (page) return <div className="min-w-0">{children}</div>
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 sm:px-6">
       {children}

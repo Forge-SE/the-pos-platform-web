@@ -1,3 +1,13 @@
+import { MobileOverview } from "./mobile/mobile-overview"
+import { useMediaQuery } from "@/lib/use-media-query"
+import { useUrlState } from "@/lib/url-state"
+import {
+  formatMoney,
+  paymentLabels,
+  elapsedLabel,
+  greeting,
+} from "./overview-model"
+import type { ActiveOrder, SalesData } from "./overview-model"
 import { useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
@@ -30,6 +40,7 @@ import { MetricCard } from "@/components/ui/metric-card"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import type { AccessTokenProfile } from "@/lib/auth-token"
 import { SalesDigestCard } from "@/features/insights/sales-digest"
+import { SalesDigestAction } from "@/features/insights/mobile/sales-digest-action"
 import { useLanguage } from "@/components/language-provider"
 import { hasPermission } from "@/lib/permissions"
 
@@ -123,25 +134,6 @@ interface Shift {
   openedAt: string
 }
 
-interface ActiveOrder {
-  id: string
-  ticketNumber: string
-  status: "NEW" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED"
-  diningType: "DINE_IN" | "TAKEAWAY" | "DELIVERY"
-  notes: string | null
-  tip: number
-  total: number
-  createdAt: string
-  payment: { method: "CASH" | "MOMO" | "TRANSFER" } | null
-  items: Array<{
-    id: string
-    name: string
-    quantity: number
-    notes: string | null
-    modifiers: Array<{ id: string; name: string }>
-  }>
-}
-
 interface OperationsData {
   currentShift: Shift | null
   activeOrders: ActiveOrder[]
@@ -155,17 +147,6 @@ interface OrderStatusChangedData {
   orderStatusChanged: ActiveOrder
 }
 
-interface SalesData {
-  salesToday: {
-    totalSales: number
-    orderCount: number
-    paymentBreakdown: Array<{
-      method: "CASH" | "MOMO" | "TRANSFER"
-      amount: number
-    }>
-  }
-}
-
 interface OpenShiftData {
   openShift: Shift
 }
@@ -177,47 +158,12 @@ interface OpenShiftVariables {
   }
 }
 
-const currency = new Intl.NumberFormat("en-GH", {
-  style: "currency",
-  currency: "GHS",
-  currencyDisplay: "code",
-  minimumFractionDigits: 2,
-})
-
-function formatMoney(value: number) {
-  return currency.format(value / 100)
-}
-
-const paymentLabels: Record<
-  NonNullable<ActiveOrder["payment"]>["method"],
-  string
-> = {
-  CASH: "Cash",
-  MOMO: "Mobile money",
-  TRANSFER: "Transfer",
-}
-
-function elapsedLabel(createdAt: string, language: "en" | "fr") {
-  const minutes = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000)
-  )
-  if (minutes < 1) return language === "fr" ? "À l’instant" : "Just now"
-  if (language === "fr") return `Il y a ${minutes} min`
-  if (minutes === 1) return "1 min ago"
-  return `${minutes} min ago`
-}
-
-function greeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return "Good morning"
-  if (hour < 18) return "Good afternoon"
-  return "Good evening"
-}
-
 export function Overview() {
   const { t, locale, language } = useLanguage()
-  const [search, setSearch] = useState("")
+  const compact = useMediaQuery("(max-width: 1023px)")
+  const [searchParam, setSearchParam] = useUrlState("overviewSearch")
+  const search = searchParam ?? ""
+  const setSearch = (value: string) => setSearchParam(value || null)
   const [shiftActionError, setShiftActionError] = useState<string | null>(null)
   const [retrying, setRetrying] = useState(false)
   const profile = getAccessTokenProfile() as AccessTokenProfile
@@ -381,6 +327,113 @@ export function Overview() {
     } finally {
       setRetrying(false)
     }
+  }
+
+  if (compact) {
+    const metrics = canSeeSales
+      ? [
+          {
+            id: "revenue",
+            label: t("Today's net revenue"),
+            value:
+              salesLoading || salesError || !salesData
+                ? "\u2014"
+                : formatMoney(salesData.salesToday.totalSales),
+            icon: WalletIcon,
+          },
+          {
+            id: "orders",
+            label: t("Today's orders"),
+            value:
+              salesLoading || salesError || !salesData
+                ? "\u2014"
+                : String(salesData.salesToday.orderCount),
+            icon: ReceiptIcon,
+          },
+          {
+            id: "active",
+            label: t("Active orders"),
+            value: loading || error ? "\u2014" : String(orders.length),
+            icon: ForkKnifeIcon,
+          },
+        ]
+      : [
+          {
+            id: "active",
+            label: t("Active orders"),
+            value: loading || error ? "\u2014" : String(orders.length),
+            icon: ReceiptIcon,
+          },
+          {
+            id: "preparing",
+            label: t("In preparation"),
+            value: loading || error ? "\u2014" : String(orderCounts.preparing),
+            icon: ForkKnifeIcon,
+          },
+          {
+            id: "ready",
+            label: t("Ready to serve"),
+            value: loading || error ? "\u2014" : String(orderCounts.ready),
+            icon: UsersThreeIcon,
+          },
+        ]
+    return (
+      <MobileOverview
+        name={profile.name.split(" ")[0]}
+        metrics={metrics}
+        orders={visibleOrders}
+        loading={loading}
+        metricsBusy={loading || (canSeeSales && salesLoading)}
+        error={Boolean(error)}
+        onRetry={retryOperations}
+        search={search}
+        onSearchChange={setSearch}
+        shiftActionError={shiftActionError}
+        action={
+          !loading && !error && !shift && opensShift ? (
+            <Button size="lg" onClick={startShift} disabled={openingShift}>
+              {t(openingShift ? "Starting shift\u2026" : "Start shift")}
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              nativeButton={false}
+              render={<Link to="/orders" />}
+            >
+              {t("View orders")}
+            </Button>
+          )
+        }
+        shiftNotice={
+          !loading && opensShift && shift ? (
+            <Link
+              to="/shift"
+              className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-muted px-4 py-3 text-sm"
+            >
+              <span>
+                {t("Shift is open")} {"\u00b7"}{" "}
+                {new Date(shift.openedAt).toLocaleTimeString(locale, {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </span>
+              <span className="font-semibold">{t("Manage")}</span>
+            </Link>
+          ) : undefined
+        }
+        paymentMix={
+          canSeeSales ? (
+            <PaymentMix
+              loading={salesLoading}
+              sales={salesData?.salesToday}
+              error={Boolean(salesError)}
+              onRetry={refetchSales}
+            />
+          ) : undefined
+        }
+        digest={canSeeSales ? <SalesDigestAction /> : undefined}
+      />
+    )
   }
 
   return (

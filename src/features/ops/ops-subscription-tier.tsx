@@ -266,7 +266,7 @@ function TierAnalytics({ detail }: { detail: Detail }) {
   ]
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mobile-metric-collection grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={StorefrontIcon}
           label="On this plan"

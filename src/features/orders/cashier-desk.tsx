@@ -1,3 +1,6 @@
+import { MobileTabs } from "@/components/mobile/mobile-tabs"
+import { useMediaQuery } from "@/lib/use-media-query"
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
@@ -210,12 +213,16 @@ function groupMode(group: ModifierGroup): "radio" | "cards" | "chips" {
   return priced ? "cards" : "chips"
 }
 
-export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
+export function CashierDesk({
+  switcher,
+  active = true,
+}: { switcher?: ReactNode; active?: boolean } = {}) {
   const { t } = useLanguage()
   const [fullscreenParam, setFullscreenParam] = useUrlState("fullscreen")
   const fullscreen = fullscreenParam === "1"
   const ownsFullscreen = useRef(false)
   const { data, loading, error, refetch } = useQuery<CounterMenu>(MENU_QUERY)
+  const compact = useMediaQuery("(max-width: 1023px)")
   const [online, setOnline] = useState(
     typeof navigator === "undefined" ? true : navigator.onLine
   )
@@ -666,16 +673,20 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
     <div
       className={
         fullscreen
-          ? "grid h-dvh min-h-0 grid-cols-[minmax(160px,30%)_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)]"
+          ? "grid h-dvh min-h-0 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]"
           : "content-page"
       }
     >
-      {fullscreen && <CashierLiveOrders />}
+      {fullscreen && (
+        <div className="hidden min-h-0 lg:contents">
+          <CashierLiveOrders />
+        </div>
+      )}
       <div
         className={
           fullscreen
             ? "flex min-h-0 min-w-0 flex-col"
-            : "content-region flex max-h-[calc(100svh-4.5rem)] flex-col lg:max-h-[calc(100svh-1rem)]"
+            : "content-region flex max-h-[calc(100dvh-var(--mobile-header-height)-var(--mobile-nav-clearance)-var(--mobile-notice-offset,0px))] flex-col lg:max-h-[calc(100svh-1rem)]"
         }
       >
         <header className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
@@ -709,8 +720,8 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
                 <ArrowsOutIcon aria-hidden="true" />
               )}
             </Button>
-            <StationAlarm inline />
-            <NotificationButton />
+            {active && (!compact || fullscreen) && <StationAlarm inline />}
+            {active && (!compact || fullscreen) && <NotificationButton />}
           </div>
         </header>
 
@@ -726,32 +737,49 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
             />
             {!fullscreen && switcher}
           </div>
-          <div
-            aria-label="Menu categories"
-            className="mt-4 flex gap-3 overflow-x-auto p-1 pb-3"
-          >
-            <CategoryCard
-              name="All"
-              color="#005B36"
-              count={data?.menuItems.length ?? 0}
-              active={categoryId === "all"}
-              onClick={() => setCategoryId("all")}
-            />
-            {categories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                name={category.name}
-                color={category.color}
-                count={
-                  data?.menuItems.filter(
-                    (item) => item.categoryId === category.id
-                  ).length ?? 0
-                }
-                active={categoryId === category.id}
-                onClick={() => setCategoryId(category.id)}
+          {compact ? (
+            <div className="mt-4">
+              <MobileTabs
+                label="Menu categories"
+                value={categoryId}
+                onChange={setCategoryId}
+                items={[
+                  { id: "all", label: t("All") },
+                  ...categories.map((category) => ({
+                    id: category.id,
+                    label: category.name,
+                  })),
+                ]}
               />
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div
+              aria-label="Menu categories"
+              className="mobile-counter-categories mt-4 flex gap-3 overflow-x-auto p-1 pb-3"
+            >
+              <CategoryCard
+                name="All"
+                color="#005B36"
+                count={data?.menuItems.length ?? 0}
+                active={categoryId === "all"}
+                onClick={() => setCategoryId("all")}
+              />
+              {categories.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  name={category.name}
+                  color={category.color}
+                  count={
+                    data?.menuItems.filter(
+                      (item) => item.categoryId === category.id
+                    ).length ?? 0
+                  }
+                  active={categoryId === category.id}
+                  onClick={() => setCategoryId(category.id)}
+                />
+              ))}
+            </div>
+          )}
 
           {error ? (
             <ErrorState
@@ -759,7 +787,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
               onRetry={refetch}
             />
           ) : loading ? (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mobile-counter-menu mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {[0, 1, 2].map((item) => (
                 <div
                   key={item}
@@ -785,7 +813,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
               }
             />
           ) : (
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="mobile-counter-menu mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => {
                 const category = categories.find(
                   (entry) => entry.id === item.categoryId
@@ -854,7 +882,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
           )}
         </div>
 
-        {customizing && (
+        {customizing && active && (
           <CustomizeDialog
             item={customizing}
             onClose={() => setCustomizing(null)}
@@ -863,7 +891,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
         )}
 
         <BagDrawer
-          open={bagOpen}
+          open={bagOpen && active}
           onOpenChange={setBagOpen}
           lines={lines}
           diningType={diningType}
@@ -920,7 +948,7 @@ export function CashierDesk({ switcher }: { switcher?: ReactNode } = {}) {
 
         <ReceiptDialog
           orderId={receiptOrderId}
-          open={receiptOpen}
+          open={receiptOpen && active}
           onOpenChange={setReceiptOpen}
         />
       </div>
@@ -980,7 +1008,7 @@ function CustomizeDialog({
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
-        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex max-h-[min(92svh,760px)] w-[min(32rem,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-lg">
+        <AdaptiveDialogPopup className="fixed top-1/2 left-1/2 z-50 flex max-h-[min(92svh,760px)] w-[min(32rem,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-lg">
           <div className="relative h-36 shrink-0 bg-muted">
             {item.imageUrl && (
               <img
@@ -1056,7 +1084,7 @@ function CustomizeDialog({
               <span className="tabular-nums">{formatMoney(unit)}</span>
             </Button>
           </div>
-        </Dialog.Popup>
+        </AdaptiveDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   )
@@ -1230,7 +1258,7 @@ function BagDrawer(props: {
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
-        <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border/70 bg-card shadow-lg">
+        <AdaptiveDialogPopup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border/70 bg-card shadow-lg">
           <div className="flex items-start justify-between gap-3 border-b border-border/70 px-4 py-4">
             <div>
               <Dialog.Title className="text-lg font-semibold tracking-[-0.03em]">
@@ -1586,7 +1614,7 @@ function BagDrawer(props: {
               {props.busy ? "Placing order…" : "Place order"}
             </Button>
           </div>
-        </Dialog.Popup>
+        </AdaptiveDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   )

@@ -361,7 +361,7 @@ export function Login() {
             : `${selected?.name}, enter the four-digit PIN for ${restaurantName || restaurantCode}.`
 
   return (
-    <main className="place-items-left relative grid min-h-svh bg-[url('/auth.jpg')] bg-cover bg-center px-4 py-8 sm:px-6">
+    <main className="mobile-entry-page place-items-left relative grid min-h-svh bg-[url('/auth.jpg')] bg-cover bg-center px-4 py-8 sm:px-6">
       <div aria-hidden="true" className="absolute inset-0 bg-black/60" />
       <section className="relative flex min-h-[560px] w-full max-w-lg flex-col rounded-xl bg-card p-5 text-card-foreground sm:p-8">
         <div className="flex justify-end">

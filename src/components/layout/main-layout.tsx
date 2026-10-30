@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import type { CSSProperties } from "react"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import {
@@ -8,8 +9,11 @@ import {
   useLocation,
 } from "@tanstack/react-router"
 import { useUrlState } from "@/lib/url-state"
+import { useMediaQuery } from "@/lib/use-media-query"
+import { useRouterUrlState } from "@/lib/use-router-url-state"
 
-import { MobileHeader } from "@/components/layout/mobile-header"
+import { MobileHeader } from "@/components/layout/mobile/mobile-header"
+import { MobileBottomNavigation } from "@/components/layout/mobile/mobile-bottom-navigation"
 import { NotificationButton } from "@/components/layout/notification-button"
 import { StationAlarm } from "@/features/orders/station-alarm"
 import { ShiftBanner } from "@/components/layout/shift-banner"
@@ -30,9 +34,15 @@ const ONBOARDING_QUERY = gql`
 `
 
 export function MainLayout() {
+  const compact = useMediaQuery("(max-width: 1023px)")
+  useRouterUrlState()
+  const noticesRef = useRef<HTMLDivElement>(null)
+  const [noticeHeight, setNoticeHeight] = useState(0)
   const navigate = useNavigate()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [settingsParam, setSettingsParam] = useUrlState("settings")
+  const mobileSettingsOpenedHere = useRef(false)
+  const [, pushSettingsParam] = useUrlState("settings", "push")
   const [settingsDismissed, setSettingsDismissed] = useState(false)
   const profile = getAccessTokenProfile()
   const [fullscreenParam] = useUrlState("fullscreen")
@@ -101,6 +111,18 @@ export function MainLayout() {
     }
   )
 
+  useEffect(() => {
+    const notices = noticesRef.current
+    if (!notices) return
+    const update = () =>
+      setNoticeHeight(compact ? notices.getBoundingClientRect().height : 0)
+    update()
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(update)
+    observer.observe(notices)
+    return () => observer.disconnect()
+  }, [compact, onboarding.loading, profile?.sub])
+
   if (!profile) return <Navigate to="/" replace />
   if (profile.role === "OWNER" && onboarding.error) {
     return (
@@ -119,7 +141,8 @@ export function MainLayout() {
       pathname === "/taxes" ||
       pathname === "/discounts") &&
     profile.role !== "MANAGER" &&
-    profile.role !== "OWNER"
+    profile.role !== "OWNER" &&
+    !(pathname === "/settings" && settingsParam === "preferences")
   ) {
     return <Navigate to="/overview" replace />
   }
@@ -136,6 +159,15 @@ export function MainLayout() {
   }
 
   function openSettings() {
+    if (compact) {
+      setSettingsDismissed(false)
+      if (settingsOpen) setSettingsParam("restaurant")
+      else {
+        mobileSettingsOpenedHere.current = true
+        pushSettingsParam("restaurant")
+      }
+      return
+    }
     setSettingsDismissed(false)
     setSettingsParam(
       pathname === "/settings" &&
@@ -146,11 +178,29 @@ export function MainLayout() {
   }
 
   function openPreferences() {
+    if (compact) {
+      setSettingsDismissed(false)
+      if (settingsOpen) setSettingsParam("preferences")
+      else {
+        mobileSettingsOpenedHere.current = true
+        pushSettingsParam("preferences")
+      }
+      return
+    }
     setSettingsDismissed(false)
     setSettingsParam("preferences")
   }
 
   function closeSettings() {
+    if (
+      compact &&
+      mobileSettingsOpenedHere.current &&
+      pathname !== "/settings"
+    ) {
+      mobileSettingsOpenedHere.current = false
+      window.history.back()
+      return
+    }
     setSettingsParam(null)
     if (pathname === "/settings") {
       setSettingsDismissed(true)
@@ -159,8 +209,18 @@ export function MainLayout() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-sidebar lg:h-dvh lg:overflow-hidden">
-      <div className={fullscreen ? "hidden" : "contents"}>
+    <div
+      className="mobile-app-shell flex min-h-svh flex-col bg-sidebar lg:h-dvh lg:overflow-hidden"
+      style={{ "--mobile-notice-offset": `${noticeHeight}px` } as CSSProperties}
+    >
+      <div
+        ref={noticesRef}
+        className={
+          fullscreen
+            ? "hidden"
+            : "mobile-workspace-notices sticky top-0 z-40 lg:contents"
+        }
+      >
         <ShiftBanner />
         <OfflineSync />
       </div>
@@ -168,7 +228,7 @@ export function MainLayout() {
         className={
           fullscreen
             ? "flex h-dvh min-h-0 flex-1 flex-col overflow-hidden"
-            : `flex min-h-0 flex-1 flex-col p-2 lg:grid lg:gap-2 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.2,0,0,1)] ${sidebarCollapsed ? "lg:grid-cols-[72px_minmax(0,1fr)]" : "lg:grid-cols-[220px_minmax(0,1fr)]"}`
+            : `flex min-h-0 flex-1 flex-col lg:grid lg:gap-2 lg:p-2 lg:transition-[grid-template-columns] lg:duration-200 lg:ease-[cubic-bezier(0.2,0,0,1)] ${sidebarCollapsed ? "lg:grid-cols-[72px_minmax(0,1fr)]" : "lg:grid-cols-[220px_minmax(0,1fr)]"}`
         }
       >
         <div className={fullscreen ? "hidden" : "contents"}>
@@ -186,18 +246,19 @@ export function MainLayout() {
           className={
             fullscreen
               ? "min-h-0 flex-1 overflow-hidden bg-card text-card-foreground"
-              : "pos-workspace relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/35 bg-card text-card-foreground lg:h-full lg:overflow-y-auto"
+              : "pos-workspace mobile-workspace relative min-h-0 min-w-0 flex-1 bg-card text-card-foreground lg:h-full lg:overflow-y-auto lg:rounded-2xl lg:border lg:border-border/35"
           }
         >
-          <div className={fullscreen ? "hidden" : "contents"}>
+          {!fullscreen && compact && (
             <MobileHeader
               profile={profile}
               onSignOut={signOut}
               onOpenSettings={canOpenSettings ? openSettings : undefined}
               onOpenPreferences={openPreferences}
-              showNotifications={!cashierCounter}
+              showNotifications
+              alarm={<StationAlarm inline />}
             />
-          </div>
+          )}
           {!cashierCounter && (
             <div
               className={
@@ -211,11 +272,42 @@ export function MainLayout() {
               </div>
             </div>
           )}
-          {!cashierCounter && <StationAlarm fullscreen={fullscreen} />}
-          <Outlet />
+          {!cashierCounter && (!compact || fullscreen) && (
+            <StationAlarm fullscreen={fullscreen} />
+          )}
+          <div
+            hidden={compact && settingsOpen}
+            className={compact && settingsOpen ? "hidden" : "contents"}
+            inert={compact && settingsOpen ? true : undefined}
+          >
+            <Outlet />
+          </div>
+          {compact && settingsOpen && (
+            <RestaurantBranding
+              open
+              section={
+                settingsParam === "subscription" ||
+                settingsParam === "payouts" ||
+                settingsParam === "preferences"
+                  ? settingsParam
+                  : "restaurant"
+              }
+              onSectionChange={setSettingsParam}
+              onOpenChange={(next) => {
+                if (!next) closeSettings()
+              }}
+            />
+          )}
         </section>
       </main>
-      {settingsOpen && (
+      {!fullscreen && compact && (
+        <MobileBottomNavigation
+          profile={profile}
+          onOpenSettings={canOpenSettings ? openSettings : undefined}
+          onOpenPreferences={openPreferences}
+        />
+      )}
+      {settingsOpen && !compact && (
         <RestaurantBranding
           open
           section={

@@ -154,7 +154,7 @@ export function DateRangePicker({
   const accessibleLabel = t(label)
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex max-w-full min-w-0 items-center gap-2">
       <Popover.Root open={open} onOpenChange={handleOpenChange}>
         <Popover.Trigger
           render={
@@ -162,9 +162,10 @@ export function DateRangePicker({
               variant="outline"
               aria-label={accessibleLabel}
               title={display ?? accessibleLabel}
+              className="min-w-0 shrink"
             >
               <CalendarBlankIcon data-icon="inline-start" />
-              {display ?? t("Select a range")}
+              <span className="truncate">{display ?? t("Select a range")}</span>
             </Button>
           }
         />
@@ -173,9 +174,9 @@ export function DateRangePicker({
             side="bottom"
             align="end"
             sideOffset={8}
-            className="z-50 outline-none"
+            className="z-[90] outline-none"
           >
-            <Popover.Popup className="w-[min(560px,calc(100vw-2rem))] origin-[var(--transform-origin)] rounded-xl border border-border/70 bg-card text-card-foreground shadow-lg transition-[scale,opacity] duration-150 ease-[cubic-bezier(0.2,0,0,1)] outline-none data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0 motion-reduce:transition-none">
+            <Popover.Popup className="mobile-date-popup w-[min(560px,calc(100vw-2rem))] origin-[var(--transform-origin)] rounded-xl border border-border/70 bg-card text-card-foreground shadow-lg transition-[scale,opacity] duration-150 ease-[cubic-bezier(0.2,0,0,1)] outline-none data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0 motion-reduce:transition-none">
               <div className="flex flex-col sm:flex-row">
                 <div className="border-b border-border/60 px-3 py-4 sm:w-44 sm:shrink-0 sm:border-r sm:border-b-0">
                   <div className="flex flex-row gap-1 overflow-x-auto sm:flex-col sm:overflow-visible">

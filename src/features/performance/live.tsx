@@ -1,3 +1,6 @@
+import { MobileMetricGroup } from "@/components/mobile/mobile-metric-group"
+import { useLanguage } from "@/components/language-provider"
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import {
   CaretRightIcon,
   ChartLineUpIcon,
@@ -61,12 +64,52 @@ export function HeroStats({
   salesLoading: boolean
   periodLabel: string
 }) {
+  const { t } = useLanguage()
   const [breakdownOpen, setBreakdownOpen] = useState(false)
   const total = sales?.totalSales ?? 0
   const count = sales?.orderCount ?? 0
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      <article className="rounded-lg border border-border/70 bg-card p-5 sm:p-6">
+      <div className="col-span-full lg:hidden">
+        <MobileMetricGroup
+          label={t("Performance")}
+          busy={salesLoading}
+          items={[
+            {
+              id: "revenue",
+              label: t("Net revenue"),
+              value: salesLoading ? "\u2014" : formatMoney(total),
+              icon: WalletIcon,
+            },
+            {
+              id: "orders",
+              label: t("Completed orders"),
+              value: salesLoading ? "\u2014" : String(count),
+              icon: ReceiptIcon,
+            },
+            {
+              id: "average",
+              label: t("Average net order value"),
+              value:
+                salesLoading || !sales
+                  ? "\u2014"
+                  : formatMoney(averageOrderValue(sales)),
+              icon: ChartLineUpIcon,
+            },
+          ]}
+        />
+        <p className="mt-3 text-xs text-muted-foreground">{periodLabel}</p>
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={() => setBreakdownOpen(true)}
+        >
+          {t("Revenue breakdown")}
+          <CaretRightIcon aria-hidden />
+        </Button>
+      </div>
+
+      <article className="hidden rounded-lg border border-border/70 bg-card p-5 sm:p-6 lg:block">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <WalletIcon aria-hidden="true" className="size-4" />
@@ -92,7 +135,7 @@ export function HeroStats({
           <CaretRightIcon aria-hidden="true" className="size-4" />
         </Button>
       </article>
-      <article className="rounded-lg border border-border/70 bg-card p-5 sm:p-6">
+      <article className="hidden rounded-lg border border-border/70 bg-card p-5 sm:p-6 lg:block">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <ReceiptIcon aria-hidden="true" className="size-4" />
@@ -107,7 +150,7 @@ export function HeroStats({
         </p>
         <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
       </article>
-      <article className="rounded-lg border border-border/70 bg-card p-5 sm:p-6">
+      <article className="hidden rounded-lg border border-border/70 bg-card p-5 sm:p-6 lg:block">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <ChartLineUpIcon aria-hidden="true" className="size-4" />
@@ -125,7 +168,10 @@ export function HeroStats({
       <Dialog.Root open={breakdownOpen} onOpenChange={setBreakdownOpen}>
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
-          <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-[min(24rem,90vw)] flex-col border-l border-border/70 bg-card p-5 text-card-foreground shadow-xl outline-none data-ending-style:translate-x-full data-starting-style:translate-x-full sm:p-6">
+          <AdaptiveDialogPopup
+            mobileClassName="px-5"
+            className="fixed inset-y-0 right-0 z-50 flex w-[min(24rem,90vw)] flex-col border-l border-border/70 bg-card p-5 text-card-foreground shadow-xl outline-none data-ending-style:translate-x-full data-starting-style:translate-x-full sm:p-6"
+          >
             <div className="flex items-start justify-between gap-4 border-b border-border/70 pb-4">
               <div>
                 <Dialog.Title className="text-lg font-semibold tracking-[-0.025em]">
@@ -201,7 +247,7 @@ export function HeroStats({
                 loading={salesLoading}
               />
             </dl>
-          </Dialog.Popup>
+          </AdaptiveDialogPopup>
         </Dialog.Portal>
       </Dialog.Root>
     </div>

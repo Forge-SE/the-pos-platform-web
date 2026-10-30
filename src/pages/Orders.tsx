@@ -48,9 +48,29 @@ function CashierOrders() {
       </DeskButton>
     </div>
   )
-  if (desk === "history") return <OwnerOrders switcher={switcher} />
-  if (status) return <KitchenDisplay readOnly switcher={switcher} />
-  return <CashierDesk switcher={switcher} />
+  const selling = !status && desk !== "history"
+  // Keep the bag while moving between the cashier's bottom navigation tabs.
+  return (
+    <>
+      <div className={selling ? "contents" : "hidden"}>
+        <CashierDesk
+          active={selling}
+          switcher={<div className="hidden lg:contents">{switcher}</div>}
+        />
+      </div>
+      {desk === "history" && (
+        <OwnerOrders
+          switcher={<div className="hidden lg:contents">{switcher}</div>}
+        />
+      )}
+      {status && (
+        <KitchenDisplay
+          readOnly
+          switcher={<div className="hidden lg:contents">{switcher}</div>}
+        />
+      )}
+    </>
+  )
 }
 
 function ManagerOrders() {
@@ -79,9 +99,13 @@ function ManagerOrders() {
     </div>
   )
   return history ? (
-    <OwnerOrders switcher={switcher} />
+    <OwnerOrders
+      switcher={<div className="hidden lg:contents">{switcher}</div>}
+    />
   ) : (
-    <KitchenDisplay switcher={switcher} />
+    <KitchenDisplay
+      switcher={<div className="hidden lg:contents">{switcher}</div>}
+    />
   )
 }
 

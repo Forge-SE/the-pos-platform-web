@@ -67,7 +67,7 @@ export function OnboardingShell({
   children: React.ReactNode
 }) {
   return (
-    <main className="min-h-svh bg-background px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+    <main className="mobile-entry-page min-h-svh bg-background px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex items-center gap-2.5 text-foreground sm:mb-10">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">

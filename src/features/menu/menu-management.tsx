@@ -391,6 +391,7 @@ export function MenuManagement() {
                           uploadState.status === "verifying"
                         return (
                           <article
+                            data-mobile-menu-card
                             key={item.id}
                             className="group overflow-hidden rounded-xl border border-border/70 bg-card transition-shadow hover:shadow-md"
                           >

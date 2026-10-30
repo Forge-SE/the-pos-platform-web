@@ -1,3 +1,4 @@
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import type { ReactNode } from "react"
 import { Dialog } from "@base-ui/react/dialog"
 import { XIcon } from "@phosphor-icons/react"
@@ -27,7 +28,7 @@ export function MenuDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
-        <Dialog.Popup
+        <AdaptiveDialogPopup
           className={
             drawer
               ? "fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col overflow-hidden border-l border-border/70 bg-card shadow-lg transition-transform duration-200 data-ending-style:translate-x-full data-starting-style:translate-x-full motion-reduce:transition-none"
@@ -63,7 +64,7 @@ export function MenuDialog({
               {footer}
             </div>
           ) : null}
-        </Dialog.Popup>
+        </AdaptiveDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   )

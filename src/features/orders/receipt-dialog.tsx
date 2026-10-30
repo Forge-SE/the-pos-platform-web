@@ -1,3 +1,4 @@
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Dialog } from "@base-ui/react/dialog"
@@ -119,7 +120,7 @@ export function ReceiptDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 print:hidden" />
-        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex max-h-[min(92svh,760px)] w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-lg print:static print:max-h-none print:w-full print:translate-none print:border-0 print:shadow-none">
+        <AdaptiveDialogPopup className="fixed top-1/2 left-1/2 z-50 flex max-h-[min(92svh,760px)] w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-lg print:static print:max-h-none print:w-full print:translate-none print:border-0 print:shadow-none">
           <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3 print:hidden">
             <div>
               <Dialog.Title className="text-base font-semibold tracking-[-0.02em]">
@@ -200,7 +201,7 @@ export function ReceiptDialog({
               Close
             </Button>
           </div>
-        </Dialog.Popup>
+        </AdaptiveDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   )

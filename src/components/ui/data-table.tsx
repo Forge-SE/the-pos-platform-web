@@ -1,3 +1,7 @@
+import { useMediaQuery } from "@/lib/use-media-query"
+import { MobileTableContent } from "@/components/mobile/mobile-table-content"
+import type { MobileFieldRole } from "@/components/mobile/mobile-table-content"
+import { MobileTableFilters } from "@/components/mobile/mobile-table-toolbar"
 import { useId, useState } from "react"
 import type { ComponentProps, ReactNode } from "react"
 import {
@@ -28,6 +32,7 @@ export interface DataTableColumn<TRow> {
   header: ReactNode
   cell: (row: TRow) => ReactNode
   className?: string
+  mobileRole?: MobileFieldRole
 }
 
 export type DataTableView = "table" | "grid"
@@ -80,6 +85,8 @@ export interface DataTableProps<TRow> {
   layout?: DataTableLayout<TRow>
   gridClassName?: string
   getRowProps?: (row: TRow) => ComponentProps<"tr">
+  mobilePresentation?: "records" | "scroll"
+  mobileFieldRoles?: readonly MobileFieldRole[]
 }
 
 export function DataTable<TRow>({
@@ -100,8 +107,12 @@ export function DataTable<TRow>({
   layout = { mode: "table" },
   gridClassName = "grid-cols-1 gap-4 @xl/data-table:grid-cols-2 @4xl/data-table:grid-cols-3 @6xl/data-table:grid-cols-4",
   getRowProps,
+  mobilePresentation = "records",
+  mobileFieldRoles,
 }: DataTableProps<TRow>) {
   const { t, language } = useLanguage()
+  const compact = useMediaQuery("(max-width: 1023px)")
+  const mobileRecords = compact && mobilePresentation === "records"
   const id = useId()
   const [localView, setLocalView] = useState<DataTableView>(
     layout.mode === "toggle" ? (layout.defaultView ?? "table") : "table"
@@ -164,6 +175,7 @@ export function DataTable<TRow>({
       data-slot="data-table"
       className={cn(
         "@container/data-table flex min-h-0 w-full min-w-0 flex-1 flex-col text-sm text-foreground",
+        compact && "mobile-data-table",
         className
       )}
     >
@@ -189,7 +201,13 @@ export function DataTable<TRow>({
             </div>
           )}
           <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
-            {filters}
+            {compact && filters ? (
+              <MobileTableFilters label={ariaLabel}>
+                {filters}
+              </MobileTableFilters>
+            ) : (
+              filters
+            )}
             {!children && layout.mode === "toggle" && (
               <div
                 role="group"
@@ -241,9 +259,18 @@ export function DataTable<TRow>({
         className="min-h-0 min-w-0 flex-1 [scrollbar-width:none] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/25 [&::-webkit-scrollbar]:hidden"
       >
         {children ? (
-          <table className="w-full min-w-max border-separate border-spacing-0 text-left">
+          <table
+            role={compact ? "table" : undefined}
+            className={`w-full min-w-max border-separate border-spacing-0 text-left ${mobileRecords ? "mobile-record-table" : ""}`}
+          >
             <caption className="sr-only">{ariaLabel}</caption>
-            {children}
+            {mobileRecords ? (
+              <MobileTableContent fieldRoles={mobileFieldRoles}>
+                {children}
+              </MobileTableContent>
+            ) : (
+              children
+            )}
           </table>
         ) : view === "grid" && layout.mode !== "table" ? (
           hasError ? (
@@ -292,96 +319,101 @@ export function DataTable<TRow>({
           )
         ) : (
           <table
+            role={compact ? "table" : undefined}
             className={cn(
               "w-full min-w-max border-separate border-spacing-0 text-left",
+              mobileRecords && "mobile-record-table",
               (hasError || (!isLoading && rows.length === 0)) && "h-full"
             )}
             aria-busy={!hasError && (isLoading || isFetching)}
           >
             <caption className="sr-only">{ariaLabel}</caption>
-            <thead className="sticky top-0 z-10 h-9 text-muted-foreground">
-              <tr>
-                {columns.map((column) => (
-                  <th
-                    key={column.id}
-                    scope="col"
-                    className={cn(
-                      "bg-muted px-3 py-2 font-medium whitespace-nowrap first:rounded-l-sm last:rounded-r-sm",
-                      column.className
-                    )}
-                  >
-                    {typeof column.header === "string"
-                      ? t(column.header)
-                      : column.header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {!hasError && isLoading ? (
-                Array.from({ length: Math.min(pageSize, 6) }, (_, index) => (
-                  <tr key={index} className="even:bg-muted/60">
-                    {columns.map((column, columnIndex) => (
-                      <td
-                        key={column.id}
-                        className={cn("px-3 py-3.5", column.className)}
-                      >
-                        {index === 0 && columnIndex === 0 && (
-                          <span role="status" className="sr-only">
-                            {t("Loading")} {t(ariaLabel)}
-                          </span>
-                        )}
-                        <Skeleton aria-hidden className="h-5 w-full" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : hasError || rows.length === 0 ? (
+            <TablePresentation compact={mobileRecords}>
+              <thead className="sticky top-0 z-10 h-9 text-muted-foreground">
                 <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-12 text-center align-middle text-muted-foreground"
-                  >
-                    <div
-                      role={hasError ? undefined : "status"}
-                      className="flex w-full items-center justify-center"
-                    >
-                      {hasError
-                        ? errorState
-                        : typeof emptyState === "string"
-                          ? t(emptyState)
-                          : emptyState}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                rows.map((row) => {
-                  const rowProps = getRowProps?.(row)
-                  return (
-                    <tr
-                      {...rowProps}
-                      key={getRowId(row)}
+                  {columns.map((column) => (
+                    <th
+                      key={column.id}
+                      scope="col"
                       className={cn(
-                        "even:bg-muted/60 hover:bg-muted/80",
-                        rowProps?.className
+                        "bg-muted px-3 py-2 font-medium whitespace-nowrap first:rounded-l-sm last:rounded-r-sm",
+                        column.className
                       )}
                     >
-                      {columns.map((column) => (
+                      {typeof column.header === "string"
+                        ? t(column.header)
+                        : column.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {!hasError && isLoading ? (
+                  Array.from({ length: Math.min(pageSize, 6) }, (_, index) => (
+                    <tr key={index} className="even:bg-muted/60">
+                      {columns.map((column, columnIndex) => (
                         <td
                           key={column.id}
-                          className={cn(
-                            "px-3 py-2.5 whitespace-nowrap",
-                            column.className
-                          )}
+                          className={cn("px-3 py-3.5", column.className)}
                         >
-                          {column.cell(row)}
+                          {index === 0 && columnIndex === 0 && (
+                            <span role="status" className="sr-only">
+                              {t("Loading")} {t(ariaLabel)}
+                            </span>
+                          )}
+                          <Skeleton aria-hidden className="h-5 w-full" />
                         </td>
                       ))}
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
+                  ))
+                ) : hasError || rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="px-4 py-12 text-center align-middle text-muted-foreground"
+                    >
+                      <div
+                        role={hasError ? undefined : "status"}
+                        className="flex w-full items-center justify-center"
+                      >
+                        {hasError
+                          ? errorState
+                          : typeof emptyState === "string"
+                            ? t(emptyState)
+                            : emptyState}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((row) => {
+                    const rowProps = getRowProps?.(row)
+                    return (
+                      <tr
+                        {...rowProps}
+                        key={getRowId(row)}
+                        className={cn(
+                          "even:bg-muted/60 hover:bg-muted/80",
+                          rowProps?.className
+                        )}
+                      >
+                        {columns.map((column) => (
+                          <td
+                            key={column.id}
+                            data-mobile-field={column.mobileRole}
+                            className={cn(
+                              "px-3 py-2.5 whitespace-nowrap",
+                              column.className
+                            )}
+                          >
+                            {column.cell(row)}
+                          </td>
+                        ))}
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </TablePresentation>
           </table>
         )}
       </div>
@@ -466,5 +498,19 @@ export function DataTable<TRow>({
         </footer>
       )}
     </div>
+  )
+}
+
+function TablePresentation({
+  compact,
+  children,
+}: {
+  compact: boolean
+  children: ReactNode
+}) {
+  return compact ? (
+    <MobileTableContent>{children}</MobileTableContent>
+  ) : (
+    children
   )
 }

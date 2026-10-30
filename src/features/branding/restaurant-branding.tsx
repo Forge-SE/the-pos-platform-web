@@ -1,3 +1,5 @@
+import { useTheme } from "@/components/theme-provider"
+import { MobileTabs } from "@/components/mobile/mobile-tabs"
 import { useEffect, useRef, useState } from "react"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
@@ -99,6 +101,7 @@ export function RestaurantBranding({
   onSectionChange: (section: SettingsSection) => void
 }) {
   const { t } = useLanguage()
+  const { theme, setTheme } = useTheme()
   const profile = getAccessTokenProfile()
   const canManage = hasPermission(profile, "SETTINGS_MANAGE")
   const canOpenRestaurantSettings =
@@ -175,6 +178,22 @@ export function RestaurantBranding({
             description="Choose how the workspace appears for you on this device."
           />
           <SettingsBody>
+            <SettingRow
+              title="Appearance"
+              description="Choose how the workspace appears for you on this device."
+            >
+              <MobileTabs
+                label="Appearance"
+                items={[
+                  { id: "light", label: "Light" },
+                  { id: "dark", label: "Dark" },
+                ]}
+                value={theme}
+                onChange={(value) =>
+                  setTheme(value === "dark" ? "dark" : "light")
+                }
+              />
+            </SettingRow>
             <SettingRow
               title="Language"
               description="Choose the language for menus and workspace controls."

@@ -129,8 +129,48 @@ beforeEach(() => {
   })
   window.history.replaceState(null, "", "/inventory")
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 describe("inventory workspace", () => {
+  it("uses a flat mobile stock row while retaining count safeguards and actions", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query.includes("max-width"),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }))
+    )
+    const view = render(<InventoryManagement />)
+    expect(view.container.querySelector("[data-mobile-stock-row]")).toBeTruthy()
+    expect(screen.getByText("900 g")).toBeTruthy()
+    expect(state.record).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole("button", { name: "Count Rice" }))
+    expect(
+      screen.getByLabelText("Physical count (g)").getAttribute("value")
+    ).toBe("")
+    fireEvent.change(screen.getByLabelText("Physical count (g)"), {
+      target: { value: "950" },
+    })
+    fireEvent.change(screen.getByLabelText("Reason or count note"), {
+      target: { value: "Closing mobile count" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Record" }))
+    await waitFor(() =>
+      expect(state.record).toHaveBeenCalledWith({
+        variables: {
+          input: expect.objectContaining({
+            kind: "COUNT",
+            stockItemId: "rice",
+            quantity: 950,
+            expectedVersion: 4,
+          }),
+        },
+      })
+    )
+  })
   it("keeps movement-history guidance in an info popover", async () => {
     state.hasMovements = true
     window.history.replaceState(null, "", "/inventory?inventoryTab=movements")

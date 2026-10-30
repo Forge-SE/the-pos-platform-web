@@ -2,6 +2,7 @@ import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 
 import { Button } from "@/components/ui/button"
+import { ErrorState } from "@/components/content-state"
 import { formatMoney } from "@/features/menu/model"
 import { hasPermission } from "@/lib/permissions"
 import { getAccessTokenProfile } from "@/lib/auth-token"
@@ -42,11 +43,15 @@ const SEND_DIGEST = gql`
   }
 `
 
-export function SalesDigestCard() {
+export function SalesDigestCard({
+  presentation = "banner",
+}: {
+  presentation?: "banner" | "sheet"
+}) {
   const { t, language } = useLanguage()
   const profile = getAccessTokenProfile()
   const allowed = Boolean(profile && hasPermission(profile, "REPORTS_VIEW"))
-  const { data, loading, refetch } = useQuery<{
+  const { data, loading, error, refetch } = useQuery<{
     salesDigest: {
       businessDate: string
       netSales: number
@@ -73,21 +78,35 @@ export function SalesDigestCard() {
       }
     }>(SEND_DIGEST)
   if (!allowed) return null
+  if (error)
+    return <ErrorState title="Could not load sales digest." onRetry={refetch} />
   const digest = data?.salesDigest
   return (
-    <section className="relative mt-6 overflow-hidden rounded-xl bg-secondary p-5 text-secondary-foreground sm:p-6">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_center,currentColor_1px,transparent_1px)] [mask-image:linear-gradient(90deg,transparent_25%,black_100%)] [background-size:18px_18px] opacity-20"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-16 right-16 size-56 rounded-full border border-current/20"
-      />
+    <section
+      className={
+        presentation === "sheet"
+          ? "relative"
+          : "relative mt-6 overflow-hidden rounded-xl bg-secondary p-5 text-secondary-foreground sm:p-6"
+      }
+    >
+      {presentation === "banner" && (
+        <>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_center,currentColor_1px,transparent_1px)] [mask-image:linear-gradient(90deg,transparent_25%,black_100%)] [background-size:18px_18px] opacity-20"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-16 right-16 size-56 rounded-full border border-current/20"
+          />
+        </>
+      )}
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-semibold tracking-[0.12em] uppercase opacity-70">
-            {t("Sales digest")}
+            {t(
+              presentation === "sheet" ? "Today's net revenue" : "Sales digest"
+            )}
           </p>
           <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] tabular-nums sm:text-2xl">
             {loading || !digest
@@ -112,7 +131,11 @@ export function SalesDigestCard() {
               .then(() => refetch())
               .catch(() => undefined)
           }}
-          className="shrink-0 self-start sm:self-center"
+          className={
+            presentation === "sheet"
+              ? "min-h-11 w-full shrink-0 sm:w-auto"
+              : "shrink-0 self-start sm:self-center"
+          }
         >
           {t(sending ? "Sending…" : "Email yesterday's digest")}
         </Button>

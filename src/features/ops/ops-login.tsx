@@ -62,7 +62,7 @@ export function OpsLogin() {
   }
 
   return (
-    <main className="grid min-h-svh place-items-center bg-background px-4 py-8">
+    <main className="mobile-entry-page grid min-h-svh place-items-center bg-background px-4 py-8">
       <section className="w-full max-w-sm rounded-xl border bg-card p-6 text-card-foreground sm:p-8">
         <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
           Internal

@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from "react"
 
 const CHANGE_EVENT = "url-state-change"
 
+export function notifyUrlStateChange() {
+  window.dispatchEvent(new CustomEvent(CHANGE_EVENT))
+}
+
 function readParam(key: string): string | null {
   if (typeof window === "undefined") return null
   return new URLSearchParams(window.location.search).get(key)
@@ -25,7 +29,7 @@ function writeParam(
     "",
     `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`
   )
-  window.dispatchEvent(new CustomEvent(CHANGE_EVENT))
+  notifyUrlStateChange()
 }
 
 /**
