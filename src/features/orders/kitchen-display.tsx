@@ -991,7 +991,7 @@ function TableView({
 }) {
   const paging = useTablePagination("kitchen")
   const visible = orders.slice(
-    paging.pageIndex * paging.pageSize,
+    paging.windowStart(),
     (paging.pageIndex + 1) * paging.pageSize
   )
   if (loading) {
@@ -1002,6 +1002,7 @@ function TableView({
   return (
     <div className="mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
       <DataTable
+        mobileFeedMode="window"
         ariaLabel="Kitchen orders"
         rows={visible}
         search={{

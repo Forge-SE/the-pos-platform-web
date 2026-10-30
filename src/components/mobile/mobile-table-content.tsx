@@ -6,7 +6,7 @@ import type {
   TdHTMLAttributes,
 } from "react"
 
-type TableElement = ReactElement<
+export type TableElement = ReactElement<
   HTMLAttributes<HTMLElement> &
     TdHTMLAttributes<HTMLTableCellElement> & {
       "data-mobile-field"?: MobileFieldRole
@@ -14,11 +14,11 @@ type TableElement = ReactElement<
 >
 export type MobileFieldRole =
   "identity" | "status" | "amount" | "meta" | "detail" | "actions"
-function nodes(children: ReactNode): TableElement[] {
+export function tableNodes(children: ReactNode): TableElement[] {
   return Children.toArray(children).flatMap((child) => {
     if (!isValidElement(child)) return []
     if (typeof child.type === "symbol")
-      return nodes((child.props as { children?: ReactNode }).children)
+      return tableNodes((child.props as { children?: ReactNode }).children)
     return [child as TableElement]
   })
 }
@@ -42,12 +42,12 @@ export function MobileTableContent({
   children: ReactNode
   fieldRoles?: readonly MobileFieldRole[]
 }) {
-  const sections = nodes(children)
+  const sections = tableNodes(children)
   const headers = sections
     .filter((section) => section.type === "thead")
     .flatMap((section) =>
-      nodes(section.props.children).flatMap((row) =>
-        nodes(row.props.children).map((cell) => text(cell.props.children))
+      tableNodes(section.props.children).flatMap((row) =>
+        tableNodes(row.props.children).map((cell) => text(cell.props.children))
       )
     )
   return sections.map((section) => {
@@ -55,9 +55,9 @@ export function MobileTableContent({
     return cloneElement(
       section,
       { role: "rowgroup" },
-      nodes(section.props.children).map((row) => {
+      tableNodes(section.props.children).map((row) => {
         if (row.type !== "tr") return row
-        const cells = nodes(row.props.children)
+        const cells = tableNodes(row.props.children)
         const state = cells.length === 1 && (cells[0].props.colSpan ?? 1) > 1
         const designed =
           !state &&

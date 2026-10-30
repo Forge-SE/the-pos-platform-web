@@ -6,6 +6,10 @@ export type Language = "en" | "fr"
 const STORAGE_KEY = "pos.language"
 
 const french: Record<string, string> = {
+  "Loading more…": "Chargement de la suite…",
+  "Could not load more items.": "Impossible de charger la suite.",
+  "Load more": "Charger la suite",
+  "You’re all caught up": "Vous avez tout vu",
   Filters: "Filtres",
   "Show results": "Afficher les résultats",
   Back: "Retour",

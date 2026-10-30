@@ -145,7 +145,7 @@ export function OpsTeam() {
     Math.max(0, Math.ceil(filtered.length / paging.pageSize) - 1)
   )
   const rows = filtered.slice(
-    pageIndex * paging.pageSize,
+    paging.windowStart(pageIndex),
     (pageIndex + 1) * paging.pageSize
   )
   const columns: DataTableColumn<Member>[] = [
@@ -312,6 +312,7 @@ export function OpsTeam() {
         )}
 
         <DataTable
+          mobileFeedMode="window"
           ariaLabel="Operations team"
           rows={rows}
           columns={columns}
@@ -329,6 +330,7 @@ export function OpsTeam() {
             pageIndex,
             pageSize: paging.pageSize,
             totalCount: filtered.length,
+            onLoadMore: paging.onLoadMore,
             onPageChange: paging.onPageChange,
             onPageSizeChange: paging.onPageSizeChange,
             pageSizeOptions: [10, 20, 50],

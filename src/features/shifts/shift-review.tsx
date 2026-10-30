@@ -181,7 +181,7 @@ export function ShiftReview() {
       .includes((shiftSearch ?? "").toLowerCase().trim())
   )
   const visibleShifts = filteredShifts.slice(
-    shiftPaging.pageIndex * shiftPaging.pageSize,
+    shiftPaging.windowStart(),
     (shiftPaging.pageIndex + 1) * shiftPaging.pageSize
   )
   const filteredOrders = (detail?.orders ?? []).filter((order) =>
@@ -190,7 +190,7 @@ export function ShiftReview() {
       .includes((orderSearch ?? "").toLowerCase().trim())
   )
   const visibleOrders = filteredOrders.slice(
-    orderPaging.pageIndex * orderPaging.pageSize,
+    orderPaging.windowStart(),
     (orderPaging.pageIndex + 1) * orderPaging.pageSize
   )
 
@@ -234,6 +234,7 @@ export function ShiftReview() {
     >
       <div className="content-region mt-6 overflow-hidden rounded-md lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
+          mobileFeedMode="window"
           ariaLabel="Shifts"
           mobileFieldRoles={[
             "identity",
@@ -458,6 +459,7 @@ export function ShiftReview() {
                   {tab === "orders" && (
                     <div className="content-region mt-4 overflow-x-auto">
                       <DataTable
+                        mobileFeedMode="window"
                         ariaLabel={t("Shift orders")}
                         rows={visibleOrders}
                         search={{

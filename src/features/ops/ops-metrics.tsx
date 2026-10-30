@@ -373,7 +373,7 @@ function Breakdown({
     row.label.toLowerCase().includes((search ?? "").toLowerCase().trim())
   )
   const visible = filtered.slice(
-    paging.pageIndex * paging.pageSize,
+    paging.windowStart(),
     (paging.pageIndex + 1) * paging.pageSize
   )
   return (
@@ -382,6 +382,7 @@ function Breakdown({
         {title}
       </h2>
       <DataTable
+        mobileFeedMode="window"
         ariaLabel={title}
         rows={visible}
         search={{

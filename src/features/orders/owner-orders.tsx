@@ -256,6 +256,15 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
       <section className="content-region mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
           ariaLabel={t("Orders")}
+          mobileFeedKey={JSON.stringify([
+            search,
+            statusFilter,
+            creatorFilter,
+            rangeParam,
+            fromParam,
+            toParam,
+          ])}
+          mobilePageError={Boolean(error)}
           mobileFieldRoles={[
             "identity",
             "meta",

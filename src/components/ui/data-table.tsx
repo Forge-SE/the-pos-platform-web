@@ -1,9 +1,14 @@
+import { useMobileFeed } from "@/components/mobile/use-mobile-feed"
+import { MobileFeedLoader } from "@/components/mobile/mobile-feed-loader"
 import { useMediaQuery } from "@/lib/use-media-query"
-import { MobileTableContent } from "@/components/mobile/mobile-table-content"
+import {
+  MobileTableContent,
+  tableNodes,
+} from "@/components/mobile/mobile-table-content"
 import type { MobileFieldRole } from "@/components/mobile/mobile-table-content"
 import { MobileTableFilters } from "@/components/mobile/mobile-table-toolbar"
-import { useId, useState } from "react"
-import type { ComponentProps, ReactNode } from "react"
+import { cloneElement, useId, useMemo, useRef, useState } from "react"
+import type { ComponentProps, ReactNode, ReactElement } from "react"
 import {
   ArrowClockwiseIcon,
   CaretDoubleLeftIcon,
@@ -58,6 +63,7 @@ export interface DataTablePagination {
   totalCount?: number
   hasNextPage?: boolean
   onPageChange: (pageIndex: number) => void
+  onLoadMore?: (pageIndex: number) => void
   onPageSizeChange: (size: number) => void
   pageSizeOptions?: readonly number[]
 }
@@ -76,6 +82,7 @@ export interface DataTableProps<TRow> {
   }
   filters?: ReactNode
   onRefresh?: () => void
+  onRetry?: () => void
   pagination?: DataTablePagination
   isLoading?: boolean
   isFetching?: boolean
@@ -87,10 +94,13 @@ export interface DataTableProps<TRow> {
   getRowProps?: (row: TRow) => ComponentProps<"tr">
   mobilePresentation?: "records" | "scroll"
   mobileFieldRoles?: readonly MobileFieldRole[]
+  mobileFeedMode?: "paged" | "window"
+  mobileFeedKey?: string
+  mobilePageError?: boolean
 }
 
 export function DataTable<TRow>({
-  rows = [],
+  rows: pageRows = [],
   columns = [],
   getRowId = () => "",
   ariaLabel,
@@ -98,8 +108,9 @@ export function DataTable<TRow>({
   search,
   filters,
   onRefresh,
+  onRetry,
   pagination,
-  isLoading = false,
+  isLoading: pageLoading = false,
   isFetching = false,
   emptyState = "No results found.",
   errorState,
@@ -109,6 +120,9 @@ export function DataTable<TRow>({
   getRowProps,
   mobilePresentation = "records",
   mobileFieldRoles,
+  mobileFeedMode = "paged",
+  mobileFeedKey,
+  mobilePageError = false,
 }: DataTableProps<TRow>) {
   const { t, language } = useLanguage()
   const compact = useMediaQuery("(max-width: 1023px)")
@@ -128,10 +142,60 @@ export function DataTable<TRow>({
     if (layout.view === undefined) setLocalView(next)
     layout.onViewChange?.(next)
   }
-  const hasError = errorState != null && errorState !== false
+  const pageError =
+    mobilePageError || (errorState != null && errorState !== false)
+  const scrollRoot = useRef<HTMLDivElement>(null)
+  const [refreshEpoch, setRefreshEpoch] = useState(0)
+  const mobileInfinite = compact && Boolean(pagination)
   const pageIndex = pagination?.pageIndex ?? 0
-  const pageSize = pagination?.pageSize ?? Math.max(rows.length, 1)
-  const totalCount = pagination?.totalCount ?? rows.length
+  const pageSize = pagination?.pageSize ?? Math.max(pageRows.length, 1)
+  const scope = JSON.stringify([
+    typeof window === "undefined" ? "" : window.location.pathname,
+    ariaLabel,
+    mobileFeedKey ?? search?.value ?? "",
+    language,
+    pageSize,
+    refreshEpoch,
+  ])
+  const elements = useMemo(() => legacyRows(children), [children])
+  const feed = useMobileFeed({
+    enabled: mobileInfinite,
+    scope,
+    pageIndex,
+    items: pageRows,
+    elements,
+    busy: pageLoading || isFetching,
+    error: pageError,
+    provided: mobileFeedMode === "window",
+    getKey: (row) =>
+      getRowId(row) ||
+      (typeof row === "object" && row !== null && "id" in row
+        ? String(row.id)
+        : ""),
+  })
+  const rows = mobileInfinite ? feed.items : pageRows
+  const loadedCount = Math.max(rows.length, feed.elements.length)
+  const hasItems = loadedCount > 0
+  const hasError = pageError && !(mobileInfinite && hasItems && pageIndex > 0)
+  const isLoading =
+    pageLoading && !(mobileInfinite && hasItems && pageIndex > 0)
+  const renderedChildren =
+    mobileInfinite && hasItems && children && !hasError && !isLoading
+      ? combineLegacyRows(children, feed.elements)
+      : children
+  const totalCount = pagination?.totalCount ?? pageRows.length
+  const hasMore = pagination
+    ? mobileFeedMode === "window"
+      ? rows.length < totalCount
+      : (pagination.hasNextPage ?? (pageIndex + 1) * pageSize < totalCount)
+    : false
+  const refresh = () => {
+    if (mobileInfinite && pagination) {
+      setRefreshEpoch((epoch) => epoch + 1)
+      ;(pagination.onLoadMore ?? pagination.onPageChange)(0)
+    }
+    onRefresh?.()
+  }
   const lastPage = Math.max(0, Math.ceil(totalCount / pageSize) - 1)
   const start = rows.length === 0 ? 0 : pageIndex * pageSize + 1
   const end = Math.min(pageIndex * pageSize + rows.length, totalCount)
@@ -242,8 +306,8 @@ export function DataTable<TRow>({
                 size="icon-sm"
                 aria-label={`Refresh ${t(ariaLabel)}`}
                 title={`Refresh ${t(ariaLabel)}`}
-                disabled={isLoading || isFetching}
-                onClick={onRefresh}
+                disabled={pageLoading || isFetching}
+                onClick={refresh}
               >
                 <ArrowClockwiseIcon aria-hidden />
               </Button>
@@ -253,6 +317,7 @@ export function DataTable<TRow>({
       )}
 
       <div
+        ref={scrollRoot}
         role="region"
         aria-label={`${ariaLabel} ${view} scroll area`}
         tabIndex={0}
@@ -266,10 +331,10 @@ export function DataTable<TRow>({
             <caption className="sr-only">{ariaLabel}</caption>
             {mobileRecords ? (
               <MobileTableContent fieldRoles={mobileFieldRoles}>
-                {children}
+                {renderedChildren}
               </MobileTableContent>
             ) : (
-              children
+              renderedChildren
             )}
           </table>
         ) : view === "grid" && layout.mode !== "table" ? (
@@ -325,7 +390,7 @@ export function DataTable<TRow>({
               mobileRecords && "mobile-record-table",
               (hasError || (!isLoading && rows.length === 0)) && "h-full"
             )}
-            aria-busy={!hasError && (isLoading || isFetching)}
+            aria-busy={!hasError && (pageLoading || isFetching)}
           >
             <caption className="sr-only">{ariaLabel}</caption>
             <TablePresentation compact={mobileRecords}>
@@ -416,9 +481,23 @@ export function DataTable<TRow>({
             </TablePresentation>
           </table>
         )}
+        {mobileInfinite && pagination && (
+          <MobileFeedLoader
+            pageIndex={pageIndex}
+            hasMore={hasMore}
+            busy={pageLoading || isFetching}
+            error={pageError}
+            count={hasError ? 0 : loadedCount}
+            scope={scope}
+            noProgress={feed.noProgress}
+            scrollRoot={scrollRoot}
+            onLoadMore={pagination.onLoadMore ?? pagination.onPageChange}
+            onRetry={onRetry ?? onRefresh}
+          />
+        )}
       </div>
 
-      {pagination && (
+      {pagination && !compact && (
         <footer className="sticky bottom-0 z-10 grid w-full shrink-0 grid-cols-2 items-center gap-3 border-t border-border/60 bg-card px-4 py-4 @4xl/data-table:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <p
             aria-live="polite"
@@ -512,5 +591,23 @@ function TablePresentation({
     <MobileTableContent>{children}</MobileTableContent>
   ) : (
     children
+  )
+}
+
+function legacyRows(children: ReactNode): ReactElement[] {
+  return tableNodes(children)
+    .filter((section) => section.type === "tbody")
+    .flatMap((section) => tableNodes(section.props.children))
+    .filter((row) => {
+      const cells = tableNodes(row.props.children)
+      return (
+        row.type === "tr" &&
+        !(cells.length === 1 && (cells[0].props.colSpan ?? 1) > 1)
+      )
+    })
+}
+function combineLegacyRows(children: ReactNode, rows: ReactElement[]) {
+  return tableNodes(children).map((section) =>
+    section.type === "tbody" ? cloneElement(section, undefined, rows) : section
   )
 }

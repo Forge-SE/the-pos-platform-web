@@ -73,6 +73,36 @@ Custom row components should use the column API rather than hide cells inside
 an opaque React component. Filters open in `MobileTableFilters`; pagination and
 search keep the feature's existing state and callbacks.
 
+## Automatic mobile loading
+
+Compact tables use a near-end sentinel with a 400px preload margin. They append
+the next batch without a numbered footer or page-size selector. Desktop keeps
+its existing pagination. A loading indicator and retry action sit after the
+loaded rows. A manual load action is available when IntersectionObserver is
+unavailable, the current batch is empty, or a repeated batch adds no records.
+
+- Remote batches use the default `mobileFeedMode="paged"`. Supply stable row IDs
+  through `getRowId` (or records with an `id`) and stable keys on legacy table
+  rows. Batches are deduplicated. `mobilePageError` tells legacy-child tables
+  about failed batches; declarative tables use `errorState`. Supply `onRetry` or
+  `onRefresh` for the inline retry action.
+- Include server filter/dataset values in `mobileFeedKey`; search, language,
+  page size and pathname already participate in the scope. Changing the scope
+  starts a fresh feed. Refresh returns to the first batch. A cold URL containing
+  a page hint starts at that batch; the in-memory prefix is not persisted.
+- Local datasets use `mobileFeedMode="window"` and
+  `allRows.slice(paging.windowStart(), (pageIndex + 1) * paging.pageSize)`.
+  This keeps previously revealed rows tied to current source data after edits,
+  rather than storing old rendered controls. Desktop `windowStart()` retains
+  the usual page offset; pass a clamped page index where applicable.
+- Pass `paging.onLoadMore` through custom pagination objects. It replaces the
+  URL page hint, so automatic loads do not create extra Back steps. The normal
+  `onPageChange` still pushes history for desktop navigation.
+
+Remote pages retain the rows fetched during this mounted feed. Refresh when
+fresh data for every earlier remote batch is needed. Row actions still use the
+feature's existing handlers and server validation.
+
 `MobileTabs` provides a sliding selection with a static pressed state and reduced
 motion. `AdaptiveDialogPopup` retains each form's controller and Base UI dialog
 semantics, presenting a full-height mobile form with safe-area spacing; desktop

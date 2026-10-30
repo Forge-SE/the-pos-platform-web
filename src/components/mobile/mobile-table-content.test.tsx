@@ -153,7 +153,7 @@ it("adapts legacy table rows without dropping fields, row actions or keyboard ac
   expect(select).toHaveBeenCalledOnce()
 })
 
-it("keeps filters usable in a sheet and pagination available on an empty current page", async () => {
+it("keeps filters usable and offers a loading fallback on an empty mobile batch", async () => {
   const next = vi.fn()
   const filter = vi.fn()
   function StatusFilter() {
@@ -201,7 +201,8 @@ it("keeps filters usable in a sheet and pagination available on an empty current
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   expect(window.location.search).toContain("status=Ready")
   expect(window.location.search).not.toContain("mobilePanel")
-  fireEvent.click(screen.getByRole("button", { name: "Next page" }))
+  expect(screen.queryByRole("button", { name: "Next page" })).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "Load more" }))
   expect(next).toHaveBeenCalledWith(3)
 })
 

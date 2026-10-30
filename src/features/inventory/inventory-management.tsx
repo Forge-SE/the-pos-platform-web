@@ -1000,6 +1000,7 @@ function RecipeEditor({
 }
 function MovementLog() {
   const { t, locale } = useLanguage()
+  const compact = useMediaQuery("(max-width: 1023px)")
   const paging = useTablePagination("movements", 25)
   const { data, loading, error, refetch } = useQuery<{
     inventoryHistory: { items: Movement[]; total: number }
@@ -1013,10 +1014,17 @@ function MovementLog() {
   })
   const entries = data?.inventoryHistory.items ?? []
   const total = data?.inventoryHistory.total ?? 0
-  if (loading && !data) return <LoadingState label="stock movements" />
-  if (error)
+  if (loading && !data && (!compact || paging.pageIndex === 0))
+    return <LoadingState label="stock movements" />
+  if (error && (!compact || paging.pageIndex === 0))
     return <ErrorState title="Couldn’t load movement log" onRetry={refetch} />
-  if (!entries.length && total === 0)
+  if (
+    !loading &&
+    !error &&
+    !entries.length &&
+    total === 0 &&
+    (!compact || paging.pageIndex === 0)
+  )
     return (
       <EmptyState
         title="No stock movements yet"
@@ -1036,6 +1044,7 @@ function MovementLog() {
       <div className="overflow-x-auto lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
           ariaLabel={t("Inventory movement history")}
+          mobilePageError={Boolean(error)}
           rows={entries}
           onRefresh={() => void refetch()}
           isLoading={loading}
