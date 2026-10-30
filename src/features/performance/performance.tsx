@@ -1,3 +1,4 @@
+import { MobileTabs } from "@/components/mobile/mobile-tabs"
 import { useQuery } from "@apollo/client/react"
 
 import { format, isSameDay } from "date-fns"
@@ -124,32 +125,42 @@ export function Performance() {
       description="Sales and operations for the selected dates, updated every minute."
     >
       <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div
-          role="tablist"
-          aria-label={t("Analytics categories")}
-          className={`grid gap-1 rounded-lg bg-muted/50 p-1 sm:max-w-md ${tabs.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}
-        >
-          {tabs.map((entry) => {
-            const selected = entry.id === tab
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() =>
-                  setTabParam(entry.id === "all" ? null : entry.id)
-                }
-                className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
-                  selected
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t(entry.label)}
-              </button>
-            )
-          })}
+        <div className="lg:hidden">
+          <MobileTabs
+            items={tabs}
+            value={tab}
+            onChange={(id) => setTabParam(id === "all" ? null : id)}
+            label="Analytics categories"
+          />
+        </div>
+        <div className="hidden lg:contents">
+          <div
+            role="tablist"
+            aria-label={t("Analytics categories")}
+            className={`grid gap-1 rounded-lg bg-muted/50 p-1 sm:max-w-md ${tabs.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}
+          >
+            {tabs.map((entry) => {
+              const selected = entry.id === tab
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() =>
+                    setTabParam(entry.id === "all" ? null : entry.id)
+                  }
+                  className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
+                    selected
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t(entry.label)}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <DateRangePicker value={range} onChange={handleRangeChange} />

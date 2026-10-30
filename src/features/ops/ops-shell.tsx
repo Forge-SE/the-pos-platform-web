@@ -1,8 +1,17 @@
-import { useState } from "react"
-import type { ReactNode } from "react"
-import { gql } from "@apollo/client"
-import { useApolloClient, useQuery } from "@apollo/client/react"
+import { LayoutGroup, motion, useReducedMotion } from "framer-motion"
+import { useId, useState } from "react"
+import { useMobileKeyboard } from "@/lib/use-mobile-keyboard"
 import {
+  mobileInstant,
+  mobileSpring,
+} from "@/components/layout/mobile/mobile-motion"
+import { MobileSheet } from "@/components/layout/mobile/mobile-sheet"
+import { useMobilePanel } from "@/components/layout/mobile/use-mobile-panel"
+import { useRouterUrlState } from "@/lib/use-router-url-state"
+import { MobileScreenHeader } from "@/components/mobile/mobile-screen-header"
+import { Button } from "@/components/ui/button"
+import {
+  ListIcon,
   CaretDownIcon,
   HeartbeatIcon,
   ChartLineUpIcon,
@@ -11,6 +20,9 @@ import {
   StorefrontIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react"
+import type { ReactNode } from "react"
+import { gql } from "@apollo/client"
+import { useApolloClient, useQuery } from "@apollo/client/react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 
 import { OvaalMark } from "@/components/ovaal-mark"
@@ -104,6 +116,7 @@ export function OpsHeader({
 }
 
 export function OpsShell({ children }: { children: ReactNode }) {
+  useRouterUrlState()
   const { t } = useLanguage()
   const navigate = useNavigate()
   const client = useApolloClient()
@@ -175,27 +188,115 @@ export function OpsShell({ children }: { children: ReactNode }) {
             <OpsNotifications />
           </div>
         </div>
-        <div className="flex min-h-16 items-center justify-between gap-3 border-b border-border/70 px-4 py-3 lg:hidden">
-          <OvaalMark />
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {links.map((link) => (
-              <NavLink key={link.to} link={link} pathname={pathname} compact />
-            ))}
-            <OpsNotifications />
-            <OpsAccountMenu
-              name={me?.name || "Operations"}
-              email={me?.email || ""}
-              role={me?.role || "MEMBER"}
-              onSignOut={() => void signOut()}
-              compact
-            />
-          </div>
+        <div className="lg:hidden">
+          <MobileScreenHeader
+            title={t(currentPage)}
+            subtitle={t("Platform")}
+            leading={<OvaalMark />}
+            actions={
+              <>
+                <OpsNotifications />
+                <OpsAccountMenu
+                  name={me?.name || "Operations"}
+                  email={me?.email || ""}
+                  role={me?.role || "MEMBER"}
+                  onSignOut={() => void signOut()}
+                  compact
+                />
+              </>
+            }
+          />
         </div>
-        <div className="content-page flex w-full min-w-0 flex-1 flex-col">
+        <OpsMobileNavigation pathname={pathname} />
+        <div className="mobile-workspace content-page flex w-full min-w-0 flex-1 flex-col">
           {children}
         </div>
       </div>
     </div>
+  )
+}
+
+function OpsMobileNavigation({ pathname }: { pathname: string }) {
+  const { t } = useLanguage()
+  const layoutId = useId()
+  const reduced = useReducedMotion()
+  const keyboardOpen = useMobileKeyboard()
+  const panel = useMobilePanel("ops-navigation")
+  const primary = links.filter(
+    (link) =>
+      link.to === "/ops" ||
+      link.to === "/ops/metrics" ||
+      link.to === "/ops/health"
+  )
+  const matches = (path: string) =>
+    pathname === path ||
+    (path === "/ops" &&
+      (pathname.startsWith("/ops/restaurants/") || pathname === "/ops/new"))
+  const moreActive = panel.open || !primary.some((link) => matches(link.to))
+  const indicator = (
+    <motion.span
+      aria-hidden
+      layoutId={reduced ? undefined : "ops-destination"}
+      className="mobile-nav-indicator"
+      transition={reduced ? mobileInstant : mobileSpring}
+    />
+  )
+  return (
+    <>
+      <LayoutGroup id={layoutId}>
+        <nav
+          hidden={keyboardOpen}
+          className="mobile-bottom-nav flex items-center gap-1 rounded-full bg-popover/95 p-1.5 shadow-lg ring-1 ring-border backdrop-blur-xl lg:hidden"
+          aria-label={t("Platform navigation")}
+        >
+          {primary.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              activeOptions={{ exact: true }}
+              aria-current={matches(link.to) ? "page" : undefined}
+              className={`mobile-nav-item ${matches(link.to) && !panel.open ? "text-primary-foreground" : "text-muted-foreground"}`}
+            >
+              {matches(link.to) && !panel.open && indicator}
+              <link.icon aria-hidden className="size-5" />
+              <span>{t(link.label)}</span>
+            </Link>
+          ))}
+          <Button
+            variant="ghost"
+            className={`mobile-nav-item ${moreActive ? "text-primary-foreground" : "text-muted-foreground"}`}
+            onClick={() => panel.onOpenChange(true)}
+            aria-haspopup="dialog"
+            aria-expanded={panel.open}
+          >
+            {moreActive && indicator}
+            <ListIcon aria-hidden className="size-5" />
+            {t("More")}
+          </Button>
+        </nav>
+      </LayoutGroup>
+      <MobileSheet
+        open={panel.open}
+        onOpenChange={panel.onOpenChange}
+        title="Platform"
+        description="Workspace navigation"
+      >
+        <nav className="grid gap-1" aria-label={t("More navigation")}>
+          {links.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              replace
+              onClick={panel.dismissForNavigation}
+              className="flex min-h-14 items-center gap-3 rounded-lg px-3 text-sm font-medium hover:bg-muted"
+            >
+              <link.icon aria-hidden className="size-5" />
+              {t(link.label)}
+            </Link>
+          ))}
+        </nav>
+      </MobileSheet>
+    </>
   )
 }
 

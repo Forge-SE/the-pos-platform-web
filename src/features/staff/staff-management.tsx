@@ -67,7 +67,7 @@ export function StaffManagement() {
   }, [data, search, roleFilter, statusFilter])
 
   const pageItems = filtered.slice(
-    paging.pageIndex * paging.pageSize,
+    paging.windowStart(),
     (paging.pageIndex + 1) * paging.pageSize
   )
 
@@ -125,7 +125,9 @@ export function StaffManagement() {
           <>
             <div className="mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
               <DataTable
+                mobileFeedMode="window"
                 ariaLabel="Staff"
+                mobileFieldRoles={["identity", "meta", "status", "actions"]}
                 rows={pageItems}
                 search={{
                   value: search ?? "",

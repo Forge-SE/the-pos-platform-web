@@ -1,3 +1,4 @@
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import { useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
@@ -241,7 +242,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
   return (
     <div className="content-page mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:px-8 lg:py-8">
       <header>
-        {switcher && <div className="mb-5">{switcher}</div>}
+        {switcher && <div className="mb-5 hidden lg:block">{switcher}</div>}
         <h1 className="text-3xl font-semibold tracking-[-0.04em]">
           {t("Orders")}
         </h1>
@@ -255,6 +256,23 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
       <section className="content-region mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
           ariaLabel={t("Orders")}
+          mobileFeedKey={JSON.stringify([
+            search,
+            statusFilter,
+            creatorFilter,
+            rangeParam,
+            fromParam,
+            toParam,
+          ])}
+          mobilePageError={Boolean(error)}
+          mobileFieldRoles={[
+            "identity",
+            "meta",
+            "status",
+            "amount",
+            "meta",
+            "detail",
+          ]}
           rows={visible}
           search={{
             value: search ?? "",
@@ -456,7 +474,10 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
       >
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
-          <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 max-h-[min(90svh,720px)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border/70 bg-card p-5 shadow-lg">
+          <AdaptiveDialogPopup
+            mobileClassName="px-5"
+            className="fixed top-1/2 left-1/2 z-50 max-h-[min(90svh,720px)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border/70 bg-card p-5 shadow-lg"
+          >
             {selected && (
               <>
                 <div className="flex items-start justify-between gap-3">
@@ -591,7 +612,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                 </Button>
               </>
             )}
-          </Dialog.Popup>
+          </AdaptiveDialogPopup>
         </Dialog.Portal>
       </Dialog.Root>
       <ReceiptDialog

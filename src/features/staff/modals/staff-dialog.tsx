@@ -1,3 +1,4 @@
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import type { ReactNode } from "react"
 import { Dialog } from "@base-ui/react/dialog"
 import { XIcon } from "@phosphor-icons/react"
@@ -23,7 +24,7 @@ export function StaffDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
-        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100svh-2rem)] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-lg transition-[transform,opacity] duration-150 data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
+        <AdaptiveDialogPopup className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100svh-2rem)] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-lg transition-[transform,opacity] duration-150 data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-foreground/10 px-4 pt-4 pb-3 sm:px-5">
             <div>
               <Dialog.Title className="text-lg font-semibold tracking-[-0.025em]">
@@ -53,7 +54,7 @@ export function StaffDialog({
               {footer}
             </div>
           ) : null}
-        </Dialog.Popup>
+        </AdaptiveDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   )

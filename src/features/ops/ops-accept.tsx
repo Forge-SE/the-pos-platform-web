@@ -56,7 +56,7 @@ export function OpsAccept() {
   }
 
   return (
-    <main className="grid min-h-svh place-items-center bg-background px-4 py-8">
+    <main className="mobile-entry-page grid min-h-svh place-items-center bg-background px-4 py-8">
       <section className="w-full max-w-md rounded-lg border border-border bg-card p-6 sm:p-8">
         <OvaalMark />
         <h1 className="mt-6 text-2xl font-semibold tracking-[-0.03em]">

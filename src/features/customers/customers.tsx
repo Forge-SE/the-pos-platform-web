@@ -1,3 +1,4 @@
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import { useState } from "react"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
@@ -160,12 +161,19 @@ export function Customers() {
           columns={[
             {
               id: "name",
+              mobileRole: "identity",
               header: "Customer",
               cell: (row) => <span className="font-medium">{row.name}</span>,
             },
-            { id: "phone", header: "Phone", cell: (row) => row.phone },
+            {
+              id: "phone",
+              mobileRole: "meta",
+              header: "Phone",
+              cell: (row) => row.phone,
+            },
             {
               id: "orders",
+              mobileRole: "detail",
               header: "Orders",
               cell: (row) => (
                 <span className="tabular-nums">{row.orderCount}</span>
@@ -173,11 +181,13 @@ export function Customers() {
             },
             {
               id: "last",
+              mobileRole: "meta",
               header: "Last order",
               cell: (row) => dateTime(row.lastOrderAt),
             },
             {
               id: "messages",
+              mobileRole: "status",
               header: "Messages",
               cell: (row) => (
                 <StatusBadge
@@ -189,6 +199,7 @@ export function Customers() {
             },
             {
               id: "action",
+              mobileRole: "actions",
               header: "",
               cell: (row) => (
                 <Button
@@ -210,7 +221,7 @@ export function Customers() {
       >
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40" />
-          <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border bg-card text-card-foreground shadow-xl outline-none">
+          <AdaptiveDialogPopup className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border bg-card text-card-foreground shadow-xl outline-none">
             <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-5">
               <div>
                 <Dialog.Title className="text-xl font-semibold">
@@ -335,7 +346,7 @@ export function Customers() {
                 </>
               )}
             </div>
-          </Dialog.Popup>
+          </AdaptiveDialogPopup>
         </Dialog.Portal>
       </Dialog.Root>
     </SectionPage>

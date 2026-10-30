@@ -1,3 +1,4 @@
+import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import { useState } from "react"
 import { gql } from "@apollo/client"
 import { useLazyQuery } from "@apollo/client/react"
@@ -111,7 +112,10 @@ export function AccountantExport({ from, to }: { from: string; to: string }) {
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40" />
-          <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-xl outline-none sm:p-6">
+          <AdaptiveDialogPopup
+            mobileClassName="px-5"
+            className="fixed top-1/2 left-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-xl outline-none sm:p-6"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <Dialog.Title className="text-lg font-semibold">
@@ -179,7 +183,7 @@ export function AccountantExport({ from, to }: { from: string; to: string }) {
                 ))}
               </ul>
             )}
-          </Dialog.Popup>
+          </AdaptiveDialogPopup>
         </Dialog.Portal>
       </Dialog.Root>
     </>

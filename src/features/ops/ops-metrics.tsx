@@ -1,3 +1,4 @@
+import { MobileFeatureFilters } from "@/components/mobile/mobile-feature-filters"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
@@ -160,53 +161,55 @@ export function OpsMetrics() {
         description="Orders, order revenue, and Paystack subscription payments. Date and region apply to both. Category, status, and order type apply to orders."
       />
       <section className="content-region mx-4 mb-8 space-y-4 lg:mx-8">
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 xl:flex-nowrap">
-          <div className="min-w-0 shrink-0 space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">
-              Date range
-            </p>
-            <DateRangePicker value={range} onChange={changeRange} />
+        <MobileFeatureFilters label="Metrics">
+          <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 xl:flex-nowrap">
+            <div className="min-w-0 shrink-0 space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">
+                Date range
+              </p>
+              <DateRangePicker value={range} onChange={changeRange} />
+            </div>
+            <Choice
+              label="Region"
+              value={region ?? ""}
+              onChange={setRegion}
+              options={options?.regions ?? []}
+              placeholder="All regions"
+            />
+            <Choice
+              label="Category"
+              value={category ?? ""}
+              onChange={setCategory}
+              options={options?.categories ?? []}
+              placeholder="All categories"
+            />
+            <Choice
+              label="Status"
+              value={status ?? ""}
+              onChange={setStatus}
+              options={statuses}
+              placeholder="All statuses"
+            />
+            <Choice
+              label="Order type"
+              value={diningType ?? ""}
+              onChange={setDiningType}
+              options={["DINE_IN", "TAKEAWAY", "DELIVERY"]}
+              labels={{
+                DINE_IN: "Dine-In",
+                TAKEAWAY: "Pickup",
+                DELIVERY: "Delivery",
+              }}
+              placeholder="All types"
+            />
           </div>
-          <Choice
-            label="Region"
-            value={region ?? ""}
-            onChange={setRegion}
-            options={options?.regions ?? []}
-            placeholder="All regions"
-          />
-          <Choice
-            label="Category"
-            value={category ?? ""}
-            onChange={setCategory}
-            options={options?.categories ?? []}
-            placeholder="All categories"
-          />
-          <Choice
-            label="Status"
-            value={status ?? ""}
-            onChange={setStatus}
-            options={statuses}
-            placeholder="All statuses"
-          />
-          <Choice
-            label="Order type"
-            value={diningType ?? ""}
-            onChange={setDiningType}
-            options={["DINE_IN", "TAKEAWAY", "DELIVERY"]}
-            labels={{
-              DINE_IN: "Dine-In",
-              TAKEAWAY: "Pickup",
-              DELIVERY: "Delivery",
-            }}
-            placeholder="All types"
-          />
-        </div>
+        </MobileFeatureFilters>
 
         {error ? (
           <ErrorState title="Couldn’t load metrics." onRetry={refetch} />
         ) : (
           <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mobile-metric-collection grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <MetricCard
                 icon={ReceiptIcon}
                 label="Orders"
@@ -370,7 +373,7 @@ function Breakdown({
     row.label.toLowerCase().includes((search ?? "").toLowerCase().trim())
   )
   const visible = filtered.slice(
-    paging.pageIndex * paging.pageSize,
+    paging.windowStart(),
     (paging.pageIndex + 1) * paging.pageSize
   )
   return (
@@ -379,6 +382,7 @@ function Breakdown({
         {title}
       </h2>
       <DataTable
+        mobileFeedMode="window"
         ariaLabel={title}
         rows={visible}
         search={{

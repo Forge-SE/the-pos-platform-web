@@ -130,9 +130,11 @@ export function OpsHealth() {
       </OpsHeader>
       <section className="flex min-h-[calc(100svh-11rem)] min-w-0 flex-1 flex-col px-5 pb-6 lg:px-8">
         <DataTable
+          mobileFeedMode="window"
           ariaLabel="Pilot health"
+          onRetry={() => void refetch()}
           rows={allRows.slice(
-            pageIndex * paging.pageSize,
+            paging.windowStart(pageIndex),
             (pageIndex + 1) * paging.pageSize
           )}
           columns={columns}
@@ -141,6 +143,7 @@ export function OpsHealth() {
             pageIndex,
             pageSize: paging.pageSize,
             totalCount: allRows.length,
+            onLoadMore: paging.onLoadMore,
             onPageChange: paging.onPageChange,
             onPageSizeChange: paging.onPageSizeChange,
             pageSizeOptions: [10, 20, 50],

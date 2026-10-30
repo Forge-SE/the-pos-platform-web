@@ -69,6 +69,12 @@ export function OpsAudit({
       >
         <DataTable
           ariaLabel="Platform audit log"
+          mobileFeedKey={JSON.stringify([
+            fixedRestaurantId,
+            restaurantId,
+            action,
+          ])}
+          mobilePageError={Boolean(error)}
           rows={items}
           search={{
             value: action ?? "",

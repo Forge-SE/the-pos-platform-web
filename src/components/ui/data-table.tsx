@@ -1,5 +1,14 @@
-import { useId, useState } from "react"
-import type { ComponentProps, ReactNode } from "react"
+import { useMobileFeed } from "@/components/mobile/use-mobile-feed"
+import { MobileFeedLoader } from "@/components/mobile/mobile-feed-loader"
+import { useMediaQuery } from "@/lib/use-media-query"
+import {
+  MobileTableContent,
+  tableNodes,
+} from "@/components/mobile/mobile-table-content"
+import type { MobileFieldRole } from "@/components/mobile/mobile-table-content"
+import { MobileTableFilters } from "@/components/mobile/mobile-table-toolbar"
+import { cloneElement, useId, useMemo, useRef, useState } from "react"
+import type { ComponentProps, ReactNode, ReactElement } from "react"
 import {
   ArrowClockwiseIcon,
   CaretDoubleLeftIcon,
@@ -28,6 +37,7 @@ export interface DataTableColumn<TRow> {
   header: ReactNode
   cell: (row: TRow) => ReactNode
   className?: string
+  mobileRole?: MobileFieldRole
 }
 
 export type DataTableView = "table" | "grid"
@@ -53,6 +63,7 @@ export interface DataTablePagination {
   totalCount?: number
   hasNextPage?: boolean
   onPageChange: (pageIndex: number) => void
+  onLoadMore?: (pageIndex: number) => void
   onPageSizeChange: (size: number) => void
   pageSizeOptions?: readonly number[]
 }
@@ -71,6 +82,7 @@ export interface DataTableProps<TRow> {
   }
   filters?: ReactNode
   onRefresh?: () => void
+  onRetry?: () => void
   pagination?: DataTablePagination
   isLoading?: boolean
   isFetching?: boolean
@@ -80,10 +92,15 @@ export interface DataTableProps<TRow> {
   layout?: DataTableLayout<TRow>
   gridClassName?: string
   getRowProps?: (row: TRow) => ComponentProps<"tr">
+  mobilePresentation?: "records" | "scroll"
+  mobileFieldRoles?: readonly MobileFieldRole[]
+  mobileFeedMode?: "paged" | "window"
+  mobileFeedKey?: string
+  mobilePageError?: boolean
 }
 
 export function DataTable<TRow>({
-  rows = [],
+  rows: pageRows = [],
   columns = [],
   getRowId = () => "",
   ariaLabel,
@@ -91,8 +108,9 @@ export function DataTable<TRow>({
   search,
   filters,
   onRefresh,
+  onRetry,
   pagination,
-  isLoading = false,
+  isLoading: pageLoading = false,
   isFetching = false,
   emptyState = "No results found.",
   errorState,
@@ -100,8 +118,15 @@ export function DataTable<TRow>({
   layout = { mode: "table" },
   gridClassName = "grid-cols-1 gap-4 @xl/data-table:grid-cols-2 @4xl/data-table:grid-cols-3 @6xl/data-table:grid-cols-4",
   getRowProps,
+  mobilePresentation = "records",
+  mobileFieldRoles,
+  mobileFeedMode = "paged",
+  mobileFeedKey,
+  mobilePageError = false,
 }: DataTableProps<TRow>) {
   const { t, language } = useLanguage()
+  const compact = useMediaQuery("(max-width: 1023px)")
+  const mobileRecords = compact && mobilePresentation === "records"
   const id = useId()
   const [localView, setLocalView] = useState<DataTableView>(
     layout.mode === "toggle" ? (layout.defaultView ?? "table") : "table"
@@ -117,10 +142,60 @@ export function DataTable<TRow>({
     if (layout.view === undefined) setLocalView(next)
     layout.onViewChange?.(next)
   }
-  const hasError = errorState != null && errorState !== false
+  const pageError =
+    mobilePageError || (errorState != null && errorState !== false)
+  const scrollRoot = useRef<HTMLDivElement>(null)
+  const [refreshEpoch, setRefreshEpoch] = useState(0)
+  const mobileInfinite = compact && Boolean(pagination)
   const pageIndex = pagination?.pageIndex ?? 0
-  const pageSize = pagination?.pageSize ?? Math.max(rows.length, 1)
-  const totalCount = pagination?.totalCount ?? rows.length
+  const pageSize = pagination?.pageSize ?? Math.max(pageRows.length, 1)
+  const scope = JSON.stringify([
+    typeof window === "undefined" ? "" : window.location.pathname,
+    ariaLabel,
+    mobileFeedKey ?? search?.value ?? "",
+    language,
+    pageSize,
+    refreshEpoch,
+  ])
+  const elements = useMemo(() => legacyRows(children), [children])
+  const feed = useMobileFeed({
+    enabled: mobileInfinite,
+    scope,
+    pageIndex,
+    items: pageRows,
+    elements,
+    busy: pageLoading || isFetching,
+    error: pageError,
+    provided: mobileFeedMode === "window",
+    getKey: (row) =>
+      getRowId(row) ||
+      (typeof row === "object" && row !== null && "id" in row
+        ? String(row.id)
+        : ""),
+  })
+  const rows = mobileInfinite ? feed.items : pageRows
+  const loadedCount = Math.max(rows.length, feed.elements.length)
+  const hasItems = loadedCount > 0
+  const hasError = pageError && !(mobileInfinite && hasItems && pageIndex > 0)
+  const isLoading =
+    pageLoading && !(mobileInfinite && hasItems && pageIndex > 0)
+  const renderedChildren =
+    mobileInfinite && hasItems && children && !hasError && !isLoading
+      ? combineLegacyRows(children, feed.elements)
+      : children
+  const totalCount = pagination?.totalCount ?? pageRows.length
+  const hasMore = pagination
+    ? mobileFeedMode === "window"
+      ? rows.length < totalCount
+      : (pagination.hasNextPage ?? (pageIndex + 1) * pageSize < totalCount)
+    : false
+  const refresh = () => {
+    if (mobileInfinite && pagination) {
+      setRefreshEpoch((epoch) => epoch + 1)
+      ;(pagination.onLoadMore ?? pagination.onPageChange)(0)
+    }
+    onRefresh?.()
+  }
   const lastPage = Math.max(0, Math.ceil(totalCount / pageSize) - 1)
   const start = rows.length === 0 ? 0 : pageIndex * pageSize + 1
   const end = Math.min(pageIndex * pageSize + rows.length, totalCount)
@@ -164,6 +239,7 @@ export function DataTable<TRow>({
       data-slot="data-table"
       className={cn(
         "@container/data-table flex min-h-0 w-full min-w-0 flex-1 flex-col text-sm text-foreground",
+        compact && "mobile-data-table",
         className
       )}
     >
@@ -189,7 +265,13 @@ export function DataTable<TRow>({
             </div>
           )}
           <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
-            {filters}
+            {compact && filters ? (
+              <MobileTableFilters label={ariaLabel}>
+                {filters}
+              </MobileTableFilters>
+            ) : (
+              filters
+            )}
             {!children && layout.mode === "toggle" && (
               <div
                 role="group"
@@ -224,8 +306,8 @@ export function DataTable<TRow>({
                 size="icon-sm"
                 aria-label={`Refresh ${t(ariaLabel)}`}
                 title={`Refresh ${t(ariaLabel)}`}
-                disabled={isLoading || isFetching}
-                onClick={onRefresh}
+                disabled={pageLoading || isFetching}
+                onClick={refresh}
               >
                 <ArrowClockwiseIcon aria-hidden />
               </Button>
@@ -235,15 +317,25 @@ export function DataTable<TRow>({
       )}
 
       <div
+        ref={scrollRoot}
         role="region"
         aria-label={`${ariaLabel} ${view} scroll area`}
         tabIndex={0}
         className="min-h-0 min-w-0 flex-1 [scrollbar-width:none] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/25 [&::-webkit-scrollbar]:hidden"
       >
         {children ? (
-          <table className="w-full min-w-max border-separate border-spacing-0 text-left">
+          <table
+            role={compact ? "table" : undefined}
+            className={`w-full min-w-max border-separate border-spacing-0 text-left ${mobileRecords ? "mobile-record-table" : ""}`}
+          >
             <caption className="sr-only">{ariaLabel}</caption>
-            {children}
+            {mobileRecords ? (
+              <MobileTableContent fieldRoles={mobileFieldRoles}>
+                {renderedChildren}
+              </MobileTableContent>
+            ) : (
+              renderedChildren
+            )}
           </table>
         ) : view === "grid" && layout.mode !== "table" ? (
           hasError ? (
@@ -292,101 +384,120 @@ export function DataTable<TRow>({
           )
         ) : (
           <table
+            role={compact ? "table" : undefined}
             className={cn(
               "w-full min-w-max border-separate border-spacing-0 text-left",
+              mobileRecords && "mobile-record-table",
               (hasError || (!isLoading && rows.length === 0)) && "h-full"
             )}
-            aria-busy={!hasError && (isLoading || isFetching)}
+            aria-busy={!hasError && (pageLoading || isFetching)}
           >
             <caption className="sr-only">{ariaLabel}</caption>
-            <thead className="sticky top-0 z-10 h-9 text-muted-foreground">
-              <tr>
-                {columns.map((column) => (
-                  <th
-                    key={column.id}
-                    scope="col"
-                    className={cn(
-                      "bg-muted px-3 py-2 font-medium whitespace-nowrap first:rounded-l-sm last:rounded-r-sm",
-                      column.className
-                    )}
-                  >
-                    {typeof column.header === "string"
-                      ? t(column.header)
-                      : column.header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {!hasError && isLoading ? (
-                Array.from({ length: Math.min(pageSize, 6) }, (_, index) => (
-                  <tr key={index} className="even:bg-muted/60">
-                    {columns.map((column, columnIndex) => (
-                      <td
-                        key={column.id}
-                        className={cn("px-3 py-3.5", column.className)}
-                      >
-                        {index === 0 && columnIndex === 0 && (
-                          <span role="status" className="sr-only">
-                            {t("Loading")} {t(ariaLabel)}
-                          </span>
-                        )}
-                        <Skeleton aria-hidden className="h-5 w-full" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : hasError || rows.length === 0 ? (
+            <TablePresentation compact={mobileRecords}>
+              <thead className="sticky top-0 z-10 h-9 text-muted-foreground">
                 <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-12 text-center align-middle text-muted-foreground"
-                  >
-                    <div
-                      role={hasError ? undefined : "status"}
-                      className="flex w-full items-center justify-center"
-                    >
-                      {hasError
-                        ? errorState
-                        : typeof emptyState === "string"
-                          ? t(emptyState)
-                          : emptyState}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                rows.map((row) => {
-                  const rowProps = getRowProps?.(row)
-                  return (
-                    <tr
-                      {...rowProps}
-                      key={getRowId(row)}
+                  {columns.map((column) => (
+                    <th
+                      key={column.id}
+                      scope="col"
                       className={cn(
-                        "even:bg-muted/60 hover:bg-muted/80",
-                        rowProps?.className
+                        "bg-muted px-3 py-2 font-medium whitespace-nowrap first:rounded-l-sm last:rounded-r-sm",
+                        column.className
                       )}
                     >
-                      {columns.map((column) => (
+                      {typeof column.header === "string"
+                        ? t(column.header)
+                        : column.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {!hasError && isLoading ? (
+                  Array.from({ length: Math.min(pageSize, 6) }, (_, index) => (
+                    <tr key={index} className="even:bg-muted/60">
+                      {columns.map((column, columnIndex) => (
                         <td
                           key={column.id}
-                          className={cn(
-                            "px-3 py-2.5 whitespace-nowrap",
-                            column.className
-                          )}
+                          className={cn("px-3 py-3.5", column.className)}
                         >
-                          {column.cell(row)}
+                          {index === 0 && columnIndex === 0 && (
+                            <span role="status" className="sr-only">
+                              {t("Loading")} {t(ariaLabel)}
+                            </span>
+                          )}
+                          <Skeleton aria-hidden className="h-5 w-full" />
                         </td>
                       ))}
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
+                  ))
+                ) : hasError || rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="px-4 py-12 text-center align-middle text-muted-foreground"
+                    >
+                      <div
+                        role={hasError ? undefined : "status"}
+                        className="flex w-full items-center justify-center"
+                      >
+                        {hasError
+                          ? errorState
+                          : typeof emptyState === "string"
+                            ? t(emptyState)
+                            : emptyState}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((row) => {
+                    const rowProps = getRowProps?.(row)
+                    return (
+                      <tr
+                        {...rowProps}
+                        key={getRowId(row)}
+                        className={cn(
+                          "even:bg-muted/60 hover:bg-muted/80",
+                          rowProps?.className
+                        )}
+                      >
+                        {columns.map((column) => (
+                          <td
+                            key={column.id}
+                            data-mobile-field={column.mobileRole}
+                            className={cn(
+                              "px-3 py-2.5 whitespace-nowrap",
+                              column.className
+                            )}
+                          >
+                            {column.cell(row)}
+                          </td>
+                        ))}
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </TablePresentation>
           </table>
+        )}
+        {mobileInfinite && pagination && (
+          <MobileFeedLoader
+            pageIndex={pageIndex}
+            hasMore={hasMore}
+            busy={pageLoading || isFetching}
+            error={pageError}
+            count={hasError ? 0 : loadedCount}
+            scope={scope}
+            noProgress={feed.noProgress}
+            scrollRoot={scrollRoot}
+            onLoadMore={pagination.onLoadMore ?? pagination.onPageChange}
+            onRetry={onRetry ?? onRefresh}
+          />
         )}
       </div>
 
-      {pagination && (
+      {pagination && !compact && (
         <footer className="sticky bottom-0 z-10 grid w-full shrink-0 grid-cols-2 items-center gap-3 border-t border-border/60 bg-card px-4 py-4 @4xl/data-table:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <p
             aria-live="polite"
@@ -466,5 +577,37 @@ export function DataTable<TRow>({
         </footer>
       )}
     </div>
+  )
+}
+
+function TablePresentation({
+  compact,
+  children,
+}: {
+  compact: boolean
+  children: ReactNode
+}) {
+  return compact ? (
+    <MobileTableContent>{children}</MobileTableContent>
+  ) : (
+    children
+  )
+}
+
+function legacyRows(children: ReactNode): ReactElement[] {
+  return tableNodes(children)
+    .filter((section) => section.type === "tbody")
+    .flatMap((section) => tableNodes(section.props.children))
+    .filter((row) => {
+      const cells = tableNodes(row.props.children)
+      return (
+        row.type === "tr" &&
+        !(cells.length === 1 && (cells[0].props.colSpan ?? 1) > 1)
+      )
+    })
+}
+function combineLegacyRows(children: ReactNode, rows: ReactElement[]) {
+  return tableNodes(children).map((section) =>
+    section.type === "tbody" ? cloneElement(section, undefined, rows) : section
   )
 }

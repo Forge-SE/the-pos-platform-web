@@ -10,7 +10,10 @@ export function MetricCard({
   value: string
 }) {
   return (
-    <article className="flex min-h-32 min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card p-5">
+    <article
+      data-slot="metric-card"
+      className="flex min-h-32 min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card p-5"
+    >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
         <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-secondary">

@@ -38,7 +38,7 @@ export function TaxesPage() {
     tax.name.toLowerCase().includes((search ?? "").toLowerCase().trim())
   )
   const visible = filtered.slice(
-    paging.pageIndex * paging.pageSize,
+    paging.windowStart(),
     (paging.pageIndex + 1) * paging.pageSize
   )
 
@@ -116,6 +116,7 @@ export function TaxesPage() {
           ) : (
             <div className="overflow-hidden rounded-md bg-card">
               <DataTable
+                mobileFeedMode="window"
                 ariaLabel="Custom tax rates"
                 rows={visible}
                 search={{

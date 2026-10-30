@@ -266,7 +266,7 @@ function TierAnalytics({ detail }: { detail: Detail }) {
   ]
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mobile-metric-collection grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={StorefrontIcon}
           label="On this plan"
@@ -311,6 +311,7 @@ function TierAnalytics({ detail }: { detail: Detail }) {
       <section className="min-w-0">
         <h2 className="px-4 py-3 text-sm font-semibold">Recent payments</h2>
         <DataTable
+          mobileFeedMode="window"
           ariaLabel="Recent tier payments"
           rows={detail.recentPayments}
           columns={paymentColumns}
@@ -392,11 +393,12 @@ function TierRestaurantsTable({
   ]
   return (
     <DataTable
+      mobileFeedMode="window"
       ariaLabel={
         id === "tierRenewals" ? "Pending renewals" : "Restaurants on tier"
       }
       rows={filtered.slice(
-        pageIndex * paging.pageSize,
+        paging.windowStart(pageIndex),
         (pageIndex + 1) * paging.pageSize
       )}
       columns={columns}

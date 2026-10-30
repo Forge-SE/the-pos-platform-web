@@ -41,7 +41,7 @@ export function DiscountsPage() {
       .includes((search ?? "").toLowerCase().trim())
   )
   const visible = filtered.slice(
-    paging.pageIndex * paging.pageSize,
+    paging.windowStart(),
     (paging.pageIndex + 1) * paging.pageSize
   )
 
@@ -85,7 +85,17 @@ export function DiscountsPage() {
         ) : (
           <div className="overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
             <DataTable
+              mobileFeedMode="window"
               ariaLabel="Discounts"
+              mobileFieldRoles={[
+                "identity",
+                "meta",
+                "amount",
+                "detail",
+                "detail",
+                "status",
+                "actions",
+              ]}
               rows={visible}
               search={{
                 value: search ?? "",

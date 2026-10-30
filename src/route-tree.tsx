@@ -13,7 +13,7 @@ const rootRoute = createRootRoute({
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: "POS Platform" },
     ],
@@ -65,6 +65,15 @@ const overviewRoute = createRoute({
 const ordersRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/orders",
+  validateSearch: (
+    search: Record<string, unknown>
+  ): { desk?: "status" | "history" } => ({
+    ...search,
+    desk:
+      search.desk === "status" || search.desk === "history"
+        ? search.desk
+        : undefined,
+  }),
   component: lazyRouteComponent(() => import("@/pages/Orders"), "Orders"),
   head: () => ({ meta: [{ title: "Orders | Ovaal" }] }),
 })
@@ -131,6 +140,10 @@ const discountsRoute = createRoute({
 const settingsRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/settings",
+  validateSearch: (search: Record<string, unknown>): { settings?: string } => ({
+    ...search,
+    settings: typeof search.settings === "string" ? search.settings : undefined,
+  }),
   component: lazyRouteComponent(() => import("@/pages/Settings"), "Settings"),
   head: () => ({ meta: [{ title: "Settings | Ovaal" }] }),
 })

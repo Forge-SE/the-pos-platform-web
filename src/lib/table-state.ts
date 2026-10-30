@@ -1,3 +1,4 @@
+import { useMediaQuery } from "@/lib/use-media-query"
 import { useUrlState } from "@/lib/url-state"
 
 function positiveInteger(value: string | null, fallback: number) {
@@ -10,6 +11,8 @@ export function useTablePagination(
   defaultPageSize = 20,
   allowedSizes: readonly number[] = [10, 20, 25, 50, 100]
 ) {
+  const compact = useMediaQuery("(max-width: 1023px)")
+  const [, replacePageParam] = useUrlState(`${key}Page`)
   const [pageParam, setPageParam] = useUrlState(`${key}Page`, "push")
   const [sizeParam, setSizeParam] = useUrlState(`${key}PageSize`)
   const pageIndex = positiveInteger(pageParam, 1) - 1
@@ -22,6 +25,9 @@ export function useTablePagination(
   return {
     pageIndex,
     pageSize,
+    onLoadMore: (index: number) =>
+      replacePageParam(index > 0 ? String(index + 1) : null),
+    windowStart: (index = pageIndex) => (compact ? 0 : index * pageSize),
     onPageChange: (index: number) =>
       setPageParam(index > 0 ? String(index + 1) : null),
     onPageSizeChange: (size: number) => {

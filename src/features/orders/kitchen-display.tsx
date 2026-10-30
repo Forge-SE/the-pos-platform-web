@@ -1,3 +1,4 @@
+import { MobileTabs } from "@/components/mobile/mobile-tabs"
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { gql } from "@apollo/client"
@@ -504,7 +505,7 @@ export function KitchenDisplay({
 
   return (
     <div
-      className={`content-page mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8 ${view === "table" ? "lg:flex lg:h-full lg:min-h-0 lg:flex-col" : ""} ${readOnly ? "max-h-[calc(100svh-4.5rem)] overflow-y-auto lg:max-h-[calc(100svh-1rem)]" : ""}`}
+      className={`content-page mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8 ${view === "table" ? "lg:flex lg:h-full lg:min-h-0 lg:flex-col" : ""} ${readOnly ? "lg:max-h-[calc(100svh-1rem)] lg:overflow-y-auto" : ""}`}
     >
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -709,78 +710,133 @@ function BoardView({
   highlightId: string | null
   onAdvance: (order: KitchenOrder) => void
 }) {
+  const boardRef = useRef<HTMLElement>(null)
+  const { t } = useLanguage()
+  const [mobileStage, setMobileStage] = useState<string>("NEW")
+  const moveStage = (status: string) => {
+    setMobileStage(status)
+    const board = boardRef.current
+    const index = columns.findIndex((column) => column.status === status)
+    const target = board?.children[index] as HTMLElement | undefined
+    if (board && target)
+      board.scrollTo({
+        left:
+          target.offsetLeft -
+          (board.firstElementChild as HTMLElement).offsetLeft,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      })
+  }
   return (
-    <section
-      aria-label="Kitchen order board"
-      className="mt-6 grid flex-1 gap-4 xl:grid-cols-3"
-    >
-      {columns.map((column) => {
-        const columnOrders = orders.filter(
-          (order) => order.status === column.status
-        )
-        return (
-          <section
-            key={column.status}
-            aria-labelledby={`column-${column.status}`}
-            className="relative flex min-w-0 flex-col rounded-2xl border border-border/70 bg-muted/20 pt-1"
-          >
-            <div
-              aria-hidden="true"
-              className={`absolute -top-[3px] right-6 left-6 h-1.5 rounded-full ${column.rail}`}
-            />
-            <header className="flex items-center justify-between gap-3 overflow-hidden rounded-t-2xl border-b border-border/60 bg-card/70 px-4 py-3.5">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <span
-                  className={`size-2.5 shrink-0 rounded-full ${column.dot}`}
-                />
-                <h2
-                  id={`column-${column.status}`}
-                  className="truncate text-base font-semibold tracking-[-0.02em]"
-                >
-                  {column.step}. {column.title}
-                </h2>
+    <div className="min-w-0 lg:contents">
+      <div className="mt-5 lg:hidden">
+        <MobileTabs
+          label="Kitchen stages"
+          value={mobileStage}
+          onChange={moveStage}
+          items={columns.map((column) => ({
+            id: column.status,
+            label: `${t(column.status === "NEW" ? "New" : column.status === "PREPARING" ? "Preparing" : "Ready")} (${counts[column.status]})`,
+          }))}
+        />
+      </div>
+      <section
+        ref={boardRef}
+        onScroll={(event) => {
+          const board = event.currentTarget
+          const first = board.firstElementChild as HTMLElement | null
+          if (!first) return
+          const nearest = Array.from(board.children).reduce(
+            (best, child, index) =>
+              Math.abs(
+                (child as HTMLElement).offsetLeft -
+                  first.offsetLeft -
+                  board.scrollLeft
+              ) <
+              Math.abs(
+                (board.children[best] as HTMLElement).offsetLeft -
+                  first.offsetLeft -
+                  board.scrollLeft
+              )
+                ? index
+                : best,
+            0
+          )
+          setMobileStage(columns[nearest].status)
+        }}
+        aria-label="Kitchen order board"
+        tabIndex={0}
+        className="mobile-kitchen-board mt-6 grid flex-1 gap-4 xl:grid-cols-3"
+      >
+        {columns.map((column) => {
+          const columnOrders = orders.filter(
+            (order) => order.status === column.status
+          )
+          return (
+            <section
+              key={column.status}
+              aria-labelledby={`column-${column.status}`}
+              className="relative flex min-w-0 flex-col rounded-2xl border border-border/70 bg-muted/20 pt-1"
+            >
+              <div
+                aria-hidden="true"
+                className={`absolute -top-[3px] right-6 left-6 h-1.5 rounded-full ${column.rail}`}
+              />
+              <header className="flex items-center justify-between gap-3 overflow-hidden rounded-t-2xl border-b border-border/60 bg-card/70 px-4 py-3.5">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span
+                    className={`size-2.5 shrink-0 rounded-full ${column.dot}`}
+                  />
+                  <h2
+                    id={`column-${column.status}`}
+                    className="truncate text-base font-semibold tracking-[-0.02em]"
+                  >
+                    {column.step}. {column.title}
+                  </h2>
+                </div>
+                <span className="flex min-w-7 items-center justify-center rounded-full border border-border/70 bg-background px-2 py-0.5 text-xs font-semibold tabular-nums">
+                  {counts[column.status]}
+                </span>
+              </header>
+              <div className="content-region min-h-64 space-y-3 p-3">
+                {loading ? (
+                  [0, 1].map((item) => (
+                    <div
+                      key={item}
+                      className="h-64 animate-pulse rounded-xl bg-card motion-reduce:animate-none"
+                    />
+                  ))
+                ) : columnOrders.length === 0 ? (
+                  <EmptyState
+                    icon={<ForkKnifeIcon />}
+                    title={searching ? "No matching tickets" : "Column clear"}
+                    description={
+                      searching
+                        ? "Try a ticket number, dish, or kitchen note."
+                        : column.empty
+                    }
+                  />
+                ) : (
+                  columnOrders.map((order) => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      now={now}
+                      canAdvance={canAdvance}
+                      readOnly={readOnly}
+                      pending={pendingOrderId === order.id}
+                      highlighted={highlightId === order.id}
+                      onAdvance={onAdvance}
+                    />
+                  ))
+                )}
               </div>
-              <span className="flex min-w-7 items-center justify-center rounded-full border border-border/70 bg-background px-2 py-0.5 text-xs font-semibold tabular-nums">
-                {counts[column.status]}
-              </span>
-            </header>
-            <div className="content-region min-h-64 space-y-3 p-3">
-              {loading ? (
-                [0, 1].map((item) => (
-                  <div
-                    key={item}
-                    className="h-64 animate-pulse rounded-xl bg-card motion-reduce:animate-none"
-                  />
-                ))
-              ) : columnOrders.length === 0 ? (
-                <EmptyState
-                  icon={<ForkKnifeIcon />}
-                  title={searching ? "No matching tickets" : "Column clear"}
-                  description={
-                    searching
-                      ? "Try a ticket number, dish, or kitchen note."
-                      : column.empty
-                  }
-                />
-              ) : (
-                columnOrders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    now={now}
-                    canAdvance={canAdvance}
-                    readOnly={readOnly}
-                    pending={pendingOrderId === order.id}
-                    highlighted={highlightId === order.id}
-                    onAdvance={onAdvance}
-                  />
-                ))
-              )}
-            </div>
-          </section>
-        )
-      })}
-    </section>
+            </section>
+          )
+        })}
+      </section>
+    </div>
   )
 }
 
@@ -935,7 +991,7 @@ function TableView({
 }) {
   const paging = useTablePagination("kitchen")
   const visible = orders.slice(
-    paging.pageIndex * paging.pageSize,
+    paging.windowStart(),
     (paging.pageIndex + 1) * paging.pageSize
   )
   if (loading) {
@@ -946,6 +1002,7 @@ function TableView({
   return (
     <div className="mt-6 overflow-hidden rounded-md bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
       <DataTable
+        mobileFeedMode="window"
         ariaLabel="Kitchen orders"
         rows={visible}
         search={{

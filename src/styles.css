@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@import "./components/layout/mobile/mobile.css";
+@import "./components/mobile/mobile-features.css";
+
 @font-face {
   font-family: "Season Sans";
   src: url("/fonts/SeasonCollectionVF-TRIAL.ttf") format("truetype");

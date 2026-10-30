@@ -1,3 +1,6 @@
+import { MobileStockRow } from "./mobile/mobile-stock-row"
+import { useMediaQuery } from "@/lib/use-media-query"
+import { MobileTabs } from "@/components/mobile/mobile-tabs"
 import { useRef, useState } from "react"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Navigate } from "@tanstack/react-router"
@@ -119,9 +122,21 @@ export function InventoryManagement() {
         onValueChange={(value) => setTab(String(value))}
         className="mt-6 flex flex-1 flex-col lg:min-h-0"
       >
+        <div className="mb-5 lg:hidden">
+          <MobileTabs
+            items={[
+              { id: "stock", label: "Stock" },
+              { id: "recipes", label: "Meal recipes" },
+              { id: "movements", label: "Movement log" },
+            ]}
+            value={tab}
+            onChange={setTab}
+            label="Inventory sections"
+          />
+        </div>
         <Tabs.List
           aria-label={t("Inventory sections")}
-          className="mb-5 flex gap-6 overflow-x-auto border-b border-border/70"
+          className="mb-5 hidden gap-6 overflow-x-auto border-b border-border/70 lg:flex"
         >
           {[
             { value: "stock", label: "Stock" },
@@ -219,6 +234,7 @@ function StockCard({
   onAction: (kind: "RECEIPT" | "WASTE" | "COUNT") => void
 }) {
   const { t } = useLanguage()
+  const compact = useMediaQuery("(max-width: 1023px)")
   const total = Math.max(0, item.onHand)
   const availablePercent =
     total > 0 ? Math.min(100, Math.max(0, (item.available / total) * 100)) : 0
@@ -228,6 +244,17 @@ function StockCard({
   const needsAttention =
     item.countReviewRequired || item.available <= item.reorderLevel
 
+  if (compact)
+    return (
+      <MobileStockRow
+        item={item}
+        canManage={canManage}
+        onAction={onAction}
+        availablePercent={availablePercent}
+        reservedPercent={reservedPercent}
+        needsAttention={needsAttention}
+      />
+    )
   return (
     <article className="overflow-hidden rounded-xl border border-border/70 bg-card">
       <div className="p-5">
@@ -973,6 +1000,7 @@ function RecipeEditor({
 }
 function MovementLog() {
   const { t, locale } = useLanguage()
+  const compact = useMediaQuery("(max-width: 1023px)")
   const paging = useTablePagination("movements", 25)
   const { data, loading, error, refetch } = useQuery<{
     inventoryHistory: { items: Movement[]; total: number }
@@ -986,10 +1014,17 @@ function MovementLog() {
   })
   const entries = data?.inventoryHistory.items ?? []
   const total = data?.inventoryHistory.total ?? 0
-  if (loading && !data) return <LoadingState label="stock movements" />
-  if (error)
+  if (loading && !data && (!compact || paging.pageIndex === 0))
+    return <LoadingState label="stock movements" />
+  if (error && (!compact || paging.pageIndex === 0))
     return <ErrorState title="Couldn’t load movement log" onRetry={refetch} />
-  if (!entries.length && total === 0)
+  if (
+    !loading &&
+    !error &&
+    !entries.length &&
+    total === 0 &&
+    (!compact || paging.pageIndex === 0)
+  )
     return (
       <EmptyState
         title="No stock movements yet"
@@ -1009,6 +1044,7 @@ function MovementLog() {
       <div className="overflow-x-auto lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
           ariaLabel={t("Inventory movement history")}
+          mobilePageError={Boolean(error)}
           rows={entries}
           onRefresh={() => void refetch()}
           isLoading={loading}

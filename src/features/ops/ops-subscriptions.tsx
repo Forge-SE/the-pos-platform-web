@@ -139,7 +139,7 @@ export function OpsSubscriptions() {
     plan.name.toLowerCase().includes((planSearch ?? "").toLowerCase().trim())
   )
   const visiblePlans = filteredPlans.slice(
-    planPaging.pageIndex * planPaging.pageSize,
+    planPaging.windowStart(),
     (planPaging.pageIndex + 1) * planPaging.pageSize
   )
   const saving = creating || updating
@@ -165,6 +165,7 @@ export function OpsSubscriptions() {
           Tiers
         </h2>
         <DataTable
+          mobileFeedMode="window"
           ariaLabel="Subscription plans"
           rows={visiblePlans}
           search={{

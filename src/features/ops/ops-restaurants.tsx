@@ -166,6 +166,15 @@ export function OpsRestaurants() {
       <section className="content-region mx-4 mb-8 overflow-hidden rounded-md bg-card lg:mx-8 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <DataTable
           ariaLabel="Restaurants"
+          mobilePageError={Boolean(error)}
+          mobileFieldRoles={[
+            "identity",
+            "meta",
+            "detail",
+            "status",
+            "meta",
+            "actions",
+          ]}
           rows={items}
           search={{
             value: searchParam ?? "",
