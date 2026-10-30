@@ -36,14 +36,14 @@ export function StaffRail({
   }
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       {profiles.length > 2 && (
         <>
           <Button
             type="button"
             variant="outline"
             size="icon-sm"
-            className="absolute top-10 -left-1 z-10 bg-card"
+            className="absolute top-10 -left-1 z-10 hidden bg-card sm:inline-flex"
             aria-label="Previous staff"
             onClick={() => scrollByCard(-1)}
           >
@@ -53,7 +53,7 @@ export function StaffRail({
             type="button"
             variant="outline"
             size="icon-sm"
-            className="absolute top-10 -right-1 z-10 bg-card"
+            className="absolute top-10 -right-1 z-10 hidden bg-card sm:inline-flex"
             aria-label="Next staff"
             onClick={() => scrollByCard(1)}
           >
@@ -63,21 +63,21 @@ export function StaffRail({
       )}
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory scroll-px-2 [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className="grid min-w-0 grid-cols-2 gap-2 px-1 pb-1 sm:flex sm:snap-x sm:snap-mandatory sm:scroll-px-2 sm:[scrollbar-width:none] sm:overflow-x-auto sm:[-ms-overflow-style:none] sm:[&::-webkit-scrollbar]:hidden"
       >
         {profiles.map((profile) => (
           <button
             key={profile.id}
             type="button"
             onClick={() => onChoose(profile)}
-            className="flex w-36 shrink-0 snap-center flex-col items-center rounded-xl px-2 py-3 text-center transition-colors hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-ring"
+            className="flex min-w-0 flex-col items-center rounded-xl px-2 py-3 text-center transition-colors hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-ring sm:w-36 sm:shrink-0 sm:snap-center"
           >
             <StaffAvatar
               name={profile.name}
               url={profile.avatarUrl}
-              className="size-24 text-xl ring-2 ring-border"
+              className="size-16 text-xl ring-2 ring-border sm:size-24"
             />
-            <span className="mt-3 max-w-full truncate text-sm font-semibold">
+            <span className="mt-3 max-w-full text-sm font-semibold break-words sm:truncate">
               {profile.name}
             </span>
             <span className="text-xs text-muted-foreground">
