@@ -22,6 +22,7 @@ export const SHIFT_CLOSURE_CHECK = gql`
       activeOrderCount
       unpaidOrders {
         id
+        ticketNumber
         total
         status
         createdAt
@@ -63,6 +64,7 @@ const VERIFY_MOMO = gql`
 
 export interface UnpaidShiftOrder {
   id: string
+  ticketNumber: string
   total: number
   status: string
   createdAt: string
@@ -247,7 +249,7 @@ export function ShiftPayments({
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold">
-                          Order {order.id.slice(-6).toUpperCase()}{" "}
+                          Order {order.ticketNumber}{" "}
                           <span className="ml-2 tabular-nums">
                             {formatMoney(order.total)}
                           </span>
@@ -398,7 +400,7 @@ function ReceivedPaymentDialog({
         if (!open && !loading) onClose()
       }}
       title="Record received payment"
-      description={`Order ${order.id.slice(-6).toUpperCase()} · ${formatMoney(order.total)}. This records money already received; it does not charge the customer.`}
+      description={`Order ${order.ticketNumber} · ${formatMoney(order.total)}. This records money already received; it does not charge the customer.`}
     >
       <form onSubmit={(event) => void submit(event)} className="space-y-5">
         <fieldset disabled={loading} className="space-y-2">

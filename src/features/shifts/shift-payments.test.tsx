@@ -45,6 +45,7 @@ vi.mock("@/features/pricing/modals/pricing-dialog", () => ({
 
 const order: UnpaidShiftOrder = {
   id: "order-123456",
+  ticketNumber: "T0001",
   total: 12500,
   createdAt: "2026-10-07T12:00:00Z",
   status: "COMPLETED",

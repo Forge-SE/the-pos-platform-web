@@ -31,6 +31,7 @@ const HISTORY_QUERY = gql`
   query CustomerHistory($customerId: ID!) {
     customerOrders(customerId: $customerId) {
       id
+      ticketNumber
       status
       total
       createdAt
@@ -69,6 +70,7 @@ interface Customer {
 interface History {
   customerOrders: Array<{
     id: string
+    ticketNumber: string
     status: string
     total: number
     createdAt: string
@@ -280,7 +282,7 @@ export function Customers() {
                           >
                             <span>
                               <span className="block font-medium">
-                                #{order.id.slice(-6).toUpperCase()} ·{" "}
+                                #{order.ticketNumber} ·{" "}
                                 {order.status.toLowerCase()}
                               </span>
                               <span className="text-xs text-muted-foreground">

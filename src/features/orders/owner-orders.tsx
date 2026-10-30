@@ -36,6 +36,7 @@ import { getAccessTokenProfile } from "@/lib/auth-token"
 
 interface OwnerOrder {
   id: string
+  ticketNumber: string
   status: string
   diningType: DiningType
   deliveryAddress: string | null
@@ -86,6 +87,7 @@ const RECENT_ORDERS = gql`
       to: $to
     ) {
       id
+      ticketNumber
       status
       diningType
       deliveryAddress
@@ -418,7 +420,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                       onClick={() => setSelected(order)}
                       className="font-semibold tabular-nums underline-offset-4 hover:underline"
                     >
-                      {order.id.slice(-6).toUpperCase()}
+                      {order.ticketNumber}
                     </button>
                   </td>
                   <td className="hidden px-4 py-3 sm:table-cell">
@@ -460,7 +462,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <Dialog.Title className="text-lg font-semibold tracking-[-0.03em]">
-                      {t("Ticket")} {selected.id.slice(-6).toUpperCase()}
+                      {t("Ticket")} {selected.ticketNumber}
                     </Dialog.Title>
                     <Dialog.Description className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                       {t(diningLabel(selected.diningType))} ·{" "}

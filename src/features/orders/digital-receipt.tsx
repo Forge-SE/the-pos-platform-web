@@ -6,6 +6,7 @@ export interface ReceiptDetails {
   restaurantLogoUrl: string | null
   currency: string
   orderId: string
+  ticketNumber: string
   diningType: string
   deliveryAddress: string | null
   createdAt: string
@@ -85,7 +86,7 @@ export function DigitalReceipt({
         <span>
           Order{" "}
           <span className="font-semibold text-foreground">
-            {details.orderId.slice(-6).toUpperCase()}
+            {details.ticketNumber}
           </span>
         </span>
         <span>{diningLabel(details.diningType)}</span>

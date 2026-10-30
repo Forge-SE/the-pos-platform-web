@@ -36,6 +36,7 @@ import { hasPermission } from "@/lib/permissions"
 const ACTIVE_ORDER_FIELDS = gql`
   fragment OverviewActiveOrder on Order {
     id
+    ticketNumber
     status
     diningType
     notes
@@ -124,6 +125,7 @@ interface Shift {
 
 interface ActiveOrder {
   id: string
+  ticketNumber: string
   status: "NEW" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED"
   diningType: "DINE_IN" | "TAKEAWAY" | "DELIVERY"
   notes: string | null
@@ -329,6 +331,7 @@ export function Overview() {
     if (!query) return orders
     return orders.filter(
       (order) =>
+        order.ticketNumber.toLowerCase().includes(query) ||
         order.id.toLowerCase().includes(query) ||
         order.notes?.toLowerCase().includes(query) ||
         order.items.some(
@@ -634,7 +637,7 @@ function ActiveOrders({
                   className="border-t border-border/50 align-top"
                 >
                   <td className="py-3 pr-3 font-semibold tabular-nums">
-                    #{order.id.slice(-6).toUpperCase()}
+                    #{order.ticketNumber}
                   </td>
                   <td className="py-3 pr-3 whitespace-nowrap">
                     <span className="block">

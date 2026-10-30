@@ -12,6 +12,7 @@ const ACTIVE_ORDERS = gql`
   query CashierLiveOrders {
     activeOrders {
       id
+      ticketNumber
       status
       diningType
       createdAt
@@ -34,6 +35,7 @@ const ACTIVE_ORDERS = gql`
 const LIVE_ORDER_FIELDS = gql`
   fragment CashierLiveOrderFields on Order {
     id
+    ticketNumber
     status
     diningType
     createdAt
@@ -71,6 +73,7 @@ const ORDER_CHANGED = gql`
 
 interface LiveOrder {
   id: string
+  ticketNumber: string
   status: string
   diningType: DiningType
   createdAt: string
@@ -230,7 +233,7 @@ export function CashierLiveOrders() {
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold tabular-nums">
-                #{order.id.slice(-6).toUpperCase()}
+                #{order.ticketNumber}
               </h3>
               <StatusBadge tone={orderStatusTone(order.status)}>
                 {statusLabels[order.status] ?? order.status}

@@ -9,6 +9,7 @@ const details: ReceiptDetails = {
   restaurantLogoUrl: null,
   currency: "GHS",
   orderId: "order-123456",
+  ticketNumber: "T0001",
   diningType: "TAKEAWAY",
   deliveryAddress: null,
   createdAt: "2026-09-30T12:00:00Z",
@@ -39,6 +40,7 @@ describe("digital receipt", () => {
     )
     for (const value of [
       "R-000001",
+      "T0001",
       "Test Kitchen",
       "Jollof",
       "Extra meat",
@@ -51,6 +53,7 @@ describe("digital receipt", () => {
       "Pickup",
     ])
       expect(html).toContain(value)
+    expect(html).not.toContain("123456")
   })
   it("does not imply payment when the saved receipt has no payment", () => {
     const html = renderToStaticMarkup(

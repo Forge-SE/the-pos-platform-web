@@ -16,6 +16,7 @@ const ACTIVE_ORDERS = gql`
   query StationAlarmOrders {
     activeOrders {
       id
+      ticketNumber
       status
     }
   }
@@ -25,6 +26,7 @@ const ORDER_CREATED = gql`
   subscription StationAlarmCreated {
     orderCreated {
       id
+      ticketNumber
       status
     }
   }
@@ -34,6 +36,7 @@ const ORDER_CHANGED = gql`
   subscription StationAlarmChanged {
     orderStatusChanged {
       id
+      ticketNumber
       status
     }
   }
