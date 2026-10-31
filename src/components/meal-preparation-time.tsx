@@ -5,16 +5,22 @@ import { Badge } from "@/components/ui/badge"
 export function MealPreparationTime({
   minutes,
   showUnset = false,
+  appearance = "muted",
 }: {
   minutes: number | null | undefined
   showUnset?: boolean
+  appearance?: "muted" | "lime"
 }) {
   const label = formatPreparationTime(minutes)
   if (label == null && !showUnset) return null
   return (
     <Badge
       variant="outline"
-      className="mt-2 bg-muted/40 text-muted-foreground tabular-nums"
+      className={
+        appearance === "lime"
+          ? "shrink-0 border-transparent bg-primary text-primary-foreground tabular-nums"
+          : "mt-2 bg-muted/40 text-muted-foreground tabular-nums"
+      }
       aria-label={
         label == null
           ? "Preparation time not set"

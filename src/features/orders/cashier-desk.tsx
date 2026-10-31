@@ -1,4 +1,6 @@
 import { MobileTabs } from "@/components/mobile/mobile-tabs"
+import { CustomerLookup } from "@/features/orders/customer-lookup"
+import { MomoPhoneInput } from "@/features/orders/momo-phone-input"
 import { useMediaQuery } from "@/lib/use-media-query"
 import { AdaptiveDialogPopup } from "@/components/mobile/adaptive-dialog-popup"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -8,6 +10,9 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import { Dialog } from "@base-ui/react/dialog"
 import {
   ClockIcon,
+  MoneyIcon,
+  BankIcon,
+  WalletIcon,
   ArrowsOutIcon,
   ArrowsInIcon,
   MinusIcon,
@@ -255,7 +260,9 @@ export function CashierDesk({
   const [tender, setTender] = useState("")
   const [discountCode, setDiscountCode] = useState("")
   const [appliedDiscountCode, setAppliedDiscountCode] = useState("")
-  const [payMethod, setPayMethod] = useState<"CASH" | "MOMO">("MOMO")
+  const [payMethod, setPayMethod] = useState<"CASH" | "MOMO" | "TRANSFER">(
+    "MOMO"
+  )
   const [network, setNetwork] = useState<(typeof networks)[number]["id"]>("MTN")
   const [walletPhone, setWalletPhone] = useState("")
   const [formError, setFormError] = useState<string | null>(null)
@@ -473,9 +480,9 @@ export function CashierDesk({
       )
       return
     }
-    if (!online && payMethod === "MOMO" && due > 0) {
+    if (!online && payMethod !== "CASH" && due > 0) {
       setFormError(
-        "MoMo is unavailable while this till is offline. Take cash, and it will sync when the connection returns."
+        "Electronic payments are unavailable while this till is offline. Take cash, and it will sync when the connection returns."
       )
       return
     }
@@ -578,7 +585,12 @@ export function CashierDesk({
           | undefined
       )?.createOrder
       if (!order) throw new Error("The order was not created.")
-      const tendered = tender.trim() ? cedisToPesewas(tender) : order.total
+      const tendered =
+        payMethod === "TRANSFER"
+          ? order.total
+          : tender.trim()
+            ? cedisToPesewas(tender)
+            : order.total
       if (order.total === 0) {
         toast({
           title: "No payment due",
@@ -589,20 +601,20 @@ export function CashierDesk({
         setReceiptOpen(true)
       } else if (!tendered || tendered <= 0) {
         throw new Error("Enter the amount received.")
-      } else if (payMethod === "CASH") {
+      } else if (payMethod !== "MOMO") {
         const recorded = await recordPayment({
           variables: {
             input: {
               idempotencyKey: crypto.randomUUID(),
               orderId: order.id,
-              method: "CASH",
+              method: payMethod,
               amount: tendered,
               receiptChannel: "PRINT",
             },
           },
         })
         toast({
-          title: `Cash order ${order.ticketNumber} is in`,
+          title: `${payMethod === "CASH" ? "Cash" : "Transfer"} order ${order.ticketNumber} is in`,
           description:
             (
               recorded.data as
@@ -674,7 +686,7 @@ export function CashierDesk({
       className={
         fullscreen
           ? "grid h-dvh min-h-0 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]"
-          : "content-page"
+          : "content-page cashier-counter-page"
       }
     >
       {fullscreen && (
@@ -787,7 +799,7 @@ export function CashierDesk({
               onRetry={refetch}
             />
           ) : loading ? (
-            <div className="mobile-counter-menu mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mobile-counter-menu mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[0, 1, 2].map((item) => (
                 <div
                   key={item}
@@ -813,7 +825,7 @@ export function CashierDesk({
               }
             />
           ) : (
-            <ul className="mobile-counter-menu mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="mobile-counter-menu mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((item) => {
                 const category = categories.find(
                   (entry) => entry.id === item.categoryId
@@ -821,14 +833,14 @@ export function CashierDesk({
                 return (
                   <li
                     key={item.id}
-                    className="overflow-hidden rounded-2xl border border-border/70 bg-card"
+                    className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card"
                   >
-                    <div className="relative aspect-video bg-muted">
+                    <div className="relative aspect-video shrink-0 overflow-hidden bg-muted">
                       {item.imageUrl ? (
                         <img
                           src={item.imageUrl}
                           alt=""
-                          className="size-full object-cover outline outline-black/10"
+                          className="absolute inset-0 size-full object-cover outline outline-black/10"
                         />
                       ) : (
                         <div className="flex size-full items-center justify-center text-3xl font-semibold text-secondary/40">
@@ -841,30 +853,27 @@ export function CashierDesk({
                         </span>
                       )}
                     </div>
-                    <div className="space-y-2 p-4">
-                      <h2 className="text-base font-semibold tracking-[-0.02em]">
-                        {item.name}
-                      </h2>
+                    <div className="flex flex-1 flex-col gap-2 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className="min-w-0 text-base font-semibold tracking-[-0.02em]">
+                          {item.name}
+                        </h2>
+                        <MealPreparationTime
+                          minutes={item.preparationTimeMinutes}
+                          appearance="lime"
+                        />
+                      </div>
                       {item.description && (
                         <p className="line-clamp-2 text-sm text-muted-foreground">
                           {item.description}
                         </p>
                       )}
-                      <MealPreparationTime
-                        minutes={item.preparationTimeMinutes}
-                      />
-                      <div className="flex items-end justify-between gap-3 pt-1">
-                        <p>
-                          <span className="block text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-                            Base price
-                          </span>
-                          <span className="text-sm font-semibold tabular-nums">
-                            {formatMoney(item.price)}
-                          </span>
+                      <div className="mt-auto flex flex-col gap-3 pt-1">
+                        <p className="text-lg font-semibold tabular-nums">
+                          {formatMoney(item.price)}
                         </p>
                         <Button
-                          variant="outline"
-                          size="sm"
+                          className="h-11 w-full px-5"
                           onClick={() => setCustomizing(item)}
                         >
                           <PlusIcon
@@ -1076,7 +1085,7 @@ function CustomizeDialog({
           </div>
           <div className="border-t border-border/70 p-4">
             <Button
-              className="w-full"
+              className="h-11 w-full px-5"
               disabled={Boolean(missing)}
               onClick={() => onAdd(optionIds, kitchenNotes)}
             >
@@ -1241,9 +1250,9 @@ function BagDrawer(props: {
   onDiscountCode: (value: string) => void
   appliedDiscountCode: string
   onApplyDiscount: () => void
-  payMethod: "CASH" | "MOMO"
+  payMethod: "CASH" | "MOMO" | "TRANSFER"
   offline: boolean
-  onPayMethod: (value: "CASH" | "MOMO") => void
+  onPayMethod: (value: "CASH" | "MOMO" | "TRANSFER") => void
   network: (typeof networks)[number]["id"]
   onNetwork: (value: (typeof networks)[number]["id"]) => void
   walletPhone: string
@@ -1254,6 +1263,10 @@ function BagDrawer(props: {
   busy: boolean
   error: string | null
 }) {
+  const [transferConfirmed, setTransferConfirmed] = useState(false)
+  useEffect(() => {
+    setTransferConfirmed(false)
+  }, [props.open, props.payMethod, props.due])
   return (
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
@@ -1288,7 +1301,27 @@ function BagDrawer(props: {
               </Dialog.Close>
             </div>
           </div>
-          <div className="content-region min-h-0 flex-1 overflow-y-auto px-5 py-2 [&>section]:border-t [&>section]:border-dotted [&>section]:border-border [&>section]:py-6">
+          <div className="content-region min-h-0 flex-1 overflow-y-auto px-5 py-4 [&>section]:mb-4 [&>section]:rounded-xl [&>section]:border [&>section]:border-dotted [&>section]:border-border [&>section]:p-4">
+            <section aria-label="Service mode">
+              <div
+                className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1"
+                role="radiogroup"
+                aria-label="Service mode"
+              >
+                {(["TAKEAWAY", "DINE_IN", "DELIVERY"] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={props.diningType === value}
+                    onClick={() => props.onDiningType(value)}
+                    className={`h-10 rounded-full text-sm font-medium transition-[background-color,color] duration-150 focus-visible:outline-2 focus-visible:outline-ring ${props.diningType === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {diningLabel(value)}
+                  </button>
+                ))}
+              </div>
+            </section>
             {props.lines.length === 0 ? (
               <EmptyState
                 title="Your bag is empty."
@@ -1311,26 +1344,39 @@ function BagDrawer(props: {
                     className="rounded-xl border border-border/70 p-3"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold">
-                          {line.item.name}
-                        </p>
-                        {line.summary && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {line.summary}
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-lg font-semibold text-muted-foreground">
+                          {line.item.imageUrl ? (
+                            <img
+                              src={line.item.imageUrl}
+                              alt=""
+                              className="size-full object-cover outline outline-black/10"
+                            />
+                          ) : (
+                            line.item.name.slice(0, 1)
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">
+                            {line.item.name}
                           </p>
-                        )}
-                        {line.notes && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {line.notes}
-                          </p>
-                        )}
+                          {line.summary && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {line.summary}
+                            </p>
+                          )}
+                          {line.notes && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {line.notes}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm font-semibold tabular-nums">
                         {formatMoney(line.unitPrice * line.quantity)}
                       </p>
                     </div>
-                    <div className="mt-3 flex items-center gap-2">
+                    <div className="mt-3 flex w-full items-center justify-between gap-2 rounded-full border border-border p-1">
                       <button
                         type="button"
                         aria-label="Decrease quantity"
@@ -1365,30 +1411,6 @@ function BagDrawer(props: {
             )}
 
             <section>
-              <h2 className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-                Dining
-              </h2>
-              <div
-                className="mt-2 grid grid-cols-3 gap-2"
-                role="radiogroup"
-                aria-label="Dining"
-              >
-                {(["TAKEAWAY", "DINE_IN", "DELIVERY"] as const).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={props.diningType === value}
-                    onClick={() => props.onDiningType(value)}
-                    className={`h-10 rounded-full text-sm font-medium transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] motion-reduce:active:scale-100 ${props.diningType === value ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}
-                  >
-                    {diningLabel(value)}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section>
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Kitchen tip</h2>
                 <span className="text-sm font-semibold text-secondary tabular-nums">
@@ -1406,39 +1428,45 @@ function BagDrawer(props: {
                   </TipChip>
                 ))}
                 <TipChip
-                  active={props.tipChoice === "percent"}
-                  onClick={() => props.onTipChoice("percent")}
+                  active={props.tipChoice === "custom"}
+                  onClick={() => props.onTipChoice("custom")}
                 >
-                  10%
+                  Custom
                 </TipChip>
               </div>
-              <Input
-                inputMode="decimal"
-                value={props.customTip}
-                onChange={(event) => {
-                  props.onCustomTip(event.target.value)
-                  props.onTipChoice("custom")
-                }}
-                placeholder="Custom GHS"
-                aria-label="Custom tip in cedis"
-                className="mt-3"
-              />
+              {props.tipChoice === "custom" && (
+                <Input
+                  inputMode="decimal"
+                  value={props.customTip}
+                  onChange={(event) => {
+                    props.onCustomTip(event.target.value)
+                    props.onTipChoice("custom")
+                  }}
+                  placeholder="Custom GHS"
+                  aria-label="Custom tip in cedis"
+                  className="mt-3"
+                />
+              )}
             </section>
 
             <section className="space-y-3">
               <h2 className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-                Customer and payment
+                Customer details
               </h2>
-              <Input
+              <CustomerLookup
+                offline={props.offline}
                 value={props.customerName}
-                onChange={(event) => props.onCustomerName(event.target.value)}
-                placeholder="Full name"
-                aria-label="Customer name"
+                onChange={props.onCustomerName}
+                onSelect={(customer) => {
+                  props.onCustomerName(customer.name)
+                  props.onContactPhone(customer.phone)
+                  props.onSmsConsent(customer.consentStatus === "granted")
+                }}
               />
               <Input
                 value={props.contactPhone}
                 onChange={(event) => props.onContactPhone(event.target.value)}
-                placeholder="Contact phone"
+                placeholder="Contact phone (optional)"
                 aria-label="Contact phone"
                 inputMode="tel"
               />
@@ -1461,13 +1489,6 @@ function BagDrawer(props: {
                   inputMode="decimal"
                 />
               )}
-              <Input
-                value={props.tender}
-                onChange={(event) => props.onTender(event.target.value)}
-                placeholder="Amount received, leave blank for the full total"
-                aria-label="Amount received in cedis"
-                inputMode="decimal"
-              />
               {props.diningType === "DELIVERY" && (
                 <Input
                   value={props.deliveryAddress}
@@ -1481,6 +1502,9 @@ function BagDrawer(props: {
                   required
                 />
               )}
+            </section>
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold">Payment</h2>
               <div className="flex gap-2">
                 <Input
                   value={props.discountCode}
@@ -1503,29 +1527,59 @@ function BagDrawer(props: {
                   {props.appliedDiscountCode} applied successfully.
                 </p>
               )}
-              <div className="grid grid-cols-2 gap-2 pt-3">
-                <button
-                  type="button"
-                  aria-pressed={props.payMethod === "MOMO"}
-                  disabled={props.offline}
-                  onClick={() => props.onPayMethod("MOMO")}
-                  className={`h-11 rounded-xl text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${props.payMethod === "MOMO" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  Mobile Money
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={props.payMethod === "CASH"}
-                  onClick={() => props.onPayMethod("CASH")}
-                  className={`h-11 rounded-xl text-sm font-semibold ${props.payMethod === "CASH" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  Cash / counter
-                </button>
+              <div
+                className="grid grid-cols-3 gap-2"
+                role="group"
+                aria-label="Payment method"
+              >
+                {(
+                  [
+                    { id: "CASH", label: "Cash", icon: MoneyIcon },
+                    { id: "TRANSFER", label: "Transfer", icon: BankIcon },
+                    { id: "MOMO", label: "Mobile money", icon: WalletIcon },
+                  ] as const
+                ).map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={props.payMethod === id}
+                    disabled={props.offline && id !== "CASH"}
+                    onClick={() => props.onPayMethod(id)}
+                    className={`flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-2xl px-2 py-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 ${props.payMethod === id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Icon aria-hidden="true" className="size-5" />
+                    {label}
+                  </button>
+                ))}
               </div>
+              {props.payMethod === "TRANSFER" && (
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={transferConfirmed}
+                    onChange={(event) =>
+                      setTransferConfirmed(event.target.checked)
+                    }
+                    className="mt-1"
+                  />
+                  I have confirmed the transfer was received in the restaurant
+                  account.
+                </label>
+              )}
+              {props.payMethod === "CASH" && (
+                <Input
+                  value={props.tender}
+                  onChange={(event) => props.onTender(event.target.value)}
+                  placeholder="Amount received, leave blank for the full total"
+                  aria-label="Amount received in cedis"
+                  inputMode="decimal"
+                />
+              )}
               {props.offline && (
                 <p className="text-xs text-muted-foreground">
-                  MoMo stays off while this till is offline. Cash is saved on
-                  this device and sent once, when the connection returns.
+                  Transfer and MoMo stay off while this till is offline. Cash is
+                  saved on this device and sent once, when the connection
+                  returns.
                 </p>
               )}
               {props.payMethod === "MOMO" && (
@@ -1540,20 +1594,22 @@ function BagDrawer(props: {
                         type="button"
                         aria-pressed={props.network === entry.id}
                         onClick={() => props.onNetwork(entry.id)}
-                        className={`h-9 rounded-full text-sm font-medium ${props.network === entry.id ? "bg-primary text-primary-foreground" : "bg-card"}`}
+                        className={`flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl p-2 text-xs font-medium ${props.network === entry.id ? "bg-primary text-primary-foreground" : "bg-card"}`}
                       >
+                        <span className="flex h-8 w-12 items-center justify-center rounded-md bg-white p-1">
+                          <img
+                            src={`/payment-providers/${entry.id === "MTN" ? "mtn.svg" : entry.id === "VODAFONE" ? "telecel.png" : "at.png"}`}
+                            alt=""
+                            className="size-full object-contain"
+                          />
+                        </span>
                         {entry.label}
                       </button>
                     ))}
                   </div>
-                  <Input
+                  <MomoPhoneInput
                     value={props.walletPhone}
-                    onChange={(event) =>
-                      props.onWalletPhone(event.target.value)
-                    }
-                    placeholder="MoMo wallet number"
-                    aria-label="MoMo wallet number"
-                    inputMode="tel"
+                    onChange={props.onWalletPhone}
                   />
                   <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <ClockIcon aria-hidden="true" className="size-3.5" />A
@@ -1608,7 +1664,11 @@ function BagDrawer(props: {
             )}
             <Button
               className="h-12 w-full"
-              disabled={props.busy || props.lines.length === 0}
+              disabled={
+                props.busy ||
+                props.lines.length === 0 ||
+                (props.payMethod === "TRANSFER" && !transferConfirmed)
+              }
               onClick={props.onPlace}
             >
               {props.busy ? "Placing order…" : "Place order"}
@@ -1634,7 +1694,7 @@ function TipChip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`h-9 rounded-full px-3 text-sm font-medium ${active ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}
+      className={`h-9 rounded-full px-3 text-sm font-medium ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
     >
       {children}
     </button>

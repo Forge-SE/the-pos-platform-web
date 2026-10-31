@@ -33,6 +33,7 @@
     "graphql": "^16.11.0",
     "graphql-ws": "^6.2.2",
     "input-otp": "^1.5.0",
+    "libphonenumber-js": "^1.13.15",
     "react": "^19.2.8",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.8",

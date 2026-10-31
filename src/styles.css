@@ -290,7 +290,7 @@
 
 /* Room for the constant notification bell in the content heading. */
 @media (min-width: 64rem) {
-  .pos-workspace .content-page > :first-child {
+  .pos-workspace .content-page:not(.cashier-counter-page) > :first-child {
     padding-right: 6.5rem;
   }
 }
