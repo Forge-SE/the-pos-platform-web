@@ -30,7 +30,7 @@
     "date-fns": "^4.4.0",
     "formik": "^2.4.9",
     "framer-motion": "^13.4.0",
-    "graphql": "^16.11.0",
+    "graphql": "^17.0.2",
     "graphql-ws": "^6.2.2",
     "input-otp": "^1.5.0",
     "libphonenumber-js": "^1.13.15",
