@@ -72,6 +72,7 @@ export const SET_ITEM_AVAILABILITY = gql`
   mutation SetMenuItemAvailability($itemId: ID!, $active: Boolean!) {
     setMenuItemAvailability(itemId: $itemId, active: $active) {
       id
+      active
       available
     }
   }

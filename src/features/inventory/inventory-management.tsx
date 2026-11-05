@@ -735,7 +735,8 @@ function RecipeEditor({
     Array<Omit<RecipeLine, "quantity"> & { quantity: string }>
   >(
     (recipe?.lines ?? []).map((row) => ({
-      ...row,
+      stockItemId: row.stockItemId,
+      modifierOptionId: row.modifierOptionId,
       quantity: String(row.quantity),
     }))
   )
@@ -749,7 +750,8 @@ function RecipeEditor({
   )
   async function save() {
     const lines = rows.map((row) => ({
-      ...row,
+      stockItemId: row.stockItemId,
+      modifierOptionId: row.modifierOptionId,
       quantity: amount(row.quantity),
     }))
     if (

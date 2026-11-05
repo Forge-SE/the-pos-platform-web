@@ -215,9 +215,16 @@ export function DateRangePicker({
                       weekday:
                         "flex size-9 flex-1 items-center justify-center text-[10px] font-medium tracking-[0.06em] text-muted-foreground uppercase",
                       week: "flex w-full",
-                      day: "flex flex-1 items-center justify-center p-0.5",
+                      day: "group flex flex-1 items-center justify-center p-0.5",
+                      selected: "font-semibold",
+                      range_start:
+                        "rounded-l-md bg-secondary/60 [&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary/90",
+                      range_end:
+                        "rounded-r-md bg-secondary/60 [&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary/90",
+                      range_middle:
+                        "bg-secondary/60 text-secondary-foreground [&>button]:rounded-none [&>button]:hover:bg-secondary",
                       day_button:
-                        "flex size-9 w-full items-center justify-center rounded-md text-sm transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 aria-selected:bg-secondary aria-selected:text-secondary-foreground",
+                        "flex size-9 w-full items-center justify-center rounded-md text-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-40",
                     }}
                     components={{
                       Chevron: ({ orientation }) =>

@@ -60,6 +60,7 @@ vi.mock("@apollo/client/react", () => ({
                   enabled: true,
                   lines: [
                     {
+                      __typename: "InventoryRecipeLine",
                       stockItemId: "rice",
                       modifierOptionId: null,
                       quantity: 100,

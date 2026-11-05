@@ -2,6 +2,7 @@ import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 
 import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/toaster"
 import { ErrorState } from "@/components/content-state"
 import { formatMoney } from "@/features/menu/model"
 import { hasPermission } from "@/lib/permissions"
@@ -69,14 +70,13 @@ export function SalesDigestCard({
       lastEmailedAt: string | null
     }
   }>(DIGEST_QUERY, { skip: !allowed })
-  const [send, { loading: sending, data: sent, error: sendError }] =
-    useMutation<{
-      sendSalesDigest: {
-        status: string
-        recipient: string | null
-        businessDate: string
-      }
-    }>(SEND_DIGEST)
+  const [send, { loading: sending }] = useMutation<{
+    sendSalesDigest: {
+      status: string
+      recipient: string | null
+      businessDate: string
+    }
+  }>(SEND_DIGEST)
   if (!allowed) return null
   if (error)
     return <ErrorState title="Could not load sales digest." onRetry={refetch} />
@@ -128,8 +128,28 @@ export function SalesDigestCard({
           disabled={sending}
           onClick={() => {
             void send()
-              .then(() => refetch())
-              .catch(() => undefined)
+              .then((result) => {
+                const status = result.data?.sendSalesDigest.status
+                toast({
+                  title: t(
+                    status === "sent"
+                      ? "Digest emailed."
+                      : status === "logged"
+                        ? "Digest prepared; email delivery is not configured."
+                        : "Digest email is unavailable. Check the recipient in settings."
+                  ),
+                  status: status === "sent" ? "success" : "error",
+                })
+                void refetch().catch(() => undefined)
+              })
+              .catch(() => {
+                toast({
+                  title: t(
+                    "The digest could not be emailed. Please try again."
+                  ),
+                  status: "error",
+                })
+              })
           }}
           className={
             presentation === "sheet"
@@ -140,22 +160,6 @@ export function SalesDigestCard({
           {t(sending ? "Sending…" : "Email yesterday's digest")}
         </Button>
       </div>
-      {sendError && (
-        <p role="alert" className="relative mt-3 text-sm">
-          {t("The digest could not be emailed. Please try again.")}
-        </p>
-      )}
-      {sent?.sendSalesDigest && (
-        <p role="status" className="relative mt-3 text-sm opacity-80">
-          {sent.sendSalesDigest.status === "sent"
-            ? t("Digest emailed.")
-            : sent.sendSalesDigest.status === "logged"
-              ? t("Digest prepared; email delivery is not configured.")
-              : t(
-                  "Digest email is unavailable. Check the recipient in settings."
-                )}
-        </p>
-      )}
     </section>
   )
 }

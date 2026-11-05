@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MenuManagement } from "./menu-management"
 import type { MenuItem, ModifierGroup } from "./model"
 
+const mutation = vi.hoisted(() =>
+  vi
+    .fn()
+    .mockResolvedValue({
+      data: { setMenuItemAvailability: { available: false } },
+    })
+)
 const fixture = vi.hoisted(() => ({
   menuCategories: [{ id: "mains", name: "Mains", sortOrder: 0 }],
   menuItems: [
@@ -15,6 +22,7 @@ const fixture = vi.hoisted(() => ({
       preparationTimeMinutes: 20,
       categoryId: "mains",
       active: true,
+      available: true,
       imageUrl: null,
       modifierGroups: [{ id: "extras", name: "Extras" }],
     },
@@ -39,7 +47,7 @@ const fixture = vi.hoisted(() => ({
 }))
 vi.mock("@apollo/client/react", () => ({
   useQuery: () => ({ data: fixture, loading: false, refetch: vi.fn() }),
-  useMutation: () => [vi.fn(), { loading: false }],
+  useMutation: () => [mutation, { loading: false }],
 }))
 vi.mock("@/lib/auth-token", () => ({
   getAccessTokenProfile: () => ({ role: "OWNER" }),
@@ -81,6 +89,20 @@ afterEach(() => {
 })
 
 describe("meal card representation", () => {
+  it("sends availability false when the on-sale switch is clicked", async () => {
+    render(<MenuManagement />)
+    fireEvent.click(
+      screen.getByRole("switch", { name: "Mark Grilled gizzard unavailable" })
+    )
+    await waitFor(() =>
+      expect(mutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: { itemId: "meal", active: false },
+        })
+      )
+    )
+  })
+
   it("uses a preparation tag without choice tags, while preserving choices in the editor", () => {
     render(<MenuManagement />)
     expect(screen.getByText("20 min").getAttribute("data-slot")).toBe("badge")

@@ -436,6 +436,10 @@ export function ConfigureOptionsModal({
                   <Field data-invalid={Boolean(groupError)}>
                     <FieldLabel>Modifier group</FieldLabel>
                     <Select
+                      items={groups.map((group) => ({
+                        value: group.id,
+                        label: group.name,
+                      }))}
                       value={formik.values.groupId}
                       onValueChange={(value) => {
                         const next = value ?? ""
@@ -569,6 +573,10 @@ export function ConfigureOptionsModal({
                     <Field data-invalid={Boolean(itemError)}>
                       <FieldLabel>Menu item</FieldLabel>
                       <Select
+                        items={items.map((item) => ({
+                          value: item.id,
+                          label: item.name,
+                        }))}
                         value={formik.values.itemId}
                         onValueChange={(value) => {
                           void formik.setFieldValue("itemId", value ?? "")
@@ -590,6 +598,10 @@ export function ConfigureOptionsModal({
                     <Field data-invalid={Boolean(groupError)}>
                       <FieldLabel>Modifier group</FieldLabel>
                       <Select
+                        items={groups.map((group) => ({
+                          value: group.id,
+                          label: group.name,
+                        }))}
                         value={formik.values.groupId}
                         onValueChange={(value) => {
                           const next = value ?? ""

@@ -226,11 +226,23 @@ export function CashierDesk({
   const [fullscreenParam, setFullscreenParam] = useUrlState("fullscreen")
   const fullscreen = fullscreenParam === "1"
   const ownsFullscreen = useRef(false)
-  const { data, loading, error, refetch } = useQuery<CounterMenu>(MENU_QUERY)
+  const { data, loading, error, refetch } = useQuery<CounterMenu>(MENU_QUERY, {
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  })
   const compact = useMediaQuery("(max-width: 1023px)")
   const [online, setOnline] = useState(
     typeof navigator === "undefined" ? true : navigator.onLine
   )
+  const wasSellingOnline = useRef(active && online)
+  useEffect(() => {
+    const sellingOnline = active && online
+    if (sellingOnline && !wasSellingOnline.current) {
+      void refetch().catch(() => undefined)
+    }
+    wasSellingOnline.current = sellingOnline
+  }, [active, online, refetch])
   const [cachedMenu, setCachedMenu] = useState<CounterMenu | null>(() =>
     readMenuCache<CounterMenu>()
   )

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { toast } from "@/components/ui/toaster"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Navigate } from "@tanstack/react-router"
 import { Menu } from "@base-ui/react/menu"
@@ -57,6 +58,9 @@ import { hasPermission } from "@/lib/permissions"
 import { useUrlState } from "@/lib/url-state"
 
 export function MenuManagement() {
+  const [pendingAvailability, setPendingAvailability] = useState<
+    Record<string, boolean>
+  >({})
   const { t } = useLanguage()
   const profile = getAccessTokenProfile()
   const canManage = hasPermission(profile, "MENU_MANAGE")
@@ -131,14 +135,49 @@ export function MenuManagement() {
   }
 
   async function toggleAvailability(item: MenuItem, active: boolean) {
+    setPendingAvailability((current) => ({ ...current, [item.id]: active }))
     try {
       setFormError(null)
-      await setAvailability({ variables: { itemId: item.id, active } })
+      const result = await setAvailability({
+        variables: { itemId: item.id, active },
+        optimisticResponse: {
+          setMenuItemAvailability: {
+            __typename: "MenuItem",
+            id: item.id,
+            available: active,
+            active: active ? true : item.active,
+          },
+        },
+      })
+      if (
+        (
+          result.data as
+            { setMenuItemAvailability?: { available: boolean } } | undefined
+        )?.setMenuItemAvailability?.available !== active
+      ) {
+        throw new Error(
+          "The server did not save the requested availability. Please try again."
+        )
+      }
       await refetch()
     } catch (mutationError) {
+      toast({
+        title: mutationMessage(
+          mutationError,
+          "Could not update item availability."
+        ),
+        status: "error",
+      })
       setFormError(
         mutationMessage(mutationError, "Could not update item availability.")
       )
+      await refetch().catch(() => undefined)
+    } finally {
+      setPendingAvailability((current) => {
+        const next = { ...current }
+        delete next[item.id]
+        return next
+      })
     }
   }
 
@@ -492,14 +531,21 @@ export function MenuManagement() {
                                 </Button>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs text-muted-foreground">
-                                    {item.available ? "On sale" : "86"}
+                                    {(pendingAvailability[item.id] ??
+                                    (item.active && item.available))
+                                      ? "On sale"
+                                      : "86"}
                                   </span>
                                   <Switch
-                                    checked={item.available}
+                                    checked={
+                                      pendingAvailability[item.id] ??
+                                      (item.active && item.available)
+                                    }
+                                    disabled={item.id in pendingAvailability}
                                     onCheckedChange={(available) =>
                                       void toggleAvailability(item, available)
                                     }
-                                    aria-label={`${item.available ? "Mark" : "Return"} ${item.name} ${item.available ? "unavailable" : "to the counter"}`}
+                                    aria-label={`${item.active && item.available ? "Mark" : "Return"} ${item.name} ${item.active && item.available ? "unavailable" : "to the counter"}`}
                                   />
                                 </div>
                               </div>
