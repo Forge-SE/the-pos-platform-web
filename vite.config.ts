@@ -22,6 +22,7 @@ const config = defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: [
+        "universfield-digital-alarm-clock-151927.mp3",
         "favicon.ico",
         "apple-touch-icon.png",
         "pwa-192x192.png",

@@ -13,6 +13,8 @@ const ACTIVE_ORDERS = gql`
     activeOrders {
       id
       ticketNumber
+      customerName
+      customerPhone
       status
       diningType
       createdAt
@@ -36,6 +38,8 @@ const LIVE_ORDER_FIELDS = gql`
   fragment CashierLiveOrderFields on Order {
     id
     ticketNumber
+    customerName
+    customerPhone
     status
     diningType
     createdAt
@@ -73,6 +77,8 @@ const ORDER_CHANGED = gql`
 
 interface LiveOrder {
   id: string
+  customerName?: string | null
+  customerPhone?: string | null
   ticketNumber: string
   status: string
   diningType: DiningType
@@ -288,6 +294,22 @@ export function CashierLiveOrders() {
                 </li>
               ))}
             </ul>
+            {(order.customerName || order.customerPhone) && (
+              <dl className="mx-4 mb-3 grid gap-1 text-xs text-muted-foreground">
+                {order.customerName && (
+                  <div>
+                    <dt className="inline font-medium">Customer: </dt>
+                    <dd className="inline">{order.customerName}</dd>
+                  </div>
+                )}
+                {order.customerPhone && (
+                  <div>
+                    <dt className="inline font-medium">Phone: </dt>
+                    <dd className="inline">{order.customerPhone}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
             {order.notes && (
               <p className="mt-3 border-t border-border/60 pt-2 text-xs text-muted-foreground">
                 {order.notes}

@@ -62,7 +62,7 @@ async function syncOne(
           idempotencyKey: item.paymentKey,
           orderId: order.id,
           method: "CASH",
-          amount: Math.min(item.amount, order.total),
+          amount: item.amount,
           receiptChannel: "PRINT",
         },
       },

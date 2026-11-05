@@ -1,39 +1,30 @@
-let audio: AudioContext | null = null
+const ALARM_AUDIO_URL = "/universfield-digital-alarm-clock-151927.mp3"
+const ALARM_DURATION_MS = 3000
+let audio: HTMLAudioElement | null = null
+let stopTimer: ReturnType<typeof setTimeout> | undefined
 
-function context() {
-  const audioWindow = window as unknown as {
-    AudioContext?: typeof AudioContext
-    webkitAudioContext?: typeof AudioContext
-  }
-  const Ctx = audioWindow.AudioContext ?? audioWindow.webkitAudioContext
-  if (!Ctx) return null
-  audio ??= new Ctx()
+export function unlockStationChime() {
+  if (typeof Audio === "undefined") return null
+  audio ??= new Audio(ALARM_AUDIO_URL)
+  audio.preload = "auto"
   return audio
 }
 
-export function unlockStationChime() {
-  const current = context()
-  if (current?.state === "suspended") void current.resume()
-  return current
+export function stopStationChime() {
+  if (stopTimer !== undefined) clearTimeout(stopTimer)
+  stopTimer = undefined
+  if (audio) {
+    audio.pause()
+    audio.currentTime = 0
+  }
 }
 
-export function playStationChime(kind: "kitchen" | "cashier") {
-  const current = context()
-  if (!current || current.state !== "running") return
-  const now = current.currentTime
-  const notes = kind === "kitchen" ? [784, 988] : [523, 659, 784]
-  notes.forEach((frequency, index) => {
-    const start = now + index * 0.16
-    const tone = current.createOscillator()
-    const level = current.createGain()
-    tone.type = "sine"
-    tone.frequency.value = frequency
-    level.gain.setValueAtTime(0.0001, start)
-    level.gain.exponentialRampToValueAtTime(0.2, start + 0.02)
-    level.gain.exponentialRampToValueAtTime(0.0001, start + 0.32)
-    tone.connect(level)
-    level.connect(current.destination)
-    tone.start(start)
-    tone.stop(start + 0.34)
-  })
+export function playStationChime() {
+  const current = unlockStationChime()
+  if (!current) return
+  stopStationChime()
+  current.loop = false
+  // Start during the alarm button's user gesture to unlock later alerts.
+  void current.play().catch(() => undefined)
+  stopTimer = setTimeout(stopStationChime, ALARM_DURATION_MS)
 }

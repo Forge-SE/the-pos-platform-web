@@ -51,6 +51,8 @@ interface OrderItem {
 
 interface KitchenOrder {
   id: string
+  customerName?: string | null
+  customerPhone?: string | null
   ticketNumber: string
   status: OrderStatus
   diningType: "DINE_IN" | "TAKEAWAY" | "DELIVERY"
@@ -86,6 +88,8 @@ const ORDER_FIELDS = gql`
   fragment KitchenOrderFields on Order {
     id
     ticketNumber
+    customerName
+    customerPhone
     status
     diningType
     notes
@@ -930,6 +934,22 @@ function OrderCard({
         ))}
       </ul>
 
+      {(order.customerName || order.customerPhone) && (
+        <dl className="mx-4 mb-3 grid gap-1 text-xs text-muted-foreground">
+          {order.customerName && (
+            <div>
+              <dt className="inline font-medium">Customer: </dt>
+              <dd className="inline">{order.customerName}</dd>
+            </div>
+          )}
+          {order.customerPhone && (
+            <div>
+              <dt className="inline font-medium">Phone: </dt>
+              <dd className="inline">{order.customerPhone}</dd>
+            </div>
+          )}
+        </dl>
+      )}
       {order.notes && (
         <div className="mx-4 mb-4 rounded-lg bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100">
           <span className="font-semibold">Kitchen note:</span> {order.notes}
@@ -1086,6 +1106,22 @@ function TableView({
                       </li>
                     ))}
                   </ul>
+                  {(order.customerName || order.customerPhone) && (
+                    <dl className="mx-4 mb-3 grid gap-1 text-xs text-muted-foreground">
+                      {order.customerName && (
+                        <div>
+                          <dt className="inline font-medium">Customer: </dt>
+                          <dd className="inline">{order.customerName}</dd>
+                        </div>
+                      )}
+                      {order.customerPhone && (
+                        <div>
+                          <dt className="inline font-medium">Phone: </dt>
+                          <dd className="inline">{order.customerPhone}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  )}
                   {order.notes && (
                     <p className="mt-1 truncate text-xs text-amber-700 dark:text-amber-300">
                       {order.notes}

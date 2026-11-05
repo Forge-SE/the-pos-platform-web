@@ -59,6 +59,8 @@ const RECEIPT_QUERY = gql`
         total
         paymentMethod
         amountPaid
+        cashReceived
+        changeDue
       }
     }
   }
@@ -185,7 +187,36 @@ export function ReceiptDialog({
             <Button
               className="flex-1"
               disabled={!receipt || loading || Boolean(error)}
-              onClick={() => window.print()}
+              onClick={() => {
+                if (!receipt) return
+                const printWindow = window.open(
+                  "",
+                  "_blank",
+                  "width=420,height=720"
+                )
+                if (!printWindow) {
+                  toast({
+                    title: "Allow popups to print the receipt",
+                    status: "error",
+                  })
+                  return
+                }
+                printWindow.opener = null
+                printWindow.document.title = `Receipt ${receipt.receiptNumber}`
+                const style = printWindow.document.createElement("style")
+                style.textContent =
+                  "body{margin:16px;background:white;color:black}pre{font:11px/1.5 monospace;white-space:pre;width:fit-content;margin:auto}@page{margin:8mm}"
+                printWindow.document.head.append(style)
+                const text = printWindow.document.createElement("pre")
+                text.textContent = receipt.text
+                printWindow.document.body.append(text)
+                printWindow.setTimeout(() => {
+                  if (printWindow.closed) return
+                  printWindow.focus()
+                  printWindow.print()
+                }, 150)
+                onOpenChange(false)
+              }}
             >
               <PrinterIcon aria-hidden="true" data-icon="inline-start" />
               Print receipt

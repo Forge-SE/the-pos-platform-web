@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import {
   playStationChime,
+  stopStationChime,
   unlockStationChime,
 } from "@/features/orders/station-chime"
 
@@ -144,10 +145,12 @@ export function StationAlarm({
 
   useEffect(() => {
     if (!armed || !station || pending.length === 0) return
-    const kind = station === "KITCHEN" ? "kitchen" : "cashier"
-    playStationChime(kind)
-    const timer = window.setInterval(() => playStationChime(kind), 8_000)
-    return () => window.clearInterval(timer)
+    playStationChime()
+    const timer = window.setInterval(() => playStationChime(), 8_000)
+    return () => {
+      window.clearInterval(timer)
+      stopStationChime()
+    }
   }, [armed, pending.length, station])
 
   if (!station) return null
@@ -190,16 +193,18 @@ export function StationAlarm({
         onClick={() => {
           if (!armed) {
             unlockStationChime()
-            playStationChime(station === "KITCHEN" ? "kitchen" : "cashier")
+            playStationChime()
             localStorage.setItem(STORAGE_KEY, "on")
             setArmed(true)
             return
           }
           if (pending.length > 0) {
+            stopStationChime()
             setPending([])
             return
           }
           localStorage.setItem(STORAGE_KEY, "off")
+          stopStationChime()
           setArmed(false)
         }}
       >

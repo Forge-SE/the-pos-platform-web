@@ -504,8 +504,7 @@ export function CashierDesk({
       )
       return
     }
-    const notes =
-      [customerName.trim(), guestPhone].filter(Boolean).join(" · ") || null
+    const notes = null
     if (!online) {
       const profile = getAccessTokenProfile()
       if (!profile) {
@@ -598,7 +597,7 @@ export function CashierDesk({
       )?.createOrder
       if (!order) throw new Error("The order was not created.")
       const tendered =
-        payMethod === "TRANSFER"
+        payMethod !== "CASH"
           ? order.total
           : tender.trim()
             ? cedisToPesewas(tender)
@@ -610,7 +609,7 @@ export function CashierDesk({
           status: "success",
         })
         setReceiptOrderId(order.id)
-        setReceiptOpen(true)
+        setReceiptOpen(false)
       } else if (!tendered || tendered <= 0) {
         throw new Error("Enter the amount received.")
       } else if (payMethod !== "MOMO") {
@@ -638,7 +637,7 @@ export function CashierDesk({
           status: "success",
         })
         setReceiptOrderId(order.id)
-        setReceiptOpen(true)
+        setReceiptOpen(false)
       } else {
         const charged = await initiateMomo({
           variables: {
@@ -723,6 +722,11 @@ export function CashierDesk({
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            {receiptOrderId && (
+              <Button variant="outline" onClick={() => setReceiptOpen(true)}>
+                Last receipt
+              </Button>
+            )}
             <Button onClick={() => setBagOpen(true)} className="shrink-0">
               <ShoppingBagIcon aria-hidden="true" data-icon="inline-start" />
               {t("Bag")}
@@ -1587,6 +1591,20 @@ function BagDrawer(props: {
                   inputMode="decimal"
                 />
               )}
+              {props.payMethod === "CASH" &&
+                (cedisToPesewas(props.tender) ?? 0) > props.due && (
+                  <div
+                    className="flex justify-between text-sm font-semibold text-primary"
+                    role="status"
+                  >
+                    <span>Change due</span>
+                    <span>
+                      {formatMoney(
+                        (cedisToPesewas(props.tender) ?? 0) - props.due
+                      )}
+                    </span>
+                  </div>
+                )}
               {props.offline && (
                 <p className="text-xs text-muted-foreground">
                   Transfer and MoMo stay off while this till is offline. Cash is

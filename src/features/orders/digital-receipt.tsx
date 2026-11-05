@@ -32,6 +32,8 @@ export interface ReceiptDetails {
   total: number
   paymentMethod: string | null
   amountPaid: number | null
+  cashReceived?: number | null
+  changeDue?: number | null
 }
 
 const paymentLabels: Record<string, string> = {
@@ -158,6 +160,15 @@ export function DigitalReceipt({
               : "No payment recorded"
           }
         />
+        {details.cashReceived != null && (
+          <>
+            <ReceiptRow
+              label="Cash received"
+              value={money(details.cashReceived)}
+            />
+            <ReceiptRow label="Change" value={money(details.changeDue ?? 0)} />
+          </>
+        )}
         {details.amountPaid !== null && (
           <ReceiptRow label="Amount paid" value={money(details.amountPaid)} />
         )}
