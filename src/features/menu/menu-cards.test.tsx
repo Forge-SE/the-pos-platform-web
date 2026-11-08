@@ -1,15 +1,19 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
 import { MenuManagement } from "./menu-management"
 import type { MenuItem, ModifierGroup } from "./model"
 
 const mutation = vi.hoisted(() =>
-  vi
-    .fn()
-    .mockResolvedValue({
-      data: { setMenuItemAvailability: { available: false } },
-    })
+  vi.fn().mockResolvedValue({
+    data: { setMenuItemAvailability: { available: false } },
+  })
 )
 const fixture = vi.hoisted(() => ({
   menuCategories: [{ id: "mains", name: "Mains", sortOrder: 0 }],
