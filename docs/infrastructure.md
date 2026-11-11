@@ -37,6 +37,43 @@ so they must never contain secrets.
 `VITE_GRAPHQL_URL` is optional. Without it, local browser traffic uses the Vite
 `/graphql` proxy.
 
+## Vercel and production ops access
+
+The production frontend is `https://app.ovaal.xyz`; operations is part of this
+same SPA, not a separate deployment. Sign in at
+`https://app.ovaal.xyz/ops/login` and open `https://app.ovaal.xyz/ops` for the
+operations dashboard. Ops invitation links use `/ops/accept` with a token.
+
+`vercel.json` rewrites client-side routes to `/index.html`, allowing direct
+navigation and refresh on routes such as `/ops/login`. Existing static files
+continue to be served normally. The Docker server's fallback does not configure
+Vercel's static hosting.
+
+Set these **Vercel build-time variables** for the production deployment, then
+redeploy:
+
+```dotenv
+VITE_GRAPHQL_URL=https://api.ovaal.xyz/graphql
+VITE_GRAPHQL_WS_URL=wss://api.ovaal.xyz/graphql
+```
+
+Use the staging API for staging/Preview builds. No admin password, password hash,
+or backend API secret belongs in a `VITE_` variable.
+
+On the **production API service**, include `https://app.ovaal.xyz` in
+`CORS_ORIGINS` and set `OPS_APP_URL=https://app.ovaal.xyz`. Also configure
+`PLATFORM_ADMIN_EMAIL` and the bcrypt `PLATFORM_ADMIN_PASSWORD_HASH` for the
+initial administrator. Invitations additionally require `RESEND_API_KEY` and
+`OPS_INVITE_FROM_EMAIL`. Store these only in the API host's secure environment
+settings; never commit credentials or password hashes.
+
+Attach `app.ovaal.xyz` to the correct Vercel project under **Settings > Domains**.
+The current Git deployment configuration disables Vercel deployments for `main`,
+and the existing production Actions workflow targets Railway. Therefore, merging
+this routing fix alone does not trigger a Vercel production deployment: deploy
+the updated revision to the project serving `app.ovaal.xyz`, or explicitly update
+the production deployment strategy first.
+
 ## Production container
 
 The Docker image builds the Vite SPA and serves it with `srvx` as a non-root
