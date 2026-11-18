@@ -13,6 +13,7 @@ const config = defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      "/voice": { target: "http://localhost:4000", changeOrigin: true },
     },
   },
   plugins: [

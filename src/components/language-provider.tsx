@@ -446,6 +446,131 @@ const french: Record<string, string> = {
     "Résumé prêt ; l’envoi par e-mail n’est pas configuré.",
   "Digest email is unavailable. Check the recipient in settings.":
     "L’envoi du résumé est indisponible. Vérifiez le destinataire dans les paramètres.",
+  // Phone voice (voice cloning)
+  "Phone voice": "Voix téléphonique",
+  "Clone a team member's voice for the phone ordering agent.":
+    "Clonez la voix d’un membre de l’équipe pour l’agent de commande téléphonique.",
+  "Record a new voice": "Enregistrer une nouvelle voix",
+  "Voice cloning is not available": "Le clonage de voix n’est pas disponible",
+  "Voice cloning is not available for this restaurant. Contact support.":
+    "Le clonage de voix n’est pas disponible pour ce restaurant. Contactez l’assistance.",
+  "Could not load your voices": "Impossible de charger vos voix",
+  "Voice library": "Bibliothèque de voix",
+  "Voices cloned for this restaurant. Only your team sees them.":
+    "Voix clonées pour ce restaurant. Seule votre équipe les voit.",
+  "No cloned voices yet": "Aucune voix clonée pour le moment",
+  "Record 1–2 minutes of speech to create one.":
+    "Enregistrez 1 à 2 minutes de parole pour en créer une.",
+  "Phone voice updated": "Voix téléphonique mise à jour",
+  "Changes apply from the next call.":
+    "Les changements s’appliquent à partir du prochain appel.",
+  "Could not change the phone voice":
+    "Impossible de changer la voix téléphonique",
+  "Phone agent voice": "Voix de l’agent téléphonique",
+  "No phone agent is linked to this restaurant yet. You can still record voices; contact support to connect your phone line.":
+    "Aucun agent téléphonique n’est encore lié à ce restaurant. Vous pouvez enregistrer des voix ; contactez l’assistance pour connecter votre ligne.",
+  "Use platform default": "Utiliser la voix par défaut",
+  "Cloned voice": "Voix clonée",
+  cloned: "clonée",
+  "Platform default": "Voix par défaut",
+  "Voice:": "Voix :",
+  "Changes apply from the next call. Calls in progress keep their current voice.":
+    "Les changements s’appliquent au prochain appel. Les appels en cours gardent leur voix actuelle.",
+  "Change voice": "Changer de voix",
+  "Play sample": "Écouter un extrait",
+  "The assigned voice is no longer usable; calls are using the default voice.":
+    "La voix attribuée n’est plus utilisable ; les appels utilisent la voix par défaut.",
+  "Could not play a sample": "Impossible de lire l’extrait",
+  "Voice is ready": "La voix est prête",
+  "Status checked": "Statut vérifié",
+  "Could not check the status": "Impossible de vérifier le statut",
+  "Voice deleted": "Voix supprimée",
+  "On phone agent": "Sur l’agent téléphonique",
+  "Waiting for the voice provider to verify it. Contact support, then check its status.":
+    "En attente de vérification par le fournisseur. Contactez l’assistance, puis vérifiez son statut.",
+  "Use on phone agent": "Utiliser sur l’agent",
+  "Checking…": "Vérification…",
+  "Check status": "Vérifier le statut",
+  Delete: "Supprimer",
+  "Switch the phone agent to another voice first.":
+    "Attribuez d’abord une autre voix à l’agent téléphonique.",
+  "Delete this voice?": "Supprimer cette voix ?",
+  "Deleting…": "Suppression…",
+  "Delete voice": "Supprimer la voix",
+  "This permanently deletes the voice, including at the voice provider. It cannot be undone. Agents using it must be switched to another voice first.":
+    "Cette action supprime définitivement la voix, y compris chez le fournisseur. Elle est irréversible. Les agents qui l’utilisent doivent d’abord changer de voix.",
+  "Creating…": "Création…",
+  "Verification required": "Vérification requise",
+  Failed: "Échec",
+  Disabled: "Désactivée",
+  "Step 1 of 3 · Confirm the speaker has agreed.":
+    "Étape 1 sur 3 · Confirmez l’accord de la personne.",
+  "Step 2 of 3 · Record 1–2 minutes of natural speech.":
+    "Étape 2 sur 3 · Enregistrez 1 à 2 minutes de parole naturelle.",
+  "Step 3 of 3 · Name the voice for your library.":
+    "Étape 3 sur 3 · Nommez la voix pour votre bibliothèque.",
+  "Creating voice": "Création de la voix",
+  "This can take up to 2 minutes. Keep this window open.":
+    "Cela peut prendre jusqu’à 2 minutes. Gardez cette fenêtre ouverte.",
+  "Voice created": "Voix créée",
+  "Your new voice is saved.": "Votre nouvelle voix est enregistrée.",
+  Done: "Terminé",
+  "Use on the phone agent": "Utiliser sur l’agent téléphonique",
+  Continue: "Continuer",
+  "Creating voice…": "Création de la voix…",
+  "Create voice": "Créer la voix",
+  "The speaker has agreed to have their voice cloned for use on this restaurant's phone line.":
+    "La personne a accepté que sa voix soit clonée pour la ligne téléphonique de ce restaurant.",
+  "Confirm the speaker's consent to continue.":
+    "Confirmez le consentement de la personne pour continuer.",
+  "How was consent recorded?": "Comment le consentement a-t-il été recueilli ?",
+  "e.g. Ama Mensah, signed consent form on 12 Nov, kept in the staff folder":
+    "ex. Ama Mensah, formulaire signé le 12 nov., rangé dans le dossier du personnel",
+  "Who agreed, when, and where the record is kept.":
+    "Qui a accepté, quand, et où la preuve est conservée.",
+  "Describe who consented and how.": "Indiquez qui a consenti et comment.",
+  "One speaker only, with no music or other voices nearby.":
+    "Une seule personne, sans musique ni autres voix à proximité.",
+  "Speak at a normal pace in natural sentences.":
+    "Parlez à un rythme normal, avec des phrases naturelles.",
+  "Introduce yourself, describe a typical working day, and read a few menu items.":
+    "Présentez-vous, décrivez une journée de travail type et lisez quelques plats du menu.",
+  "Re-record rather than trim a take that went wrong.":
+    "Réenregistrez plutôt que de couper une prise ratée.",
+  "This browser cannot record audio. Open the dashboard in a current version of Chrome, Edge, or Safari.":
+    "Ce navigateur ne peut pas enregistrer de son. Ouvrez le tableau de bord dans une version récente de Chrome, Edge ou Safari.",
+  "Stop recording": "Arrêter l’enregistrement",
+  "Record another take": "Enregistrer une autre prise",
+  "Start recording": "Commencer l’enregistrement",
+  "Allow microphone access in your browser, then try again.":
+    "Autorisez l’accès au micro dans votre navigateur, puis réessayez.",
+  "Record at least 20 seconds. About a minute gives the best result.":
+    "Enregistrez au moins 20 secondes. Environ une minute donne le meilleur résultat.",
+  "Enough to continue. A minute or more sounds more natural.":
+    "Suffisant pour continuer. Une minute ou plus sonne plus naturel.",
+  "Great length. You can continue.": "Bonne durée. Vous pouvez continuer.",
+  Takes: "Prises",
+  Take: "Prise",
+  "Delete take": "Supprimer la prise",
+  "Record at least one take.": "Enregistrez au moins une prise.",
+  "Record at least 20 seconds of speech in total.":
+    "Enregistrez au moins 20 secondes de parole au total.",
+  "That recording is too large; send less than 20 MB in total.":
+    "Cet enregistrement est trop volumineux ; envoyez moins de 20 Mo au total.",
+  "Voice name": "Nom de la voix",
+  "e.g. Mama Ama": "ex. Mama Ama",
+  "Give the voice a name.": "Donnez un nom à la voix.",
+  "Description (optional)": "Description (facultatif)",
+  "Reduce background noise": "Réduire le bruit de fond",
+  "Uploading recordings…": "Envoi des enregistrements…",
+  "Creating the voice. This can take up to 2 minutes.":
+    "Création de la voix. Cela peut prendre jusqu’à 2 minutes.",
+  "The voice is ready. Use it on the phone agent, then play a sample to hear it.":
+    "La voix est prête. Utilisez-la sur l’agent téléphonique, puis écoutez un extrait.",
+  "The voice provider needs to verify this voice before it can be used. Contact support, and use Check status later to see if it is ready.":
+    "Le fournisseur doit vérifier cette voix avant qu’elle soit utilisable. Contactez l’assistance, puis utilisez « Vérifier le statut » plus tard.",
+  "This voice cannot be used yet. Check its status in the library.":
+    "Cette voix n’est pas encore utilisable. Vérifiez son statut dans la bibliothèque.",
 }
 
 function readLanguage(): Language {
