@@ -40,6 +40,7 @@ import { opsAuthContext } from "@/lib/ops-token"
 import { useTablePagination } from "@/lib/table-state"
 import { useUrlState } from "@/lib/url-state"
 import { OpsAudit } from "./ops-audit"
+import { VoiceAgentField, VoiceAgentLogin } from "./ops-voice-agent"
 
 const dayLabels: Record<string, string> = {
   monday: "Monday",
@@ -575,6 +576,23 @@ export function RestaurantDetail({
             {tab === "general" && (
               <div className="grid gap-6 rounded-xl border border-border/70 bg-card p-5 sm:p-6">
                 <LoginCode code={restaurant.code} />
+                <Section title="Phone agent">
+                  <div className="grid gap-5">
+                    <VoiceAgentField
+                      restaurantId={restaurant.id}
+                      voiceAgentId={restaurant.voiceAgentId ?? null}
+                    />
+                    <VoiceAgentLogin
+                      restaurantId={restaurant.id}
+                      login={
+                        detail.staff.find(
+                          (member) => member.role === "VOICE_AGENT"
+                        ) ?? null
+                      }
+                      onChanged={() => refetch()}
+                    />
+                  </div>
+                </Section>
                 <Section title="Location">
                   <p className="text-sm leading-6">
                     {[restaurant.address, restaurant.city, restaurant.region]
