@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react"
 import { gql } from "@apollo/client"
-import { useMutation, useQuery, useSubscription } from "@apollo/client/react"
+import {
+  useApolloClient,
+  useMutation,
+  useQuery,
+  useSubscription,
+} from "@apollo/client/react"
 import { Popover } from "@base-ui/react/popover"
 import { BellIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/components/language-provider"
+import { POLL_INTERVAL } from "@/lib/polling"
 
 type Notice = {
   id: string
@@ -16,6 +22,9 @@ type Notice = {
   readAt: string | null
   createdAt: string
 }
+
+/** Matches the server, which returns the newest 40 notifications. */
+const NOTIFICATION_LIMIT = 40
 
 const NOTIFICATIONS_QUERY = gql`
   query RestaurantNotifications {
@@ -65,9 +74,11 @@ function when(value: string, locale: string) {
 export function NotificationButton() {
   const { t, locale } = useLanguage()
   const [tab, setTab] = useState<"all" | "inbox" | "archived">("all")
+  const client = useApolloClient()
   const { data, refetch } = useQuery<{ notifications: Notice[] }>(
     NOTIFICATIONS_QUERY,
-    { pollInterval: 20_000 }
+    // New notices arrive over the subscription; the poll only repairs gaps.
+    { pollInterval: POLL_INTERVAL.FALLBACK }
   )
   const { data: raised } = useSubscription<{ notificationRaised: Notice }>(
     RAISED
@@ -76,8 +87,22 @@ export function NotificationButton() {
   const notices = data?.notifications ?? []
 
   useEffect(() => {
-    if (raised?.notificationRaised) void refetch()
-  }, [raised, refetch])
+    const notice = raised?.notificationRaised
+    if (!notice) return
+    // Prepend the pushed notice instead of re-downloading the whole list.
+    client.cache.updateQuery<{ notifications: Notice[] }>(
+      { query: NOTIFICATIONS_QUERY },
+      (current) =>
+        current
+          ? {
+              notifications: [
+                notice,
+                ...current.notifications.filter(({ id }) => id !== notice.id),
+              ].slice(0, NOTIFICATION_LIMIT),
+            }
+          : current
+    )
+  }, [raised, client])
 
   const visible = notices.filter((notice) => {
     if (tab === "inbox") return !notice.readAt

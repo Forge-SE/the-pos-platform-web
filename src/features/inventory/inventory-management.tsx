@@ -1,5 +1,6 @@
 import { MobileStockRow } from "./mobile/mobile-stock-row"
 import { useMediaQuery } from "@/lib/use-media-query"
+import { POLL_INTERVAL } from "@/lib/polling"
 import { MobileTabs } from "@/components/mobile/mobile-tabs"
 import { useRef, useState } from "react"
 import { useMutation, useQuery } from "@apollo/client/react"
@@ -94,7 +95,7 @@ export function InventoryManagement() {
   } | null>(null)
   const { data, loading, error, refetch } = useQuery<{
     inventoryItems: StockItem[]
-  }>(STOCK_QUERY, { skip: !canView, pollInterval: 30000 })
+  }>(STOCK_QUERY, { skip: !canView, pollInterval: POLL_INTERVAL.STATUS })
   const items = data?.inventoryItems ?? []
   if (!canView) return <Navigate to="/overview" replace />
   return (
@@ -1012,7 +1013,7 @@ function MovementLog() {
       limit: paging.pageSize,
     },
     fetchPolicy: "network-only",
-    pollInterval: 30000,
+    pollInterval: POLL_INTERVAL.STATUS,
   })
   const entries = data?.inventoryHistory.items ?? []
   const total = data?.inventoryHistory.total ?? 0

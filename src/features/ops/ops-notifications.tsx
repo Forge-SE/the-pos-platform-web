@@ -4,6 +4,7 @@ import { Popover } from "@base-ui/react/popover"
 import { BellIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { POLL_INTERVAL } from "@/lib/polling"
 import { useOpsAuthError } from "@/features/ops/use-ops-auth-error"
 import { opsAuthContext } from "@/lib/ops-token"
 
@@ -40,7 +41,7 @@ export function OpsNotifications() {
   }>(NOTICES, {
     context: opsAuthContext(),
     fetchPolicy: "network-only",
-    pollInterval: 20_000,
+    pollInterval: POLL_INTERVAL.STATUS,
   })
   useOpsAuthError(error)
   const [markRead, { loading }] = useMutation(MARK_READ)

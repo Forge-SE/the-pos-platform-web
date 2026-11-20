@@ -4,6 +4,7 @@ import { useQuery } from "@apollo/client/react"
 import { format, isSameDay } from "date-fns"
 
 import { DateRangePicker, defaultPresets } from "@/components/date-range-picker"
+import { POLL_INTERVAL } from "@/lib/polling"
 import type { DateRange } from "@/components/date-range-picker"
 import { SectionPage } from "@/components/layout/section-page"
 import { ErrorState } from "@/components/content-state"
@@ -102,7 +103,7 @@ export function Performance() {
     PERFORMANCE_QUERY,
     {
       variables: { ...salesRangeVariables(range), includeSales: canSeeSales },
-      pollInterval: 60_000,
+      pollInterval: POLL_INTERVAL.STATUS,
       notifyOnNetworkStatusChange: true,
     }
   )
