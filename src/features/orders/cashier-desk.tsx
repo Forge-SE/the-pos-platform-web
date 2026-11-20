@@ -249,7 +249,7 @@ export function CashierDesk({
   const { data: shiftData } = useQuery<{
     currentShift: { id: string } | null
   }>(CURRENT_SHIFT_QUERY, {
-    pollInterval: 30_000,
+    // ShiftBanner (always mounted) polls this query; we read its cache.
     notifyOnNetworkStatusChange: false,
   })
   const [createOrder, { loading: creating }] = useMutation(CREATE_ORDER)

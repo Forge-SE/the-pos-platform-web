@@ -38,6 +38,7 @@ export interface PlatformRestaurant {
   compliance: RestaurantCompliance | null
   defaultDiningType?: "DINE_IN" | "TAKEAWAY"
   suspended: boolean
+  voiceAgentId?: string | null
   owner?: PlatformOwner | null
   createdAt: string
 }
@@ -102,6 +103,7 @@ export const RESTAURANT_DETAIL_QUERY = gql`
         }
         defaultDiningType
         suspended
+        voiceAgentId
         createdAt
       }
       staff {

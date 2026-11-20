@@ -56,7 +56,9 @@ export function MainLayout() {
   const canOpenSettings =
     profile?.role === "OWNER" || profile?.role === "MANAGER"
   const settingsSection =
-    settingsParam === "subscription" || settingsParam === "payouts"
+    settingsParam === "subscription" ||
+    settingsParam === "payouts" ||
+    settingsParam === "voice"
       ? settingsParam
       : "restaurant"
   const settingsOpen =
@@ -66,7 +68,8 @@ export function MainLayout() {
         (pathname === "/settings" ||
           settingsParam === "restaurant" ||
           settingsParam === "subscription" ||
-          settingsParam === "payouts")))
+          settingsParam === "payouts" ||
+          settingsParam === "voice")))
 
   useEffect(() => {
     setSettingsDismissed(false)
@@ -288,6 +291,7 @@ export function MainLayout() {
               section={
                 settingsParam === "subscription" ||
                 settingsParam === "payouts" ||
+                settingsParam === "voice" ||
                 settingsParam === "preferences"
                   ? settingsParam
                   : "restaurant"
@@ -313,6 +317,7 @@ export function MainLayout() {
           section={
             settingsParam === "subscription" ||
             settingsParam === "payouts" ||
+            settingsParam === "voice" ||
             settingsParam === "restaurant" ||
             settingsParam === "preferences"
               ? settingsParam

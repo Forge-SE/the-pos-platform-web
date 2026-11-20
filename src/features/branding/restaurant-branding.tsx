@@ -8,6 +8,7 @@ import {
   CreditCardIcon,
   GlobeIcon,
   ImageIcon,
+  MicrophoneIcon,
   SpinnerGapIcon,
   StorefrontIcon,
   WalletIcon,
@@ -23,6 +24,7 @@ import {
 import { MomoAccounts } from "@/features/payouts/momo-accounts"
 import { PaystackSettings } from "@/features/payouts/paystack-settings"
 import { SubscriptionPanel } from "@/features/subscriptions/subscription-panel"
+import { VoiceSettings } from "@/features/voice/voice-settings"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LoadingState } from "@/components/loading-state"
@@ -67,12 +69,14 @@ const UPDATE_DIGEST_EMAIL = gql`
 `
 
 type LogoStatus = "idle" | "uploading" | "verifying" | "done" | "error"
-type SettingsSection = "restaurant" | "subscription" | "payouts" | "preferences"
+type SettingsSection =
+  "restaurant" | "subscription" | "payouts" | "voice" | "preferences"
 
 const sections = [
   { id: "restaurant", label: "Restaurant", icon: StorefrontIcon },
   { id: "subscription", label: "Subscription", icon: CreditCardIcon },
   { id: "payouts", label: "Payouts", icon: WalletIcon },
+  { id: "voice", label: "Phone voice", icon: MicrophoneIcon },
   { id: "preferences", label: "Preferences", icon: GlobeIcon },
 ] as const
 
@@ -108,7 +112,7 @@ export function RestaurantBranding({
     profile?.role === "OWNER" || profile?.role === "MANAGER"
   const { data, loading, error, refetch } = useQuery<RestaurantData>(
     RESTAURANT_QUERY,
-    { skip: section === "preferences" }
+    { skip: section === "preferences" || section === "voice" }
   )
   const [completeUpload] = useMutation(COMPLETE_LOGO_UPLOAD)
   const [status, setStatus] = useState<LogoStatus>("idle")
@@ -165,7 +169,7 @@ export function RestaurantBranding({
       label={canOpenRestaurantSettings ? "Restaurant settings" : "Settings"}
       items={
         canOpenRestaurantSettings
-          ? sections
+          ? sections.filter((item) => item.id !== "voice" || canManage)
           : sections.filter((item) => item.id === "preferences")
       }
       section={section}
@@ -366,6 +370,7 @@ export function RestaurantBranding({
           </SettingsBody>
         </>
       )}
+      {section === "voice" && <VoiceSettings />}
       {section === "subscription" && (
         <>
           <SettingsHeader

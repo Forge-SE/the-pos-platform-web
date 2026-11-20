@@ -7,6 +7,7 @@ import {
   from,
   split,
 } from "@apollo/client"
+import { PersistedQueryLink } from "@apollo/client/link/persisted-queries"
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions"
 import { getMainDefinition } from "@apollo/client/utilities"
 import { createClient } from "graphql-ws"
@@ -14,6 +15,7 @@ import { createClient } from "graphql-ws"
 import { apolloErrorLink } from "@/lib/apollo-error-link"
 import { getValidAccessToken, refreshAccessToken } from "@/lib/auth-session"
 import { graphqlUrl } from "@/lib/graphql-url"
+import { shouldSkipPoll } from "@/lib/polling"
 import {
   getValidOpsAccessToken,
   refreshOpsAccessToken,
@@ -109,10 +111,45 @@ const authRetryLink = new ApolloLink((operation, forward) => {
   })
 })
 
+/**
+ * Screens kept current by subscriptions. Events sent while the socket was down
+ * are lost, so these refetch once when a dropped socket reconnects instead of
+ * polling all day.
+ */
+const LIVE_QUERIES = [
+  "CashierLiveOrders",
+  "KitchenActiveOrders",
+  "OverviewOperations",
+  "StationAlarmOrders",
+  "RestaurantNotifications",
+]
+
+async function sha256(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text)
+  )
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("")
+}
+
+/**
+ * Automatic persisted queries: after the first request, the browser sends a
+ * 64-character hash instead of the full query text, which matters on slow
+ * uplinks. Apollo Server supports this by default. Web Crypto exists only on
+ * HTTPS and localhost, so anywhere else requests carry the full query as before.
+ */
+function persistedQueriesLink(): ApolloLink[] {
+  if (typeof window === "undefined" || !window.isSecureContext) return []
+  return [new PersistedQueryLink({ sha256 })]
+}
+
 export function createApolloClient() {
   const httpLink = from([
     authLink,
     authRetryLink,
+    ...persistedQueriesLink(),
     new HttpLink({ uri: graphqlUrl }),
   ])
   const transportLink = import.meta.env.SSR
@@ -130,6 +167,12 @@ export function createApolloClient() {
             url: getGraphqlWsUrl(),
             lazy: true,
             retryAttempts: 10,
+            on: {
+              connected: (_socket, _payload, wasRetry) => {
+                if (wasRetry)
+                  void client.refetchQueries({ include: LIVE_QUERIES })
+              },
+            },
             connectionParams: async () => {
               const accessToken = await getValidAccessToken()
               return accessToken
@@ -141,9 +184,15 @@ export function createApolloClient() {
         httpLink
       )
 
-  return new ApolloClient({
+  const client: ApolloClient = new ApolloClient({
     ssrMode: import.meta.env.SSR,
     link: from([apolloErrorLink, transportLink]),
     cache: new InMemoryCache(),
+    defaultOptions: {
+      // Hidden tabs and offline devices skip their polls; the next visible
+      // poll catches up.
+      watchQuery: { skipPollAttempt: shouldSkipPoll },
+    },
   })
+  return client
 }

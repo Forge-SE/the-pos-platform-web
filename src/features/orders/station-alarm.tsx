@@ -5,6 +5,7 @@ import { BellRingingIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { getAccessTokenProfile } from "@/lib/auth-token"
+import { POLL_INTERVAL } from "@/lib/polling"
 import {
   playStationChime,
   stopStationChime,
@@ -65,7 +66,8 @@ export function StationAlarm({
   const known = useRef<Map<string, string> | null>(null)
   const { data } = useQuery<{ activeOrders: Ticket[] }>(ACTIVE_ORDERS, {
     skip: !station,
-    pollInterval: 20_000,
+    // Subscriptions below push changes; this only repairs missed events.
+    pollInterval: POLL_INTERVAL.FALLBACK,
   })
 
   const queued = useRef<Ticket[]>([])
