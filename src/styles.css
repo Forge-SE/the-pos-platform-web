@@ -387,3 +387,75 @@
   animation-duration: 0.35s;
   animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
+
+/*
+ * Login backdrop. Phones get an ~30 KB image, larger screens ~85 KB; the JPEG
+ * is only for browsers without WebP. The solid colour on the element shows
+ * while it loads, and data-saver users skip the photo entirely.
+ */
+.auth-backdrop {
+  background-image: url("/auth.jpg");
+  background-image: image-set(
+    url("/auth-800.webp") type("image/webp"),
+    url("/auth.jpg") type("image/jpeg")
+  );
+}
+@media (min-width: 900px) {
+  .auth-backdrop {
+    background-image: image-set(
+      url("/auth-1600.webp") type("image/webp"),
+      url("/auth.jpg") type("image/jpeg")
+    );
+  }
+}
+@media (prefers-reduced-data: reduce) {
+  .auth-backdrop {
+    background-image: none;
+  }
+}
+
+/* Boot splash (components/boot-loader.tsx). Timings match the old motion version. */
+.boot-screen {
+  animation: boot-fade 0.7s cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+.boot-screen[data-leaving] {
+  animation: boot-exit 0.7s cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+.boot-mark {
+  animation: boot-slide-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+  --boot-from: -64px;
+}
+.boot-word {
+  animation: boot-slide-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.65s both;
+  --boot-from: -110%;
+}
+@keyframes boot-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes boot-exit {
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes boot-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--boot-from));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-mark,
+  .boot-word {
+    --boot-from: 0;
+  }
+  .boot-screen[data-leaving] {
+    animation-name: boot-fade-out;
+  }
+}
+@keyframes boot-fade-out {
+  to {
+    opacity: 0;
+  }
+}

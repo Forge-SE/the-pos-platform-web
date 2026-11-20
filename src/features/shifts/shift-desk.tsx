@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import * as Yup from "yup"
 
 import { SectionPage } from "@/components/layout/section-page"
+import { POLL_INTERVAL } from "@/lib/polling"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState, ErrorState } from "@/components/content-state"
@@ -89,7 +90,7 @@ export function ShiftDesk() {
   const { data, loading, error, refetch } = useQuery<{
     currentShift: OpenShift | null
   }>(CURRENT_SHIFT_QUERY, {
-    pollInterval: 30_000,
+    // ShiftBanner (always mounted) polls this query; we read its cache.
     notifyOnNetworkStatusChange: false,
   })
   const [openShift, { loading: opening }] = useMutation<
@@ -110,7 +111,7 @@ export function ShiftDesk() {
       variables: { shiftId: shift?.id ?? "" },
       skip: !shift,
       fetchPolicy: "cache-and-network",
-      pollInterval: 15000,
+      pollInterval: POLL_INTERVAL.WATCHED,
     }
   )
   const check =

@@ -8,6 +8,7 @@ import { isSameDay } from "date-fns"
 import { XIcon } from "@phosphor-icons/react"
 
 import { DateRangePicker, defaultPresets } from "@/components/date-range-picker"
+import { POLL_INTERVAL } from "@/lib/polling"
 import type { DateRange } from "@/components/date-range-picker"
 import { DataTable } from "@/components/ui/data-table"
 import { EmptyState, ErrorState } from "@/components/content-state"
@@ -196,7 +197,7 @@ export function OwnerOrders({ switcher }: { switcher?: ReactNode }) {
       from: bounds.from,
       to: bounds.to,
     },
-    pollInterval: 30_000,
+    pollInterval: POLL_INTERVAL.STATUS,
   })
   const [selected, setSelected] = useState<OwnerOrder | null>(null)
   const orders = data?.recentOrders ?? []

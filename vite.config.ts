@@ -81,7 +81,27 @@ const config = defineConfig({
         skipWaiting: true,
         navigateFallback: "/index.html",
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        globIgnores: ["**/auth.jpg"],
+        // The ops console is for platform staff, not restaurant devices, so its
+        // chunks are cached on first use (below) instead of downloaded by every
+        // till. The login photo is left to the normal HTTP cache.
+        globIgnores: [
+          "**/auth*.jpg",
+          "**/auth-*.webp",
+          "**/assets/Ops*.js",
+          "**/assets/ops-*.js",
+        ],
+        runtimeCaching: [
+          {
+            // Hashed build files never change, so cache them forever once seen.
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && url.pathname.startsWith("/assets/"),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "assets-on-demand",
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 60 },
+            },
+          },
+        ],
       },
     }),
   ],

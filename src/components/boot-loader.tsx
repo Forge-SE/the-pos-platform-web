@@ -1,97 +1,76 @@
 import { useEffect, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { ChartDonutIcon } from "@phosphor-icons/react"
 
 const MIN_DISPLAY_MS = 2200
-const EXIT_MS = 0.7
-const INTRO_DELAY_MS = 450
+/** Matches the `boot-exit` animation in styles.css. */
+const EXIT_MS = 700
 
+/**
+ * Brand splash shown while the app starts. Animated with CSS (see the
+ * `boot-*` rules in styles.css) rather than framer-motion, which kept a
+ * ~40 KB gzipped library on the sign-in page's critical path.
+ */
 export function BootLoader() {
-  const [visible, setVisible] = useState(true)
-  const reduceMotion = useReducedMotion()
+  const [phase, setPhase] = useState<"shown" | "leaving" | "gone">("shown")
 
   useEffect(() => {
     const startedAt = performance.now()
-    const raf = 0
     let timer: ReturnType<typeof setTimeout> | undefined
 
     const hide = () => {
       const elapsed = performance.now() - startedAt
       const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed)
-      timer = setTimeout(() => setVisible(false), remaining)
+      clearTimeout(timer)
+      timer = setTimeout(() => setPhase("leaving"), remaining)
     }
 
     if (document.readyState === "complete") {
       hide()
-    } else {
-      const onLoad = () => hide()
-      window.addEventListener("load", onLoad, { once: true })
-      // Fallback so a stalled `load` event never traps the user.
-      timer = setTimeout(() => setVisible(false), MIN_DISPLAY_MS + 4000)
-      return () => {
-        window.removeEventListener("load", onLoad)
-        if (timer) clearTimeout(timer)
-      }
+      return () => clearTimeout(timer)
     }
-
+    const onLoad = () => hide()
+    window.addEventListener("load", onLoad, { once: true })
+    // Fallback so a stalled `load` event (a slow image, say) never traps the user.
+    timer = setTimeout(() => setPhase("leaving"), MIN_DISPLAY_MS + 4000)
     return () => {
-      cancelAnimationFrame(raf)
-      if (timer) clearTimeout(timer)
+      window.removeEventListener("load", onLoad)
+      clearTimeout(timer)
     }
   }, [])
 
   useEffect(() => {
-    if (!visible) return
+    if (phase !== "leaving") return
+    const timer = setTimeout(() => setPhase("gone"), EXIT_MS)
+    return () => clearTimeout(timer)
+  }, [phase])
+
+  useEffect(() => {
+    if (phase === "gone") return
     const original = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => {
       document.body.style.overflow = original
     }
-  }, [visible])
+  }, [phase])
+
+  if (phase === "gone") return null
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          aria-hidden="true"
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-primary"
-          initial={{ y: 0, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={reduceMotion ? { opacity: 0 } : { y: "-100%", opacity: 1 }}
-          transition={{ duration: EXIT_MS, ease: [0.76, 0, 0.24, 1] }}
-        >
-          <div className="flex items-center gap-3 overflow-hidden">
-            <motion.span
-              className="flex size-14 items-center justify-center rounded-2xl bg-[#1F4D2E] text-primary shadow-lg"
-              initial={reduceMotion ? { opacity: 0 } : { x: -64, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{
-                duration: 0.6,
-                delay: INTRO_DELAY_MS / 1000,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            >
-              <ChartDonutIcon className="size-8" weight="bold" />
-            </motion.span>
-            <span className="overflow-hidden">
-              <motion.span
-                className="block font-brand text-4xl font-semibold tracking-tight text-[#1F4D2E]"
-                initial={
-                  reduceMotion ? { opacity: 0 } : { x: "-110%", opacity: 0 }
-                }
-                animate={{ x: "0%", opacity: 1 }}
-                transition={{
-                  duration: 0.7,
-                  delay: INTRO_DELAY_MS / 1000 + 0.2,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-              >
-                Ovaal
-              </motion.span>
-            </span>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div
+      aria-hidden="true"
+      data-leaving={phase === "leaving" || undefined}
+      className="boot-screen fixed inset-0 z-[100] flex items-center justify-center bg-primary"
+    >
+      <div className="flex items-center gap-3 overflow-hidden">
+        <span className="boot-mark flex size-14 items-center justify-center rounded-2xl bg-[#1F4D2E] text-primary shadow-lg">
+          <ChartDonutIcon className="size-8" weight="bold" />
+        </span>
+        <span className="overflow-hidden">
+          <span className="boot-word block font-brand text-4xl font-semibold tracking-tight text-[#1F4D2E]">
+            Ovaal
+          </span>
+        </span>
+      </div>
+    </div>
   )
 }
