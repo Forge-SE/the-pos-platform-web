@@ -304,6 +304,18 @@ const opsTeamRoute = createRoute({
   head: () => ({ meta: [{ title: "Team | Platform" }, ...noIndexMeta] }),
 })
 
+const opsPartnersRoute = createRoute({
+  getParentRoute: () => opsLayoutRoute,
+  path: "/ops/partners",
+  component: lazyRouteComponent(
+    () => import("@/pages/OpsPartners"),
+    "OpsPartners"
+  ),
+  head: () => ({
+    meta: [{ title: "Partner applications | Platform" }, ...noIndexMeta],
+  }),
+})
+
 const opsAuditRoute = createRoute({
   getParentRoute: () => opsLayoutRoute,
   path: "/ops/audit",
@@ -339,6 +351,7 @@ export const routeTree = rootRoute.addChildren([
     opsMetricsRoute,
     opsHealthRoute,
     opsTeamRoute,
+    opsPartnersRoute,
     opsSubscriptionsRoute,
     opsSubscriptionTierRoute,
     opsAuditRoute,
