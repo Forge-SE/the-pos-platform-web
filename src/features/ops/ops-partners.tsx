@@ -28,7 +28,12 @@ const PARTNERS = gql`
         description
         slug
         defaultDiningType
-        openingHours { day closed opens closes }
+        openingHours {
+          day
+          closed
+          opens
+          closes
+        }
         compliance {
           businessRegistrationNumber
           tin
@@ -84,7 +89,12 @@ interface Application {
   description: string | null
   slug: string
   defaultDiningType: string
-  openingHours: { day: string; closed: boolean; opens: string | null; closes: string | null }[]
+  openingHours: {
+    day: string
+    closed: boolean
+    opens: string | null
+    closes: string | null
+  }[]
   compliance: {
     businessRegistrationNumber: string | null
     tin: string | null
@@ -140,7 +150,9 @@ export function OpsPartners() {
       setLabel("")
       await refetch()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create a code.")
+      setError(
+        cause instanceof Error ? cause.message : "Could not create a code."
+      )
     }
   }
 
@@ -157,7 +169,9 @@ export function OpsPartners() {
       await refetch()
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Could not review that application."
+        cause instanceof Error
+          ? cause.message
+          : "Could not review that application."
       )
     }
   }
@@ -194,7 +208,9 @@ export function OpsPartners() {
         {issued ? (
           <p className="rounded-2xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
             Code for {issued.label}:{" "}
-            <span className="font-semibold tracking-[0.18em]">{issued.code}</span>
+            <span className="font-semibold tracking-[0.18em]">
+              {issued.code}
+            </span>
             . Send them the marketing site’s join page and this code.
           </p>
         ) : null}
@@ -207,7 +223,8 @@ export function OpsPartners() {
           <p className="text-sm text-muted-foreground">Loading applications…</p>
         ) : invites.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No partner codes yet. Generate one when a restaurant is ready to apply.
+            No partner codes yet. Generate one when a restaurant is ready to
+            apply.
           </p>
         ) : (
           <ul className="space-y-3">
@@ -237,8 +254,8 @@ export function OpsPartners() {
                       </span>
                     </p>
                     <p className="text-muted-foreground">
-                      {invite.application.fullName} · {invite.application.email} ·{" "}
-                      {invite.application.phone}
+                      {invite.application.fullName} · {invite.application.email}{" "}
+                      · {invite.application.phone}
                     </p>
                     <p>
                       {invite.application.address}, {invite.application.city},{" "}
@@ -265,7 +282,8 @@ export function OpsPartners() {
                     {invite.application.compliance ? (
                       <p className="text-muted-foreground">
                         {[
-                          invite.application.compliance.businessRegistrationNumber,
+                          invite.application.compliance
+                            .businessRegistrationNumber,
                           invite.application.compliance.tin,
                           invite.application.compliance.foodHygienePermit,
                           invite.application.compliance.districtAssemblyPermit,
@@ -280,7 +298,9 @@ export function OpsPartners() {
                         <Button
                           type="button"
                           disabled={reviewing}
-                          onClick={() => void decide(invite.application!.id, "approved")}
+                          onClick={() =>
+                            void decide(invite.application!.id, "approved")
+                          }
                         >
                           Approve
                         </Button>
@@ -288,7 +308,9 @@ export function OpsPartners() {
                           type="button"
                           variant="outline"
                           disabled={reviewing}
-                          onClick={() => void decide(invite.application!.id, "rejected")}
+                          onClick={() =>
+                            void decide(invite.application!.id, "rejected")
+                          }
                         >
                           Reject
                         </Button>
@@ -297,7 +319,8 @@ export function OpsPartners() {
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Waiting for the partner to enter this code and send their details.
+                    Waiting for the partner to enter this code and send their
+                    details.
                   </p>
                 )}
               </li>
