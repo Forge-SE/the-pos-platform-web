@@ -33,6 +33,7 @@ import { uploadImageToCloudinary } from "@/lib/cloudinary"
 import { getAccessTokenProfile } from "@/lib/auth-token"
 import { hasPermission } from "@/lib/permissions"
 import { LanguageSetting } from "@/components/settings/language-setting"
+import { PinSetting } from "@/components/settings/pin-setting"
 import { useLanguage } from "@/components/language-provider"
 
 const RESTAURANT_QUERY = gql`
@@ -203,6 +204,12 @@ export function RestaurantBranding({
               description="Choose the language for menus and workspace controls."
             >
               <LanguageSetting />
+            </SettingRow>
+            <SettingRow
+              title="Sign-in PIN"
+              description="Change the four-digit PIN you use to sign in and approve actions."
+            >
+              <PinSetting />
             </SettingRow>
           </SettingsBody>
         </>
