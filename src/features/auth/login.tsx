@@ -24,6 +24,7 @@ import {
 import Form, { fieldError } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { PinInput } from "@/components/ui/pin-input"
+import { ChangePinForm } from "@/features/auth/change-pin-form"
 import { StaffRail } from "@/features/auth/staff-rail"
 import type { SignInProfile } from "@/features/auth/staff-rail"
 import { clearAuthSession, setAuthSession } from "@/lib/auth-token"
@@ -65,6 +66,7 @@ const LOGIN = gql`
         restaurantId
         name
         role
+        pinChangeRequired
       }
     }
   }
@@ -86,19 +88,22 @@ const SET_STAFF_PIN = gql`
         restaurantId
         name
         role
+        pinChangeRequired
       }
     }
   }
 `
 
 type Role = "CASHIER" | "KITCHEN" | "MANAGER" | "OWNER"
-type Step = "restaurant" | "profiles" | "pin" | "set-pin" | "confirm-pin"
+type Step =
+  "restaurant" | "profiles" | "pin" | "set-pin" | "confirm-pin" | "change-pin"
 
 interface AuthUser {
   id: string
   restaurantId: string
   name: string
   role: Role
+  pinChangeRequired?: boolean
 }
 
 interface AuthPayload {
@@ -168,6 +173,8 @@ export function Login() {
   const [profiles, setProfiles] = useState<SignInProfile[]>([])
   const [selected, setSelected] = useState<SignInProfile | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
+  // The PIN someone else chose, kept only until the person picks their own.
+  const [assignedPin, setAssignedPin] = useState<string | null>(null)
 
   useEffect(() => {
     const notice = sessionStorage.getItem("pos.suspended-notice")
@@ -218,6 +225,24 @@ export function Login() {
     }
     setNextPath(destination)
     setSignedInUser(payload.user)
+  }
+
+  async function afterPinLogin(payload: AuthPayload, pin: string) {
+    if (!payload.user.pinChangeRequired) return finishSignIn(payload)
+    if (payload.user.role === "OWNER") {
+      // Owners replace an assigned PIN as the first onboarding step.
+      setAuthSession(payload)
+      const result = await loadOnboarding()
+      if (result.data?.ownerOnboardingRequired) {
+        setNextPath("/onboarding")
+        setSignedInUser(payload.user)
+        return
+      }
+      clearAuthSession()
+    }
+    // Everyone else picks their own PIN before the session is kept.
+    setAssignedPin(pin)
+    setStep("change-pin")
   }
 
   function clearPinFields() {
@@ -294,7 +319,7 @@ export function Login() {
       })
       const payload = result.data?.login
       if (!payload) throw new Error("Missing login response")
-      await finishSignIn(payload)
+      await afterPinLogin(payload, values.pin)
     } catch (error) {
       const message = readableAuthError(error)
       setAuthError(
@@ -315,6 +340,7 @@ export function Login() {
     clearAuthSession()
     setSignedInUser(null)
     setSelected(null)
+    setAssignedPin(null)
     setProfiles([])
     setRestaurantName("")
     clearPinFields()
@@ -330,7 +356,8 @@ export function Login() {
       return
     }
     clearPinFields()
-    if (step === "pin" || step === "set-pin") {
+    if (step === "change-pin") setAssignedPin(null)
+    if (step === "pin" || step === "set-pin" || step === "change-pin") {
       setSelected(null)
       setStep("profiles")
       return
@@ -347,7 +374,9 @@ export function Login() {
           ? "Choose your PIN"
           : step === "confirm-pin"
             ? "Confirm your PIN"
-            : "Enter your PIN"
+            : step === "change-pin"
+              ? "Choose your own PIN"
+              : "Enter your PIN"
 
   const description =
     step === "restaurant"
@@ -358,7 +387,9 @@ export function Login() {
           ? `${selected?.name}, this is your first sign-in. Pick a four-digit PIN you’ll use from now on.`
           : step === "confirm-pin"
             ? `${selected?.name}, enter those four digits again.`
-            : `${selected?.name}, enter the four-digit PIN for ${restaurantName || restaurantCode}.`
+            : step === "change-pin"
+              ? `${selected?.name}, your PIN was set up for you. Pick a new four-digit PIN that only you know.`
+              : `${selected?.name}, enter the four-digit PIN for ${restaurantName || restaurantCode}.`
 
   return (
     <main className="mobile-entry-page place-items-left auth-backdrop relative grid min-h-svh bg-neutral-900 bg-cover bg-center px-4 py-8 sm:px-6">
@@ -404,212 +435,228 @@ export function Login() {
                 </div>
               )}
 
-              <Form
-                className="mt-6"
-                initialValues={loginValues}
-                validationSchema={loginSchema(step)}
-                onSubmit={submit}
-              >
-                {(formik) => {
-                  formikRef.current = formik
-                  const codeError = fieldError(formik, "restaurantCode")
-                  const pinError = fieldError(formik, "pin")
-                  const confirmError = fieldError(formik, "confirmPin")
-                  return step === "restaurant" ? (
-                    <>
-                      <FieldGroup className="gap-5">
-                        <Field data-invalid={Boolean(codeError)}>
-                          <FieldLabel htmlFor="restaurant-id">
-                            Restaurant code
-                          </FieldLabel>
-                          <Input
-                            id="restaurant-id"
-                            name="restaurantCode"
-                            value={formik.values.restaurantCode}
-                            onChange={(event) => {
-                              formik.handleChange(event)
-                              setAuthError(null)
-                            }}
-                            onBlur={formik.handleBlur}
-                            autoComplete="organization"
-                            autoCapitalize="characters"
-                            spellCheck={false}
-                            placeholder="e.g. R0001"
-                            aria-invalid={Boolean(codeError)}
-                            aria-describedby="restaurant-id-error"
-                            autoFocus
-                          />
-                          <div className="group relative mt-1 flex justify-end">
-                            <button
-                              type="button"
-                              aria-describedby="restaurant-id-help"
-                              className="inline-flex items-center gap-1 rounded text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-                            >
-                              <QuestionIcon
-                                aria-hidden="true"
-                                className="size-3.5"
-                              />
-                              Don&apos;t know your restaurant code?
-                            </button>
-                            <div
-                              role="tooltip"
-                              id="restaurant-id-help"
-                              className="pointer-events-none absolute right-0 bottom-full z-10 mb-2 w-60 rounded-md border bg-popover p-2.5 text-xs leading-5 text-popover-foreground opacity-0 shadow-md transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
-                            >
-                              Ask your manager for your restaurant code. It
-                              looks like R0001 and was shared when your
-                              restaurant was set up.
-                            </div>
-                          </div>
-                          <FieldError id="restaurant-id-error">
-                            {codeError}
-                          </FieldError>
-                        </Field>
-                      </FieldGroup>
-
-                      <Button
-                        type="submit"
-                        className="mt-7 w-full"
-                        disabled={busy}
-                      >
-                        {directoryState.loading ? (
-                          <>
-                            <SpinnerGapIcon
-                              aria-hidden="true"
-                              className="animate-spin motion-reduce:animate-none"
-                              data-icon="inline-start"
-                            />
-                            Looking up restaurant…
-                          </>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            Continue
-                            <CaretRightIcon
-                              aria-hidden="true"
-                              data-icon="inline-end"
-                            />
-                          </div>
-                        )}
-                      </Button>
-                    </>
-                  ) : step === "profiles" ? (
-                    <>
-                      {profiles.length === 0 ? (
-                        <EmptyState
-                          title="No active staff profiles yet."
-                          description="An owner needs to add the team before anyone can sign in."
-                          action={
-                            <Button
-                              variant="outline"
-                              size="lg"
-                              onClick={goBack}
-                            >
-                              Back
-                            </Button>
-                          }
-                        />
-                      ) : (
-                        <StaffRail
-                          profiles={profiles}
-                          onChoose={chooseProfile}
-                        />
-                      )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="mt-4 w-full"
-                        onClick={goBack}
-                      >
-                        Back
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <FieldGroup className="gap-5">
-                        {step === "confirm-pin" ? (
-                          <Field data-invalid={Boolean(confirmError)}>
-                            <FieldLabel
-                              htmlFor="staff-pin-confirm"
-                              className="sr-only"
-                            >
-                              Confirm PIN
+              {step === "change-pin" && selected && assignedPin ? (
+                <div className="mt-6">
+                  <ChangePinForm
+                    userId={selected.id}
+                    currentPin={assignedPin}
+                    submitLabel="Save PIN and sign in"
+                    onChanged={async (payload) => {
+                      setAssignedPin(null)
+                      await finishSignIn(payload)
+                    }}
+                    onCancel={goBack}
+                    cancelLabel="Back"
+                  />
+                </div>
+              ) : (
+                <Form
+                  className="mt-6"
+                  initialValues={loginValues}
+                  validationSchema={loginSchema(step)}
+                  onSubmit={submit}
+                >
+                  {(formik) => {
+                    formikRef.current = formik
+                    const codeError = fieldError(formik, "restaurantCode")
+                    const pinError = fieldError(formik, "pin")
+                    const confirmError = fieldError(formik, "confirmPin")
+                    return step === "restaurant" ? (
+                      <>
+                        <FieldGroup className="gap-5">
+                          <Field data-invalid={Boolean(codeError)}>
+                            <FieldLabel htmlFor="restaurant-id">
+                              Restaurant code
                             </FieldLabel>
-                            <PinInput
-                              id="staff-pin-confirm"
-                              value={formik.values.confirmPin}
-                              onChange={(value) => {
-                                void formik.setFieldValue("confirmPin", value)
+                            <Input
+                              id="restaurant-id"
+                              name="restaurantCode"
+                              value={formik.values.restaurantCode}
+                              onChange={(event) => {
+                                formik.handleChange(event)
                                 setAuthError(null)
                               }}
-                              invalid={Boolean(confirmError)}
-                              autoComplete="new-password"
+                              onBlur={formik.handleBlur}
+                              autoComplete="organization"
+                              autoCapitalize="characters"
+                              spellCheck={false}
+                              placeholder="e.g. R0001"
+                              aria-invalid={Boolean(codeError)}
+                              aria-describedby="restaurant-id-error"
+                              autoFocus
                             />
-                            <FieldError>{confirmError}</FieldError>
+                            <div className="group relative mt-1 flex justify-end">
+                              <button
+                                type="button"
+                                aria-describedby="restaurant-id-help"
+                                className="inline-flex items-center gap-1 rounded text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                              >
+                                <QuestionIcon
+                                  aria-hidden="true"
+                                  className="size-3.5"
+                                />
+                                Don&apos;t know your restaurant code?
+                              </button>
+                              <div
+                                role="tooltip"
+                                id="restaurant-id-help"
+                                className="pointer-events-none absolute right-0 bottom-full z-10 mb-2 w-60 rounded-md border bg-popover p-2.5 text-xs leading-5 text-popover-foreground opacity-0 shadow-md transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
+                              >
+                                Ask your manager for your restaurant code. It
+                                looks like R0001 and was shared when your
+                                restaurant was set up.
+                              </div>
+                            </div>
+                            <FieldError id="restaurant-id-error">
+                              {codeError}
+                            </FieldError>
                           </Field>
-                        ) : (
-                          <Field data-invalid={Boolean(pinError)}>
-                            <PinInput
-                              id="staff-pin"
-                              value={formik.values.pin}
-                              onChange={(value) => {
-                                void formik.setFieldValue("pin", value)
-                                setAuthError(null)
-                              }}
-                              invalid={Boolean(pinError)}
-                              autoComplete={
-                                step === "set-pin"
-                                  ? "new-password"
-                                  : "current-password"
-                              }
-                            />
-                            <FieldError>{pinError}</FieldError>
-                          </Field>
-                        )}
-                      </FieldGroup>
+                        </FieldGroup>
 
-                      <Button
-                        type="submit"
-                        className="mt-7 w-full"
-                        disabled={busy}
-                      >
-                        {busy ? (
-                          <>
-                            <SpinnerGapIcon
-                              aria-hidden="true"
-                              className="animate-spin motion-reduce:animate-none"
-                              data-icon="inline-start"
-                            />
-                            {step === "confirm-pin"
-                              ? "Saving PIN…"
-                              : "Signing in…"}
-                          </>
+                        <Button
+                          type="submit"
+                          className="mt-7 w-full"
+                          disabled={busy}
+                        >
+                          {directoryState.loading ? (
+                            <>
+                              <SpinnerGapIcon
+                                aria-hidden="true"
+                                className="animate-spin motion-reduce:animate-none"
+                                data-icon="inline-start"
+                              />
+                              Looking up restaurant…
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center gap-2">
+                              Continue
+                              <CaretRightIcon
+                                aria-hidden="true"
+                                data-icon="inline-end"
+                              />
+                            </div>
+                          )}
+                        </Button>
+                      </>
+                    ) : step === "profiles" ? (
+                      <>
+                        {profiles.length === 0 ? (
+                          <EmptyState
+                            title="No active staff profiles yet."
+                            description="An owner needs to add the team before anyone can sign in."
+                            action={
+                              <Button
+                                variant="outline"
+                                size="lg"
+                                onClick={goBack}
+                              >
+                                Back
+                              </Button>
+                            }
+                          />
                         ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            {step === "set-pin"
-                              ? "Continue"
-                              : step === "confirm-pin"
-                                ? "Save PIN and sign in"
-                                : "Sign in"}
-                            <CaretRightIcon
-                              aria-hidden="true"
-                              data-icon="inline-end"
-                            />
-                          </div>
+                          <StaffRail
+                            profiles={profiles}
+                            onChoose={chooseProfile}
+                          />
                         )}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="mt-2 w-full"
-                        onClick={goBack}
-                        disabled={busy}
-                      >
-                        Back
-                      </Button>
-                    </>
-                  )
-                }}
-              </Form>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="mt-4 w-full"
+                          onClick={goBack}
+                        >
+                          Back
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <FieldGroup className="gap-5">
+                          {step === "confirm-pin" ? (
+                            <Field data-invalid={Boolean(confirmError)}>
+                              <FieldLabel
+                                htmlFor="staff-pin-confirm"
+                                className="sr-only"
+                              >
+                                Confirm PIN
+                              </FieldLabel>
+                              <PinInput
+                                id="staff-pin-confirm"
+                                value={formik.values.confirmPin}
+                                onChange={(value) => {
+                                  void formik.setFieldValue("confirmPin", value)
+                                  setAuthError(null)
+                                }}
+                                invalid={Boolean(confirmError)}
+                                autoComplete="new-password"
+                              />
+                              <FieldError>{confirmError}</FieldError>
+                            </Field>
+                          ) : (
+                            <Field data-invalid={Boolean(pinError)}>
+                              <PinInput
+                                id="staff-pin"
+                                value={formik.values.pin}
+                                onChange={(value) => {
+                                  void formik.setFieldValue("pin", value)
+                                  setAuthError(null)
+                                }}
+                                invalid={Boolean(pinError)}
+                                autoComplete={
+                                  step === "set-pin"
+                                    ? "new-password"
+                                    : "current-password"
+                                }
+                              />
+                              <FieldError>{pinError}</FieldError>
+                            </Field>
+                          )}
+                        </FieldGroup>
+
+                        <Button
+                          type="submit"
+                          className="mt-7 w-full"
+                          disabled={busy}
+                        >
+                          {busy ? (
+                            <>
+                              <SpinnerGapIcon
+                                aria-hidden="true"
+                                className="animate-spin motion-reduce:animate-none"
+                                data-icon="inline-start"
+                              />
+                              {step === "confirm-pin"
+                                ? "Saving PIN…"
+                                : "Signing in…"}
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center gap-2">
+                              {step === "set-pin"
+                                ? "Continue"
+                                : step === "confirm-pin"
+                                  ? "Save PIN and sign in"
+                                  : "Sign in"}
+                              <CaretRightIcon
+                                aria-hidden="true"
+                                data-icon="inline-end"
+                              />
+                            </div>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="mt-2 w-full"
+                          onClick={goBack}
+                          disabled={busy}
+                        >
+                          Back
+                        </Button>
+                      </>
+                    )
+                  }}
+                </Form>
+              )}
             </div>
           )}
         </div>
@@ -718,7 +765,9 @@ function SignedIn({
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         You’re signed in as {roleLabels[user.role]}.
         {continueLabel === "Continue setup"
-          ? " Next you’ll add your team and opening menu."
+          ? user.pinChangeRequired
+            ? " Next you’ll choose your own PIN, then add your team and opening menu."
+            : " Next you’ll add your team and opening menu."
           : " Taking you to your workspace now."}
       </p>
       <Button className="mt-6 w-full" onClick={onContinue}>
