@@ -477,6 +477,11 @@ const french: Record<string, string> = {
   "Changes apply from the next call. Calls in progress keep their current voice.":
     "Les changements s’appliquent au prochain appel. Les appels en cours gardent leur voix actuelle.",
   "Change voice": "Changer de voix",
+  "Change PIN": "Changer le code PIN",
+  "Sign-in PIN": "Code PIN de connexion",
+  "Change the four-digit PIN you use to sign in and approve actions.":
+    "Changez le code PIN à quatre chiffres que vous utilisez pour vous connecter et approuver des actions.",
+  "Your PIN was changed.": "Votre code PIN a été modifié.",
   "Play sample": "Écouter un extrait",
   "The assigned voice is no longer usable; calls are using the default voice.":
     "La voix attribuée n’est plus utilisable ; les appels utilisent la voix par défaut.",

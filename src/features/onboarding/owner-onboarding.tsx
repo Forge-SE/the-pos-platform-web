@@ -5,6 +5,7 @@ import { Navigate, useNavigate } from "@tanstack/react-router"
 import {
   CheckCircleIcon,
   ForkKnifeIcon,
+  LockKeyIcon,
   UsersThreeIcon,
   ReceiptIcon,
 } from "@phosphor-icons/react"
@@ -12,13 +13,18 @@ import {
 import { OvaalMark } from "@/components/ovaal-mark"
 import { OnboardingMenuStep } from "@/features/onboarding/components/onboarding-menu-step"
 import { OnboardingStaffStep } from "@/features/onboarding/components/onboarding-staff-step"
-import { getAccessTokenProfile } from "@/lib/auth-token"
+import { ChangePinForm } from "@/features/auth/change-pin-form"
+import { getAccessTokenProfile, setAuthSession } from "@/lib/auth-token"
 import { TaxProfileForm } from "@/features/pricing/tax-profile-form"
 import { ErrorState } from "@/components/content-state"
 
 const ONBOARDING_QUERY = gql`
   query OwnerOnboardingRequired {
     ownerOnboardingRequired
+    me {
+      id
+      pinChangeRequired
+    }
   }
 `
 
@@ -28,7 +34,13 @@ const COMPLETE_ONBOARDING = gql`
   }
 `
 
-const steps = [
+const pinStep = {
+  label: "Your PIN",
+  description: "Replace the PIN you were given",
+  icon: LockKeyIcon,
+} as const
+
+const setupSteps = [
   {
     label: "Taxes",
     description: "Choose your business tax profile",
@@ -46,6 +58,8 @@ const steps = [
   },
 ] as const
 
+type StepId = "pin" | "taxes" | "staff" | "menu"
+
 export function OwnerOnboarding() {
   const navigate = useNavigate()
   const profile = getAccessTokenProfile()
@@ -54,13 +68,25 @@ export function OwnerOnboarding() {
     loading,
     error: loadError,
     refetch,
-  } = useQuery<{ ownerOnboardingRequired: boolean }>(ONBOARDING_QUERY, {
+  } = useQuery<{
+    ownerOnboardingRequired: boolean
+    me: { id: string; pinChangeRequired: boolean }
+  }>(ONBOARDING_QUERY, {
     skip: profile?.role !== "OWNER",
     fetchPolicy: "network-only",
   })
   const [complete, completeState] = useMutation(COMPLETE_ONBOARDING)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  // Decided once from the first load so the step list doesn't shift after the PIN is saved.
+  const [needsPin, setNeedsPin] = useState<boolean | null>(null)
+  if (needsPin === null && data) setNeedsPin(data.me.pinChangeRequired)
+
+  const stepIds: StepId[] = needsPin
+    ? ["pin", "taxes", "staff", "menu"]
+    : ["taxes", "staff", "menu"]
+  const steps = needsPin ? [pinStep, ...setupSteps] : setupSteps
+  const current = stepIds[Math.min(step, stepIds.length - 1)]
 
   if (!profile) return <Navigate to="/" replace />
   if (profile.role !== "OWNER") return <Navigate to="/overview" replace />
@@ -102,7 +128,9 @@ export function OwnerOnboarding() {
           </div>
         </div>
 
-        <ol className="mt-8 grid gap-3 sm:grid-cols-3">
+        <ol
+          className={`mt-8 grid gap-3 ${steps.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
+        >
           {steps.map((item, index) => {
             const done = index < step
             const now = index === step
@@ -137,18 +165,22 @@ export function OwnerOnboarding() {
 
         <header className="mt-8">
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">
-            {step === 0
-              ? "How does your business charge tax?"
-              : step === 1
-                ? "Who else works the till?"
-                : "Add the opening menu"}
+            {current === "pin"
+              ? "Choose your own PIN"
+              : current === "taxes"
+                ? "How does your business charge tax?"
+                : current === "staff"
+                  ? "Who else works the till?"
+                  : "Add the opening menu"}
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            {step === 0
-              ? "Choose your VAT registration status and how menu prices include tax. You can update this later in Taxes."
-              : step === 1
-                ? "Add cashiers, kitchen, or a manager. Each person chooses their own PIN the first time they sign in. You can skip this and add them later."
-                : "Add at least one category and dish. Prices are in Ghana cedis. Photos and modifiers can wait until the menu page."}
+            {current === "pin"
+              ? "Your PIN was set up for you when the restaurant was created. Pick four digits only you know — you’ll use them to sign in and approve manager actions."
+              : current === "taxes"
+                ? "Choose your VAT registration status and how menu prices include tax. You can update this later in Taxes."
+                : current === "staff"
+                  ? "Add cashiers, kitchen, or a manager. Each person chooses their own PIN the first time they sign in. You can skip this and add them later."
+                  : "Add at least one category and dish. Prices are in Ghana cedis. Photos and modifiers can wait until the menu page."}
           </p>
         </header>
 
@@ -158,15 +190,31 @@ export function OwnerOnboarding() {
           </p>
         )}
 
-        {step === 0 ? (
-          <div className="mt-6">
-            <TaxProfileForm allowCustom={false} onSaved={() => setStep(1)} />
+        {needsPin === null ? null : current === "pin" ? (
+          <div className="mt-6 max-w-sm">
+            <ChangePinForm
+              userId={profile.sub}
+              submitLabel="Save PIN and continue"
+              onChanged={(payload) => {
+                setAuthSession(payload)
+                setStep((value) => value + 1)
+              }}
+            />
           </div>
-        ) : step === 1 ? (
-          <OnboardingStaffStep onContinue={() => setStep(2)} />
+        ) : current === "taxes" ? (
+          <div className="mt-6">
+            <TaxProfileForm
+              allowCustom={false}
+              onSaved={() => setStep((value) => value + 1)}
+            />
+          </div>
+        ) : current === "staff" ? (
+          <OnboardingStaffStep
+            onContinue={() => setStep((value) => value + 1)}
+          />
         ) : (
           <OnboardingMenuStep
-            onBack={() => setStep(1)}
+            onBack={() => setStep((value) => value - 1)}
             onContinue={() => {
               if (completeState.loading) return
               void finish()
