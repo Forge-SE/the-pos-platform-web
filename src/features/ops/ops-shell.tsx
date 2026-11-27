@@ -16,6 +16,7 @@ import {
   HeartbeatIcon,
   ChartLineUpIcon,
   ClipboardTextIcon,
+  HandshakeIcon,
   CreditCardIcon,
   StorefrontIcon,
   UsersThreeIcon,
@@ -71,6 +72,13 @@ const links = [
     icon: CreditCardIcon,
     exact: true,
     section: "insights",
+  },
+  {
+    label: "Partners",
+    to: "/ops/partners",
+    icon: HandshakeIcon,
+    exact: true,
+    section: "records",
   },
   {
     label: "Audit log",
